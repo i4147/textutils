@@ -1,0 +1,35 @@
+code=utf8
+#基础说明可参考https://gitee.com/chenc224/dbt/blob/master/database2text/datafile/usermenual.md
+#opengauss的样例文件
+#号开头的行为注释，并不需要处理
+#冒号开头的行表示一段内容的开始，直到另外一个冒号或者是文件尾
+#执行时扫描配置文件，把每一段的内容传递给相应的处理函数处理
+:connect
+dbcfg=dbt_opengauss
+:readdata
+schema=dbt
+#需要指定名字空间
+:export
+#export段设置导出数据库里的相应内容为文本文件
+datadir=test/opengauss/export
+:render
+file=test/opengauss/all.md
+help=n
+#使用help=y可以打印出传入模板的数据，方便写模板的时候使用
+#下面是模板样例，jinja2模板库，这个样例是输出表定义到markdown文件中
+start=## {{ tname }} 
+## {{ tname }} {{ tdesc }}
+| 字段名 | 类型 | 长度 | 空 | 默认值 | 说明 |
+| :----  | :---- | ----: | :---- | :---- | :---- |
+{% for c in md %}| {{ c.name }} | {{ c.type }} | {{ c.size }} | {% if c.null == "Y" %}可{% endif %} | {{ c.default or "" }} | {{ c.desc }} |
+{% endfor %}
+end=
+
+#根据模板生成dot文件，调用neato生成pdf文件
+:dot
+dotdir=test/opengauss
+pdfdir=local/opengauss
+filename=all
+dotcmd=neato
+
+:end

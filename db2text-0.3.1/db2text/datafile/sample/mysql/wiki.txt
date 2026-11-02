@@ -1,0 +1,16 @@
+code=utf8
+
+:connect
+driver=mysql
+dbcfg=webbase.ggcx
+:readdata
+
+#view = v_user v_group
+
+:wiki
+title = name:字段名 desc:注释 ts:类型 default:默认值 :说明
+wiki=wiki
+page=门户mysql数据库文档
+level=2
+
+:end

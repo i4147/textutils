@@ -1,0 +1,15 @@
+# -*- coding: utf-8 -*-
+__title__ = 'h_topic_model'
+__author__ = 'Steven Cutting'
+__author_email__ = 'steven.e.cutting@gmail.com'
+__created_on__ = '03/24/2017'
+
+
+import sys
+from operator import eq
+
+import toolz as tlz
+import pytest
+
+
+from h_topic_model.scripts import s_utils as su

@@ -1,0 +1,81 @@
+[tool.poetry]
+name = "textscore"
+version = "0.1.0"
+description = "Tool for assesing the quality of text using causal LM."
+authors = ["Alex Varga <alex@hylix.co>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+torch = "^1.13.1"
+transformers = "^4.25.1"
+
+[tool.poetry.group.dev]
+optional = true
+
+[tool.poetry.group.dev.dependencies]
+mypy = "^0.991"
+ufmt = "^2.0.1"
+ruff = "^0.0.217"
+
+[tool.black]
+line-length = 119
+
+[tool.mypy]
+mypy_path = "textscore"
+namespace_packages = true
+explicit_package_bases = true
+
+[tool.ruff]
+line-length = 119
+
+select = [
+    "A",
+    "ANN",
+    "ARG",
+    "B",
+    "BLE",
+    "C4",
+    "C90",
+    "D",
+    "E",
+    "EM",
+    "ERA",
+    "F",
+    "FBT",
+    "ISC",
+    "N",
+    "PGH",
+    "PIE",
+    "PLC",
+    "PLE",
+    "PLR",
+    "PLW",
+    "PT",
+    "Q",
+    "RET",
+    "RUF",
+    "S",
+    "SIM",
+    "T20",
+    "UP",
+    "W",
+]
+ignore = [
+    "ANN401",
+    "E501",
+    "S101",
+    "RUF100",
+]
+
+[tool.ruff.mccabe]
+max-complexity = 10
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401", "F403"]
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

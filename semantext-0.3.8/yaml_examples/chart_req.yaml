@@ -1,0 +1,36 @@
+dimension:
+  - table: dim_snif
+    column_name: medina
+    label: Branch ID
+    hierarchy: true
+    # filters:
+    # - table_name: dim_snif
+    #   column_name: medina
+    #   value: israel
+    #   operation: eq
+    # - table_name: dim_snif
+    #   column_name: ir
+    #   value: Jerusalem
+    #   operation: eq
+metrics:
+  - table: sales_fact
+    column_name: amount
+    expression: avg
+  - table: sales_fact
+    column_name: price
+    expression: sum
+  # - table: dim_snif
+  #   column_name: godel
+  #   expression: avg
+  # - table: dim_makat
+  #   column_name: mishkal
+  #   expression: avg
+filters:
+  - table_name: sales_fact
+    column_name: taarich
+    value: 2010-02-11 11:02:57
+    operation: eq
+  # - table_name: dim_snif
+  #   column_name: medina
+  #   value: 50
+  #   operation: gt

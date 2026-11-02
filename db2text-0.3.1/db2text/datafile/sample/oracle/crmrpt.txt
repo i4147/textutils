@@ -1,0 +1,26 @@
+#基础说明可参考https://gitee.com/chenc224/dbt/blob/master/db2text/datafile/dbtmanual.md
+#sample for oracle 11
+#oracle11的样例文件
+#号开头的行为注释，并不需要处理
+#冒号开头的行表示一段内容的开始，直到另外一个冒号或者是文件尾
+#执行时扫描配置文件，把每一段的内容传递给相应的处理函数处理
+:connect
+#connect段设置数据库类型以及连接所需要的数据，不同数据库需要的数据并不相同
+#loginname=loginname
+#password=password
+#dbserver=host address or ip or tnsname
+dbcfg=fundcrm@sjzx
+
+:readdata
+table=+ t_rpt_.*
+owner=RTCRM
+
+#根据模板生成dot文件，调用fdp生成pdf文件
+:dot
+dotdir=local/oracle
+pdfdir=local/oracle
+filename=rpt
+dotcmd=fdp
+#可以选择dot，neato,twopi,circo,fdp,sfdp,patchwork和osage指定graphviz布局算法
+
+:end

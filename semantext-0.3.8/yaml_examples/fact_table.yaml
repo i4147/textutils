@@ -1,0 +1,33 @@
+name: sales_fact
+description: |
+  This table is the sales fact table.
+columns:
+  - name: sale_id
+    description: heshbonit
+    data_type: INTEGER
+  - name: taarich
+    description: The date and time of the sale.
+    data_type: TIMESTAMP
+  - name: makat
+    description: The unique identifier for the product sold.
+    data_type: STRING
+  - name: amount
+    description: The amount of the sale.
+    data_type: INTEGER
+  - name: price
+    description: The price of the product sold.
+    data_type: FLOAT
+  - name: snif_id
+    description: The branch where the sale occurred.
+    data_type: INTEGER
+dimensions:
+  - name: dim_makat
+    table_name: dim_makat
+    fact_dim_key: makat
+    dim_key: makat
+    join_type: inner
+  - name: dim_snif
+    table_name: dim_snif
+    fact_dim_key: snif_id
+    dim_key: snif_id
+    join_type: inner

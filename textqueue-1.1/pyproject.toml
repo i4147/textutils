@@ -1,0 +1,21 @@
+[project]
+name="textqueue"
+version="1.1"
+authors= [
+    { name="Asher Glick", email="aglick@aglick.com" },
+]
+description="A text-based queue tool"
+readme="README.md"
+# requires-pyton=">3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+]
+
+# [project.urls]
+# Homepage="https://github.com/AsherGlick/textqueue"
+# Issues="https://github.com/AsherGlick/textqueue/issues"
+
+[tool.setuptools]
+packages = ["textqueue"]

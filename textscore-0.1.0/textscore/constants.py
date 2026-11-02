@@ -1,0 +1,2 @@
+DEFAULT_DEVICE = "cpu"
+DEFAULT_MODEL = "gpt2"

@@ -1,0 +1,31 @@
+name: dim_snif
+description: |
+  This table contains information about branches (snifs).
+  Each branch has a unique identifier and associated details.
+columns:
+  - name: snif_id
+    description: The unique identifier for the branch.
+    data_type: integer
+    primary_key: true
+  - name: godel
+    description: size of the branch.
+    data_type: float
+  - name: shem_snif
+    description: Last name of the customer.
+    data_type: string
+  - name: ir
+    description: The city where the branch is located.
+    data_type: string
+  - name: medina
+    description: The state where the branch is located.
+    data_type: string
+hierarchies:
+  - name: snif_hierarchy
+    type: levels
+    description: |
+      This hierarchy represents the branch structure.
+      It includes the branch ID and its associated details.
+    levels:
+      - column_name: medina
+      - column_name: ir
+      - column_name: snif_id

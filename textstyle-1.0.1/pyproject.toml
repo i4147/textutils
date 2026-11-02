@@ -1,0 +1,77 @@
+[project]
+name = "textstyle"
+version = "1.0.1"
+description = "Textstyle is a lightweight Python library that makes terminal text styling effortless. With support for colors, backgrounds, text styles, and an intuitive markup format, you can create beautiful CLI applications with just a few lines of code."
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Sivaprasad Murali", email = "sivaprasad.off@gmail.com"}
+]
+maintainers = [
+    {name = "Sivaprasad Murali", email = "sivaprasad.off@gmail.com"}
+]
+keywords = [
+    "terminal",
+    "console",
+    "color",
+    "style",
+    "ansi",
+    "text",
+    "formatting",
+    "markup",
+    "theme",
+    "cli",
+    "tui",
+    "rich",
+    "colorama",
+    "cross-platform",
+    "windows",
+    "linux",
+    "macos"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: User Interfaces",
+    "Topic :: System :: Shells",
+    "Topic :: Terminals",
+    "Topic :: Utilities",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Typing :: Typed",
+    "Environment :: Console",
+]
+requires-python = ">=3.7"
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/Crystallinecore/textstyle"
+Documentation = "https://github.com/Crystallinecore/textstyle#readme"
+Source = "https://github.com/Crystallinecore/textstyle"
+Tracker = "https://github.com/Crystallinecore/textstyle/issues"
+Releases = "https://github.com/Crystallinecore/textstyle/releases"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["textstyle*"]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project.scripts]
+textstyle = "textstyle.__main__:main"

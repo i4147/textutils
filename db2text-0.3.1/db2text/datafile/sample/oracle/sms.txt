@@ -1,0 +1,21 @@
+#cc库sms用户
+
+:connect
+
+dbcfg=cc@cc
+
+:readdata
+
+table= + .* - rtyg .*ygxx.* ye jjjkwj sztwj jjjkzd hm1231 hm2 rsts ygzj dxx20.*
+
+#根据模板生成dot文件，调用fdp生成pdf文件
+:dot
+dotdir=test/oracle
+pdfdir=local/oracle
+filename=sms
+dotcmd=fdp
+#可以选择dot，neato,twopi,circo,fdp,sfdp,patchwork和osage指定graphviz布局算法
+autosplit = 50
+#每50行分一页
+
+:end

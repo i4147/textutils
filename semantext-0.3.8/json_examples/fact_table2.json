@@ -1,0 +1,57 @@
+{
+    "columns": [
+        {
+            "data_type": "INTEGER",
+            "description": "heshbonit",
+            "column_name": "sale_id"
+        },
+        {
+            "data_type": "TIMESTAMP",
+            "description": "The date and time of the sale.",
+            "column_name": "taarich"
+        },
+        {
+            "data_type": "STRING",
+            "description": "The unique identifier for the product sold.",
+            "column_name": "makat"
+        },
+        {
+            "data_type": "INTEGER",
+            "description": "The amount of the sale.",
+            "column_name": "amount"
+        },
+        {
+            "data_type": "FLOAT",
+            "description": "The price of the product sold.",
+            "column_name": "price"
+        },
+        {
+            "data_type": "INTEGER",
+            "description": "The branch where the sale occurred.",
+            "column_name": "snif_id"
+        },
+        {
+            "column_name": "ir",
+            "description": "The city where the branch is located.",
+            "data_type": "string"
+        }
+    ],
+    "description": "This table is the sales fact table.",
+    "dimensions": [
+        {
+            "dim_key": "makat",
+            "fact_dim_key": "makat",
+            "join_type": "inner",
+            "name": "dim_makat",
+            "table_name": "datalake.remix.dim_makat"
+        },
+        {
+            "dim_key": "ir",
+            "fact_dim_key": "ir",
+            "join_type": "inner",
+            "name": "dim_snif",
+            "table_name": "datalake.remix.dim_snif"
+        }
+    ],
+    "name": "datalake.remix.shalom_fact"
+}

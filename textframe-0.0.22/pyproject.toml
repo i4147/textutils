@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "textframe"
+version = "0.0.22"
+authors = [
+  { name="Guy de Winton", email="guy@codehippie.io" },
+]
+description = "An ASCII plain text table renderer."
+readme = "README.md"
+requires-python = ">=3"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+
+[project.urls]
+"Homepage" = "https://gitlab.com/guydewinton/textframe"
+"Bug Tracker" = "https://gitlab.com/guydewinton/textframe/issues"

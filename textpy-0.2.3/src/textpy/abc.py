@@ -1,0 +1,364 @@
+from abc import ABC, abstractmethod
+from functools import cached_property
+import logging
+from pathlib import Path
+import re
+from typing import TYPE_CHECKING, Any, Optional, Union
+from typing_extensions import Self
+import black
+from re_extensions import SmartPattern, line_findall
+from .imports import Imports
+from .interaction import (
+    NULL,
+    FileEditor,
+    FindTextResult,
+    Replacer,
+    TextFinding,
+    display_params,
+    make_html_tree,
+)
+
+if TYPE_CHECKING:
+    from re import Pattern
+    from htmlmaster import HTMLTreeMaker
+    from ._typing import PatternType, ReplType
+    from .texttree import PyContent
+__all__ = ["Docstring", "TextTree"]
+
+
+class TextTree(ABC):
+    def __init__(
+        self,
+        path_or_str: Path | str,
+        *,
+        parent: Optional["TextTree"] = None,
+        start_line: Optional[int] = None,
+        home: Path | str | None = None,
+        encoding: Optional[str] = None,
+        ignore: Optional[list[str]] = None,
+        include: Optional[list[str]] = None,
+        mask: Optional[Self] = None,
+    ) -> None:
+        self.text: str = ""
+        self.name: str = ""
+        self.path = Path(NULL + ".py")
+        self.parent = parent
+        self.spaces = 0
+        self.ignore, self.include = ignore, include
+        if start_line is None:
+            self.start_line = 1 if parent is None else parent.start_line
+        else:
+            self.start_line = start_line
+        if parent is None:
+            self.home = as_path(Path(), home=home)
+            self.encoding = encoding
+        else:
+            self.home = parent.home
+            self.encoding = parent.encoding
+        self._header: Optional[Any] = None
+        self.__texttree_post_init__(path_or_str)
+        if mask:
+            self.path = mask.path
+            self.name = mask.name
+            self.parent = mask.parent
+            self.home = mask.home
+
+    def __repr__(self) -> None:
+        return f"{self.__class__.__name__}({self.absname!r})"
+
+    def _repr_mimebundle_(self, *_, **__) -> Optional[dict[str, str]]:
+        if display_params.use_mimebundle:
+            return {"text/html": self.to_html().make()}
+        return None
+
+    def __truediv__(self, __value: "str") -> "TextTree":
+        return self.jumpto(__value)
+
+    @abstractmethod
+    def __texttree_post_init__(self, path_or_str: Path | str) -> None:
+        pass
+
+    def __eq__(self, __other: Self) -> bool:
+        return self.abspath == __other.abspath
+
+    def __gt__(self, __other: Self) -> bool:
+        return self.abspath > __other.abspath
+
+    def __ge__(self, __other: Self) -> bool:
+        return self.abspath >= __other.abspath
+
+    def to_html(self) -> HTMLTreeMaker:
+        return make_html_tree(self)
+
+    @cached_property
+    @abstractmethod
+    def doc(self) -> "Docstring":
+        pass
+
+    @cached_property
+    @abstractmethod
+    def header(self) -> "PyContent":
+        pass
+
+    @cached_property
+    def children(self) -> list["TextTree"]:
+        return []
+
+    @cached_property
+    def children_names(self) -> list[str]:
+        return [x.name for x in self.children]
+
+    @cached_property
+    def children_dict(self) -> dict[str, "TextTree"]:
+        children_dict: dict[str, "TextTree"] = {}
+        null_cnt: int = 0
+        for child, childname in zip(self.children, self.children_names):
+            if childname == NULL:
+                childname = f"NULL_{null_cnt}"
+                null_cnt += 1
+            children_dict[childname] = child
+        return children_dict
+
+    @cached_property
+    def absname(self) -> str:
+        if self.parent is None:
+            return self.name
+        elif self.name == "NULL":
+            return self.parent.absname
+        return self.parent.absname + "." + self.name
+
+    @cached_property
+    def relname(self) -> str:
+        return "." + self.absname.partition(".")[-1]
+
+    @cached_property
+    def abspath(self) -> Path:
+        if self.path.stem == NULL:
+            return self.path if self.parent is None else self.parent.abspath
+        else:
+            return self.path.absolute()
+
+    @cached_property
+    def relpath(self) -> Path:
+        try:
+            return self.abspath.relative_to(self.home.absolute())
+        except ValueError:
+            return self.abspath
+
+    @cached_property
+    def execpath(self) -> Path:
+        if self.is_dir():
+            return self.header.execpath
+        try:
+            return self.abspath.relative_to(self.abspath.cwd())
+        except ValueError:
+            return self.abspath
+
+    def is_file(self) -> bool:
+        return False
+
+    def is_dir(self) -> bool:
+        return False
+
+    def check_format(self) -> bool:
+        if self.is_dir():
+            check_results = [c.check_format() for c in self.children]
+            return all(check_results)
+        if self.is_file() and black_format(self.text).strip() != self.text:
+            logging.warning(
+                "file does not comply with Black formatter's default rules: '%s'",
+                self.path,
+            )
+            return False
+        return True
+
+    def findall(
+        self,
+        pattern: "PatternType",
+        /,
+        *,
+        whole_word: bool = False,
+        dotall: bool = False,
+        case_sensitive: bool = True,
+        regex: bool = True,
+        based_on: Optional[Replacer] = None,
+    ) -> FindTextResult:
+        pattern = self.__pattern_trans(pattern, whole_word, dotall, case_sensitive, regex)
+        res = FindTextResult()
+        if based_on and self.is_file():
+            latest = self
+            for e in based_on.editors:
+                if e.pyfile == self and not e.is_based_on:
+                    latest = self.__class__(e.new_text, mask=self)
+                    break
+            res.join(latest.findall(pattern))
+        elif not self.children:
+            for nline, g in line_findall(self.__pattern_expand(pattern), self.text):
+                if g:
+                    res.append(TextFinding(self, pattern, self.start_line + nline - 1, g))
+        else:
+            res.join(self.header.findall(pattern, based_on=based_on))
+            for c in self.children:
+                res.join(c.findall(pattern, based_on=based_on))
+        return res
+
+    def replace(
+        self,
+        pattern: "PatternType",
+        repl: "ReplType",
+        /,
+        *,
+        overwrite: bool = True,
+        whole_word: bool = False,
+        dotall: bool = False,
+        case_sensitive: bool = True,
+        regex: bool = True,
+        based_on: Optional[Replacer] = None,
+    ) -> "Replacer":
+        pattern = self.__pattern_trans(pattern, whole_word, dotall, case_sensitive, regex)
+        replacer = Replacer()
+        if self.path.suffix == ".py":
+            old = None
+            if based_on:
+                for e in based_on.editors:
+                    if e.pyfile == self and not e.is_based_on:
+                        old = e
+                        break
+            editor = FileEditor(self, overwrite=overwrite, based_on=old)
+            if editor.replace(pattern, repl) > 0:
+                replacer.append(editor)
+        else:
+            for c in self.children:
+                replacer.join(c.replace(pattern, repl, overwrite=overwrite, based_on=based_on))
+        return replacer
+
+    def delete(
+        self,
+        pattern: "PatternType",
+        /,
+        *,
+        overwrite: bool = True,
+        whole_word: bool = False,
+        dotall: bool = False,
+        case_sensitive: bool = True,
+        regex: bool = True,
+        based_on: Optional[Replacer] = None,
+    ) -> "Replacer":
+        return self.replace(
+            pattern,
+            "",
+            overwrite=overwrite,
+            whole_word=whole_word,
+            dotall=dotall,
+            case_sensitive=case_sensitive,
+            regex=regex,
+            based_on=based_on,
+        )
+
+    @cached_property
+    def imports(self) -> Imports:
+        return Imports(self)
+
+    @staticmethod
+    def __pattern_trans(
+        pattern: "PatternType",
+        whole_word: bool = False,
+        dotall: bool = False,
+        case_sensitive: bool = True,
+        regex: bool = True,
+    ) -> "Pattern[str]" | SmartPattern:
+        if isinstance(pattern, re.Pattern):
+            p, f = pattern.pattern, pattern.flags
+        elif isinstance(pattern, SmartPattern):
+            p, f = pattern.pattern, pattern.flags
+        elif isinstance(pattern, str):
+            p, f = pattern, 0
+        else:
+            msg = f"invalid pattern type: {type(pattern)}"
+            raise TypeError(msg)
+        if not regex:
+            p = re.escape(p)
+        if not case_sensitive:
+            f = f | re.IGNORECASE
+        if whole_word:
+            p = "\\b" + p + "\\b"
+        if dotall:
+            f = f | re.DOTALL
+        if regex and isinstance(pattern, SmartPattern):
+            return SmartPattern(p, flags=f)
+        return re.compile(p, flags=f)
+
+    @staticmethod
+    def __pattern_expand(
+        pattern: "Pattern" | SmartPattern,
+    ) -> "Pattern" | SmartPattern:
+        if pattern.flags & re.DOTALL:
+            new_pattern = "[^\n]*" + pattern.pattern + "[^\n]*"
+        else:
+            new_pattern = ".*" + pattern.pattern + ".*"
+        if isinstance(pattern, re.Pattern):
+            return re.compile(new_pattern, flags=pattern.flags)
+        return SmartPattern(new_pattern, flags=pattern.flags)
+
+    def jumpto(self, target: str) -> "TextTree":
+        if not target:
+            return self
+        if target == NULL:
+            msg = "can not jump to NULL"
+            raise ValueError(msg)
+        if target.startswith(("/", "\\")):
+            msg = f"can not jump to absolute path: {target!r}"
+            raise ValueError(msg)
+        splits = re.sub("[/\\\\]+", ".", target).split(".", maxsplit=1)
+        a, b = (splits[0], "") if len(splits) == 1 else splits
+        if not a:
+            if self.parent is not None:
+                return self.parent.jumpto(b)
+            msg = f"{self.absname!r} hasn't got a parent"
+            raise ValueError(msg)
+        to_find = {a[:-2], a} if a.endswith("()") else {a, a + "()"}
+        for i in range(len(self.children) - 1, -1, -1):
+            if self.children[i].name in to_find:
+                return self.children[i].jumpto(b)
+        if self.name in to_find:
+            return self.jumpto(b)
+        if a == "py" and self.is_file():
+            return self.jumpto(b)
+        msg = f"{a!r} is not a child of {self.absname!r}"
+        raise ValueError(msg)
+
+    def track(self) -> list["TextTree"]:
+        tracks: list["TextTree"] = []
+        obj: Optional["TextTree"] = self
+        while obj is not None:
+            tracks.append(obj)
+            obj = obj.parent
+        tracks.reverse()
+        return tracks
+
+
+class Docstring(ABC):
+    def __init__(self, text: str, parent: Optional[TextTree] = None) -> None:
+        self.text = text.strip()
+        self.parent = parent
+
+    def __repr__(self) -> str:
+        return self.text
+
+    @property
+    @abstractmethod
+    def sections(self) -> dict[str, str]:
+        return {}
+
+
+def as_path(path_or_str: Path | str, home: Path | str | None = None) -> Path:
+    if isinstance(path_or_str, str):
+        path_or_str = Path(path_or_str)
+    home = Path().cwd() if home is None else Path(home).absolute()
+    if not path_or_str.is_absolute():
+        path_or_str = home / path_or_str
+    return path_or_str
+
+
+def black_format(string: str) -> str:
+    return black.format_str(string, mode=black.FileMode())

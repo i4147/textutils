@@ -1,0 +1,25 @@
+#cc库模板文件
+
+:connect
+
+dbcfg=cc@cc
+
+:readdata
+
+# 系统监控用户
+owner=XTJK
+
+
+#根据模板生成dot文件，调用fdp生成pdf文件
+:dot
+dotdir=test/oracle
+pdfdir=local/oracle
+page=备份 其它
+备份= .*BF.*
+filename=xtjk
+dotcmd=fdp
+#可以选择dot，neato,twopi,circo,fdp,sfdp,patchwork和osage指定graphviz布局算法
+autosplit = 50
+#每50行分一页
+
+:end

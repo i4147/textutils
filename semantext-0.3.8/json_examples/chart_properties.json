@@ -1,0 +1,40 @@
+{
+    "dimension": {
+        "table_name": "datalake.remix.dim_snif",
+        "column_name": "snif_id",
+        "column_name_display": "snif_name",
+        "label": "Branch ID",
+        "hierarchy": true
+    },
+    "metrics": [
+        {
+            "table_name": "datalake.remix.sales_fact",
+            "column_name": "amount",
+            "expression": "avg"
+        },
+        {
+            "table_name": "datalake.remix.sales_fact",
+            "column_name": "price",
+            "expression": "sum"
+        },
+        {
+            "table_name": "datalake.remix.shalom_fact",
+            "column_name": "amount",
+            "expression": "avg"
+        }
+    ],
+    "filters": [
+        {
+            "table_name": "datalake.remix.sales_fact",
+            "column_name": "taarich",
+            "value": "2023-01-01",
+            "operation": "eq"
+        },
+        {
+            "table_name": "datalake.remix.dim_snif",
+            "column_name": "ir",
+            "value": "Jerusalem",
+            "operation": "eq"
+        }
+    ]
+}

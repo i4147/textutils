@@ -1,0 +1,3 @@
+import OpenHowNet
+
+OpenHowNet.download()

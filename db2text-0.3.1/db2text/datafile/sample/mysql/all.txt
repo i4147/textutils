@@ -1,0 +1,36 @@
+code=utf8
+
+:connect
+driver=mysql
+#host=服务器地址
+#user=用户名
+#password=密码
+#database=库
+#port=3306
+#charset=utf8
+dbcfg=dbt_mysql
+:readdata
+:export
+#export段设置导出数据库里的相应内容为文本文件
+datadir=test/mysql/export
+:render
+file=test/mysql/all.md
+help=n
+#table=tgroup tuser t_user_group t_app_group
+#使用help=y可以打印出传入模板的数据，方便写模板的时候使用
+start=## {{ tname }} 
+## {{ tname }} {{ tdesc }}
+| 字段名 | 类型 | 空 | 默认值 | 说明 |
+| :----  | :---- | :---- | :---- | :---- |
+{% for c in ori %}| {{ c.COLUMN_NAME }} | {{ c.COLUMN_TYPE }} | {% if c.IS_NULLABLE == "YES" %}可{% endif %} | {{ c.COLUMN_DEFAULT or "" }} | {{ c.COLUMN_COMMENT }} |
+{% endfor %}
+end=
+
+#根据模板生成graphviz的dot文件，调用相应命令生成pdf文件
+:dot
+dotdir=test/mysql
+pdfdir=local/mysql
+filename=all
+dotcmd=osage
+
+:end

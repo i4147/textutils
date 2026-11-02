@@ -1,0 +1,2 @@
+recursive-include database2text/datafile *
+recursive-include db2text/datafile *

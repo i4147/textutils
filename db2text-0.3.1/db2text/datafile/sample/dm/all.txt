@@ -1,0 +1,30 @@
+code=utf8
+
+:connect
+driver=dm
+dbcfg=dbt_dm
+:readdata
+:export
+#export段设置导出数据库里的相应内容为文本文件
+datadir=test/dm/export
+:render
+file=test/dm/all.md
+help=n
+#table=tgroup tuser t_user_group t_app_group
+#使用help=y可以打印出传入模板的数据，方便写模板的时候使用
+start=## {{ tname }} 
+## {{ tname }} {{ tdesc }}
+| 字段名 | 类型 | 长度 | 空 | 默认值 | 说明 |
+| :----  | :---- | ----: | :---- | :---- | :---- |
+{% for c in ori %}| {{ c.COLUMN_NAME }} | {{ c.DATA_TYPE }} | {{ c.DATA_LENGTH }} | {% if c.NULLABLE == "Y" %}可{% endif %} | {{ c.DATA_DEFAULT or "" }} | {{ c.COLUMN_COMMENT }} |
+{% endfor %}
+end=
+
+#根据模板生成graphviz的dot文件，调用相应命令生成pdf文件
+:dot
+dotdir=test/dm
+pdfdir=local/dm
+filename=all
+dotcmd=osage
+
+:end

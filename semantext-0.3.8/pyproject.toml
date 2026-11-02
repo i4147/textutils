@@ -1,0 +1,16 @@
+[project]
+name = "semantext"
+version = "0.3.8"
+description = "OSS Semantic Layer built for easy llm integration"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.12"
+authors = [{name = "Alon Nahmias", email = "alon.alon.nahmias@gmail.com"}, {name = "Shoham Yamin", email = "shoham39@gmail.com"}]
+dependencies = [
+    "pydantic>=2.11.7",
+    "sqlglot>=26.30.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

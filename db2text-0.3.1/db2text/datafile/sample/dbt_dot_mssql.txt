@@ -1,0 +1,16 @@
+#生成dot文件，用于griphviz
+
+#以下部分是mssql数据库
+:connect
+
+dbcfg=ia_paladin
+
+:readdata
+
+table= + dbf_map.*
+
+:dot
+file=test/ia.dot
+cmd=neato -Tpdf test/ia.dot -o test/ia.pdf
+
+:end

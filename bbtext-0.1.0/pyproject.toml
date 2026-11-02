@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "bbtext"
+version = "0.1.0"
+description = ""
+authors = ["Yuta Taniguchi <yuta.taniguchi.y.t@gmail.com>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+"pdfminer.six" = "^20211012"
+click = "^8.0.4"
+
+[tool.poetry.dev-dependencies]
+
+[tool.poetry.scripts]
+bbtext = 'bbtext:main'
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

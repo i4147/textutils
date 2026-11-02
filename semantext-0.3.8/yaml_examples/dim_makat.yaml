@@ -1,0 +1,14 @@
+name: dim_makat
+description: |
+  This table contains product information.
+columns:
+  - name: makat
+    description: The unique identifier for the product.
+    data_type: string
+    primary_key: true
+  - name: mishkal
+    description: The weight of the product.
+    data_type: float
+  - name: shem_makat
+    description: The name of the product.
+    data_type: string

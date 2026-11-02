@@ -1,0 +1,35 @@
+[tool.poetry]
+name = "texturize"
+description = "🤖🖌️ Generate new photo-realistic textures similar to a source image."
+version = "0.14.1"
+authors = ["Alex J. Champandard <445208+alexjc@users.noreply.github.com>"]
+readme = "docs/pypi.rst"
+repository = "https://github.com/photogeniq/texturize"
+license = "AGPL-3.0"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Topic :: Multimedia :: Graphics",
+]
+packages = [
+    { include = "texturize", from = "src" },
+]
+
+[tool.poetry.scripts]
+texturize = 'texturize.__main__:main'
+
+[tool.poetry.dependencies]
+python = "^3.7"
+creativeai = "^0.2.1"
+docopt = "^0.6.2"
+progressbar2 = "^4.2.0"
+schema = "^0.7.5"
+
+[tool.poetry.dev-dependencies]
+pytest = ">=7.0.0"
+hypothesis = ">=6.0.0"
+pytest-cov = ">=3.0.0"
+keyring = ">=22.4.0"
+
+[build-system]
+requires = ["poetry>=1.0"]
+build-backend = "poetry.masonry.api"

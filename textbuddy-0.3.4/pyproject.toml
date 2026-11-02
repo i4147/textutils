@@ -1,0 +1,33 @@
+# pyproject.toml
+
+# This section defines the core details of your project.
+[project]
+name = "textbuddy" # The name users will type to install your package (e.g., `pip install textbuddy`).
+                  # Must be lowercase and use hyphens if multiple words. Here, it's one word.
+version = "0.3.4"       # The current version of your package. Start with 0.1.1 (major.minor.patch).
+authors = [ # Your name and email. Replace with your actual details!
+  { name="Amit Dutta", email="amitdutta4255@gmail.com" },
+]
+description = "Simple string and text utilities for Indian contexts for beginners." # A short summary.
+readme = "README.md" # Tells PyPI to use your README.md file for the project description.
+requires-python = ">=3.7" # The minimum Python version required to run your package.
+keywords = ["india", "text", "string", "currency", "phone", "date", "beginner", "utilities"] # Keywords to help people find your package.
+classifiers = [ # Standard categories that describe your package.
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Text Processing",
+    "Topic :: Office/Business",
+    "Intended Audience :: Education",
+    "Development Status :: 3 - Alpha" # Indicates it's still in development, not fully stable.
+]
+
+# This section links to your project's website (like GitHub).
+[project.urls]
+Homepage = "https://github.com/notamitgamer/textbuddy"
+"Bug Tracker" = "https://github.com/notamitgamer/textbuddy/issues" 
+
+# This section tells Python how to build your package.
+[build-system]
+requires = ["setuptools>=61.0"] # Tools needed to build the package.
+build-backend = "setuptools.build_meta" # The specific build system to use.
