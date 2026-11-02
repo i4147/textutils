@@ -15,15 +15,11 @@ def main(
         output_img_folder = pdf_base + "_images"
     if output_txt_folder is None:
         output_txt_folder = pdf_base + "_text"
-    print(
-        f"[MAIN] Starting pipeline with {pdf_path} -> {output_img_folder} -> {output_txt_folder}"
-    )
+    print(f"[MAIN] Starting pipeline with {pdf_path} -> {output_img_folder} -> {output_txt_folder}")
     pdf_to_images(pdf_path, output_img_folder)
     print("[MAIN] Finished PDF to images. Listing images...")
     os.makedirs(output_txt_folder, exist_ok=True)
-    image_files = sorted(
-        [f for f in os.listdir(output_img_folder) if f.lower().endswith(".png")]
-    )
+    image_files = sorted([f for f in os.listdir(output_img_folder) if f.lower().endswith(".png")])
     print(f"[MAIN] Found images: {image_files}")
     for img_file in image_files:
         img_path = os.path.join(output_img_folder, img_file)
@@ -51,7 +47,5 @@ if __name__ == "__main__":
     elif len(sys.argv) == 4:
         main(sys.argv[1], sys.argv[2], sys.argv[3])
     else:
-        print(
-            "Usage: python main.py <pdf_path> [<output_img_folder> <output_txt_folder>]"
-        )
+        print("Usage: python main.py <pdf_path> [<output_img_folder> <output_txt_folder>]")
         print("Or use the CLI: python cli.py <pdf_path>")

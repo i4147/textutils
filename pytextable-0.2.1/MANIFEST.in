@@ -1,6 +1,0 @@
-include LICENSE
-
-graft misc/requirements
-
-prune docs
-prune tests

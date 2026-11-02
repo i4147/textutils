@@ -18,9 +18,7 @@ class CharNoiseAugmenter:
         self.character_set = character_set
         self.noise_level = noise_level
         self.random = random.Random(seed)
-        unsupported_actions = [
-            a for a in self.actions if a not in CharNoiseAugmenter._AVAILABLE_ACTIONS
-        ]
+        unsupported_actions = [a for a in self.actions if a not in CharNoiseAugmenter._AVAILABLE_ACTIONS]
         if unsupported_actions:
             msg = (
                 f"You provide unsupported actions: {unsupported_actions}. Available"
@@ -28,16 +26,10 @@ class CharNoiseAugmenter:
             )
             raise ValueError(msg)
         if not 0 <= self.noise_level <= 1:
-            msg = (
-                "Noise level must be between 0 and 1 (included), you provide"
-                f" {self.noise_level}"
-            )
+            msg = f"Noise level must be between 0 and 1 (included), you provide {self.noise_level}"
             raise ValueError(msg)
         if (self.noise_level > unbias.MAX_SWAP_LEVEL) & ("swap" in self.actions):
-            msg = (
-                f"You cannot have a CER greater than {unbias.MAX_SWAP_LEVEL} when using"
-                " action `swap`"
-            )
+            msg = f"You cannot have a CER greater than {unbias.MAX_SWAP_LEVEL} when using action `swap`"
             raise ValueError(msg)
 
     def _random_success(self, p: float) -> bool:
@@ -56,10 +48,7 @@ class CharNoiseAugmenter:
         return other_char
 
     def substitute_random_chars(self, text: str, p: float) -> str:
-        return "".join(
-            self._choose_another_character(char) if self._random_success(p) else char
-            for char in text
-        )
+        return "".join(self._choose_another_character(char) if self._random_success(p) else char for char in text)
 
     def delete_random_chars(self, text: str, p: float) -> str:
         return "".join(["" if self._random_success(p) else char for char in text])
@@ -95,10 +84,7 @@ class CharNoiseAugmenter:
                 case "delete":
                     action_function = self.delete_random_chars
                 case _:
-                    msg = (
-                        "Action should be one of"
-                        f" {CharNoiseAugmenter._AVAILABLE_ACTIONS!r}"
-                    )
+                    msg = f"Action should be one of {CharNoiseAugmenter._AVAILABLE_ACTIONS!r}"
                     raise ValueError(msg)
             if isinstance(text, list):
                 text = [action_function(word, p_effective) for word in text]

@@ -20,6 +20,4 @@ def add_noise(
     feature_name: str = "tokens",
     **kwargs: Any,
 ) -> Dataset:
-    return dataset.map(
-        lambda x: _add_noise_to_example(x, noise_augmenter, feature_name), **kwargs
-    )
+    return dataset.map(lambda x: _add_noise_to_example(x, noise_augmenter, feature_name), **kwargs)

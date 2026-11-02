@@ -1,7 +1,7 @@
 extract functions & classes from these pkgs &
 use them to build a textutils library 
 for linux env (drop any windows & mac support)
-- drop any pytjon2 support & compat code
+- drop any python2 support & compat code
 - refactor codes to modern py3.12+
 - migrate from stdlib logging to loguru
 - use pathlib for fs traverse (instead of os.path)

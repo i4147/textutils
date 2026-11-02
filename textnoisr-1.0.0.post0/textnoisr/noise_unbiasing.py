@@ -12,18 +12,16 @@ SWAP_LEVENSHTEIN_VALUE = np.array([1, 0, 0, 2, 0, 2, 0, 0])
 def __compute_expected_cer_from_noise_level(p: float, N: int) -> float:
     p = float(p)
     q = 1 - p
-    P = np.array(
-        [
-            [0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, p, q, 0, 0, 0],
-            [p, q, 0, 0, 0, 0, 0, 0],
-            [0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, p, q, 0, 0, 0],
-            [0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, p, q, 0, 0, 0],
-            [0, 0, 0, 0, 0, p, q, 0],
-        ]
-    )
+    P = np.array([
+        [0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, p, q, 0, 0, 0],
+        [p, q, 0, 0, 0, 0, 0, 0],
+        [0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, p, q, 0, 0, 0],
+        [0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, p, q, 0, 0, 0],
+        [0, 0, 0, 0, 0, p, q, 0],
+    ])
     state = SWAP_START_STATE
     levenshtein = state @ SWAP_LEVENSHTEIN_VALUE
     for _ in range(N - 1):

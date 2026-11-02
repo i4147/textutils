@@ -19,9 +19,7 @@ def preprocess_image(image: Image.Image) -> Image.Image:
 def image_to_text(image_path: str) -> str:
     print(f"[OCR] Starting OCR for {image_path}")
     try:
-        tesseract_path = os.getenv(
-            "TESSERACT_PATH", r"C:\Program Files\Tesseract-OCR\tesseract.exe"
-        )
+        tesseract_path = os.getenv("TESSERACT_PATH", r"C:\Program Files\Tesseract-OCR\tesseract.exe")
         pytesseract.pytesseract.tesseract_cmd = tesseract_path
         print(f"[OCR] Using tesseract at: {tesseract_path}")
         image = Image.open(image_path)
