@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--********************************************************************
+Copyright (C) 2025-2026  Robert A. Beezer
+
+This file is part of PreTeXt.
+
+PreTeXt is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 2 or version 3 of the
+License (at your option).
+
+PreTeXt is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with PreTeXt.  If not, see <http://www.gnu.org/licenses/>.
+*****************************************************************-->
+<texstyle>
+    <metadata>
+        <code>taylor-francis</code>
+        <name>Taylor Francis General - All other Taylor-Francis journals</name>
+        <publisher>Taylor-Francis</publisher>
+        <latex-engine command="pdflatex"/>
+        <bibliography-style>spbasic</bibliography-style>
+
+        <style-author>Oscar Levin</style-author>
+        <date>2025-03-17</date>
+    </metadata>
+
+    <documentclass name="article"/>
+
+
+    <ptx-preamble/>
+
+
+    <title cmd="title">
+        <arg>
+            <ptx-title/>
+            <!-- the article class marks a "\thanks" on the title and sets it at the foot of the title page -->
+            <support cmd="thanks">
+                <arg><ptx-bibinfo-support/></arg>
+            </support>
+        </arg>
+    </title>
+
+    <author cmd="author">
+        <arg>
+            <author-list sep="\and">
+                <ptx-personname/>
+                <support cmd="thanks" after="\\">
+                    <arg><ptx-support/></arg>
+                </support>
+                <ptx-affiliation sep="\\&#xa;" after="\\"/>
+                <ptx-email/>
+            </author-list>
+        </arg>
+    </author>
+
+    <date cmd="date">
+        <arg><ptx-date/></arg>
+    </date>
+
+    <begin-document/>
+
+    <maketitle/>
+
+    <abstract env="abstract">
+        <ptx-abstract/>
+         <!--  heading="\noindent{\bfseries Keywords}." -->
+        <keywords authority="author" style="bf-heading" sep=", " before="\par\medskip" />
+        <keywords authority="msc" style="bf-heading" variant-style="before" sep=", " before="\par\medskip"/>
+        <!--<subj-class heading="\noindent{\bfseries {@variant} Mathematics Subject Classification}."/>-->
+    </abstract>
+
+    <mainmatter/>
+
+
+
+    <acknowledgments heading="\section*{Acknowledgments}"/>
+
+
+    <appendices/>
+
+
+    <bibliography cmd="bibliography">
+        <arg><bib-file/></arg>
+    </bibliography>
+
+
+    <end-document/>
+</texstyle>

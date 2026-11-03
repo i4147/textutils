@@ -1,0 +1,67 @@
+/* ----------------- QHeaderView / QTableView ----------------- */
+
+QHeaderView::section {
+    color: {{ text }};
+    background-color: {{ background }};
+    border-width: 0px 2px 2px 2px;
+    border-style: dotted;
+    border-color: {{ foreground }};
+}
+
+/* ----------------- QtDataFrameWidget ----------------- */
+
+QtDataFrameWidget > HeaderView {
+    font-weight: bold;
+    background-color: {{ background }};
+    selection-color: {{ text }};
+    selection-background-color: {{ highlight }};
+    border: 0px solid {{ highlight }};
+}
+
+QtDataFrameWidget > DataTableView {
+    background-color: {{ background }};
+    gridline-color: {{ highlight }};
+    selection-color: {{ text }};
+    selection-background-color: {{ lighten(highlight, 35) }};
+    alternate-background-color: {{ darken_or_lighten_for_theme(foreground, 10) }};
+}
+
+QtDataFrameWidget > CornerView {
+    font-weight: bold;
+    background-color: {{ darken(background, 4) }};
+    alternate-background-color: {{ darken(background, 4) }};
+    gridline-color: {{ foreground }};
+    selection-background-color: {{ darken(background, 4) }};
+    selection-color: {{ text }};
+    border: 0px;
+}
+
+QtDataFrameWidget > CornerView::item {
+    padding: 4px 8px;
+}
+
+QtDataFrameWidget > HeaderView#columnHeader,
+QtDataFrameWidget > HeaderView#indexHeader,
+QtDataFrameWidget > CornerView#cornerView {
+    background-color: {{ darken(background, 4) }};
+    alternate-background-color: {{ darken(background, 4) }};
+}
+
+/* ----------------- QtCheckableTableView ----------------- */
+
+QtCheckableTableView{
+    background-color: {{ darken(background, 10) }};
+    border: 2px solid {{ foreground }};
+    border-radius: 2px;
+}
+
+QtCheckableTableView QHeaderView {
+    font-size: {{ increase(font_size, 1) }};
+    font-weight: bold;
+}
+
+/*QtCheckableTableView::item:selected {*/
+/*    !*background: transparent;*!*/
+/*    background: palette(highlight);*/
+/*    color: palette(highlighted-text);*/
+/*}*/

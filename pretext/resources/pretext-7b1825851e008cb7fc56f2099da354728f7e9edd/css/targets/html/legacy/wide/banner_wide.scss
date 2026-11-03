@@ -1,0 +1,39 @@
+//********************************************************************
+// Copyright (C) 2024-2026  Robert A. Beezer
+//
+// This file is part of PreTeXt.
+//
+// PreTeXt is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 2 or version 3 of the
+// License (at your option).
+//
+// PreTeXt is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with PreTeXt.  If not, see <http://www.gnu.org/licenses/>.
+//********************************************************************
+
+@use '../default/banner_default.css';
+
+:root {
+  --banner-background-color: #ffffff;
+}
+
+.pretext .ptx-masthead {
+  max-width: var(--page-width);
+  background-color: var(--banner-background-color);
+  margin: 0 auto;
+}
+
+.pretext .ptx-masthead .ptx-banner {
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: var(--page-width);
+  padding: 8px 0;
+}

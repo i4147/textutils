@@ -1,0 +1,311 @@
+/* ----------------- QPushButton ------------------ */
+QPushButton, QtPushButton, QtToolButton {
+  background-color: {{ foreground }};
+  border-radius: 4px;
+  padding: 4px 20px;
+  border: 0px;
+  font-size: {{ increase(font_size, 1) }};
+}
+
+QPushButton:hover {
+  background-color: {{ primary }};
+}
+
+QPushButton:pressed {
+  background-color: {{ highlight }};
+}
+
+QPushButton:checked {
+  background-color: {{ secondary }};
+}
+
+QPushButton:disabled {
+  background-color: {{ opacity(foreground, 75) }};
+  border: 1px solid;
+  border-color: {{ foreground }};
+  color: {{ opacity(text, 90) }};
+}
+
+QWidget[emphasized="true"] QPushButton {
+   background-color: {{ primary }};
+}
+
+QWidget[emphasized="true"] QPushButton:disabled {
+  background-color: {{ darken(foreground, 20) }};
+}
+
+QWidget[emphasized="true"] QPushButton:hover {
+    background-color: {{ highlight }};
+}
+
+QWidget[emphasized="true"] QPushButton:pressed {
+  background-color: {{ secondary }};
+}
+
+QWidget[emphasized="true"] QPushButton:checked {
+  background-color: {{ current }};
+}
+
+/* ------------- QPushButton --------- */
+QPushButton#update_btn{
+    color: {{ replace(success) }};
+    background-color: {{ success }};
+    font-size: {{ increase(font_size, 1) }};
+    font-weight: bold;
+}
+
+QtPushButton#action_btn {
+    color: {{ replace(warning) }};
+    background-color: {{ lighten(warning, 30) }};
+    font-size: {{ increase(font_size, 1) }};
+    font-weight: bold;
+}
+QtPushButton#action_btn:hover {
+    background-color: {{ warning }};
+}
+
+QtPushButton#standout_btn {
+    color: {{ replace(highlight) }};
+    background-color: {{ current }};
+    font-size: {{ increase(font_size, 1) }};
+    font-weight: bold;
+}
+QtPushButton#standout_btn:hover {
+    background-color: {{ darken(current, 30) }};
+}
+
+/* ----------------- QtImagePushButton ----------------- */
+QtImagePushButton{
+    padding: 1px;
+    border: 1px;
+    margin: 1px;
+}
+
+QtImagePushButton {
+    background-color: transparent;
+}
+
+QtImagePushButton:checked{
+    border-radius: 5px;
+    background-color: {{ secondary }};
+}
+
+QtImagePushButton:pressed{
+    background-color: {{ foreground }};
+}
+
+QtImagePushButton:hover{
+    border-radius: 5px;
+    background-color: {{ primary }};
+}
+
+QtImagePushButton:disabled {
+    background-color: transparent;
+    border: 0px;
+    border-color: transparent;
+    color: {{ opacity(text, 90) }};
+}
+
+QtImagePushButton[transparent=true]{
+    background-color: transparent;
+}
+
+QtImagePushButton[standout=true]{
+    background-color: {{ foreground }};
+}
+
+QtImagePushButton[standout=true]:hover {
+  background-color: {{ primary }};
+}
+
+QtImagePushButton[no_menu=true]:menu-indicator {
+    image: none;
+}
+
+/*QtImagePushButton[right_click=true] {*/
+/*  border: 2px solid {{ success }};*/
+/*}*/
+
+QtImagePushButton[with_text="true"]{
+    min-width : 60px;
+    max-width : 500px;
+    max-height : 500px;
+}
+
+QtImagePushButton[text_in_center="true"]{
+    text-align : right;
+}
+
+QtImagePushButton[flat="true"]{
+    background-color: transparent;
+}
+
+QtImagePushButton[layer_button="true"]{
+    background-color: {{ foreground }};
+}
+
+QtImagePushButton[layer_button="true"]::hover{
+    border-radius: 2px;
+    background-color: {{ darken(foreground, 10) }};
+}
+
+/* ----------------- QtCopyToClipboardButton ----------------- */
+
+QtCopyToClipboardButton {
+   background-color: {{ foreground }};
+   margin: 0px;
+   padding: 1px 1px 3px 2px;
+   border: 0px;
+   min-width: 18px;
+   max-width: 18px;
+   min-height: 18px;
+   max-height: 18px;
+   border-radius: 3px;
+}
+
+QtCopyToClipboardButton:hover,QtCopyToClipboardButton:pressed {
+    background-color: {{ highlight }};
+}
+
+/* ----------------- QtDeleteButton ----------------- */
+
+QtDeleteButton {
+   image: url("theme_{{ id }}://remove.svg");
+   background-color: {{ foreground }};
+   min-width : 28px;
+   max-width : 28px;
+   min-height : 28px;
+   max-height : 28px;
+   padding: 1px;
+   border: 1px;
+   margin: 1px;
+}
+
+QtDeleteButton:hover {
+  background-color: {{ lighten(warning, 50) }};
+}
+
+QtDeleteButton:pressed {
+  background-color: {{ warning }};
+}
+
+/* ----------------- QtPauseButton / QtLockButton ----------------- */
+QtLockButton:hover, QtLockButton:hover{
+    background: {{ primary }};
+}
+
+
+/* ------------ QtColorSwatch ------------ */
+QtColorSwatch:hover {
+    border: 2px solid {{ text }};
+}
+#colorSwatch {
+    border-radius: 1px;
+    min-height: 22px;
+    min-width: 22px;
+}
+
+/* ----------------- Other ----------------- */
+
+QtPushButton[with_menu=true]::menu-indicator {
+    right: 5px;
+}
+QtPushButton[with_menu=true] QMenu::item {
+    font-size: {{ increase(font_size, 3) }};
+}
+QtPushButton[with_menu=true] QMenu::item:selected {
+    font-size: {{ increase(font_size, 3) }};
+    background: {{ highlight }};
+}
+
+
+QPushButton#update_btn {
+    color: {{ replace(success) }};
+    background-color: {{ success }};
+    font-size: {{ increase(font_size, 1) }};
+    font-weight: bold;
+}
+
+QPushButton#success_btn {
+    background-color: {{ darken(success, 15) }};
+}
+
+QPushButton#cancel_btn {
+    background-color: {{ lighten(warning, 30) }};
+}
+
+QPushButton#error_btn {
+    background-color: {{ lighten(error, 50) }};
+}
+
+/* ----------------- QtSegmentedButton ----------------- */
+
+QtSegmentedButton {
+    border: 0px solid {{ background }};
+    border-radius: 4px;
+    background-color: {{ foreground }};
+    padding: 0px;
+}
+
+QtSegmentedButton > QPushButton#mainButton {
+    background-color: transparent;
+    border: none;
+    border-radius: 0px;
+    padding: 3px 8px;
+    text-align: center;
+}
+
+QtSegmentedButton > QPushButton#mainButton:hover {
+    background-color: {{ primary }};
+}
+
+QtSegmentedButton > QPushButton#mainButton:pressed {
+    background-color: {{ foreground }};
+}
+
+QtSegmentedButton > QPushButton#mainButton:disabled {
+    color: {{ opacity(text, 60) }};
+}
+
+QtSegmentedButton[flat="true"] {
+    border: none;
+    background-color: transparent;
+}
+
+/* Action buttons inside segmented button restore hover (overrides [transparent=true] which comes earlier) */
+QtSegmentedButton QtImagePushButton:hover {
+    border-radius: 3px;
+    background-color: {{ primary }};
+}
+
+QtSegmentedButton QtImagePushButton:pressed {
+    background-color: {{ foreground }};
+}
+
+/* Separator inside segmented button matches the outer border — no standout */
+/*QtSegmentedButton QtVertLine {*/
+/*    border: 0px;*/
+/*    !*border-left: 0px solid {{ foreground }};*!*/
+/*    !*border-right: 0px solid {{ foreground }};*!*/
+/*    background-color: transparent;*/
+/*    max-width: 1px;*/
+/*    min-width: 1px;*/
+/*}*/
+
+
+/* ----------------- QPushButton / QLabel type variants ----------------- */
+
+QtPushButton#pick_option_button {
+    font-size: {{ increase(font_size, 4) }};
+    font-weight: bold;
+}
+
+QPushButton[type="error"] {
+    color: {{ error }};
+}
+QPushButton[type="warning"] {
+    color: {{ warning }};
+}
+QPushButton[type="success"] {
+    color: {{ success }};
+}

@@ -1,0 +1,101 @@
+/*
+Styles in this file should only refer to built-in QtWidgets
+It will be imported first, and styles declared in other files
+may override these styles, but should only do so on
+custom subclasses, object names, or properties.
+
+might be possible to convert px to em by 1px = 0.0625em
+*/
+
+
+
+/* ----------------- QWidget ------------------ */
+/*
+
+mappings between property and QPalette.ColorRole:
+these colors can be looked up dynamically in widgets using, e.g
+``widget.palette().color(QPalette.Window)``
+
+background -> QPalette.Window/QPalette.Background
+  background-color -> QPalette.Window/QPalette.Background
+color -> QPalette.WindowText/QPalette.Foreground
+selection-color -> QPalette.HighlightedText
+selection-background-color -> QPalette.Highlight
+alternate-background-color -> QPalette.AlternateBase
+
+*/
+
+QWidget {
+  background-color: {{ background }};
+  border: 0px;
+  padding: 1px;
+  margin: 0px;
+  color: {{ text }};
+  selection-background-color: {{ secondary }};
+  selection-color: {{ text }};
+}
+
+/*QWidget:disabled {*/
+/*  color: {{ opacity(text, 90) }};*/
+/*}*/
+
+QWidget[emphasized="true"] {
+    background-color: {{ foreground }};
+}
+
+QWidget[emphasized="true"] > QFrame {
+    background-color: {{ foreground }};
+}
+
+/* ------------ QAbstractScrollArea ------------- */
+
+/* QAbstractScrollArea is the superclass */
+
+QTextEdit {
+  background-color: {{ console }};
+  background-clip: padding;
+  color: {{ text }};
+  selection-background-color: {{ foreground }};
+  padding: 4px 2px 4px 4px;
+  font-size: {{ increase(font_size, 1) }};
+}
+
+/* the area behind the scrollbar */
+QTextEdit > QWidget {
+  background-color: {{ console }};
+}
+
+QLineEdit {
+  background-color: {{ darken(background, 15) }};
+  color: {{ text }};
+  min-height: 20px;
+  padding: 2px;
+  border-radius: 2px;
+  font-size: {{ font_size }};
+}
+
+QWidget[emphasized="true"] QLineEdit {
+  background-color: {{ background }};
+}
+
+/* ----------------- QMenuBar ------------------ */
+
+QMenuBar::item:selected {
+   background-color: {{ secondary }};
+}
+
+/* ----------------- QStatusBar ------------------ */
+
+QStatusBar::item{
+  border: None;
+}
+
+/* ----------------- QToolTip ------------------ */
+
+QToolTip {
+    border: 1px solid {{ foreground }};
+    border-radius: 2px;
+    padding: 2px;
+    background-color: {{ background }};
+    color: {{ text }};
+}

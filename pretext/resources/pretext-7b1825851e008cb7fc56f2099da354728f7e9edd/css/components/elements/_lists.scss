@@ -1,0 +1,65 @@
+//********************************************************************
+// Copyright (C) 2024-2026  Robert A. Beezer
+//
+// This file is part of PreTeXt.
+//
+// PreTeXt is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 2 or version 3 of the
+// License (at your option).
+//
+// PreTeXt is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with PreTeXt.  If not, see <http://www.gnu.org/licenses/>.
+//********************************************************************
+
+// Entry point for ol/ul/dl web styling
+
+@use "list-styles";
+@use "description-lists";
+@use '../helpers/cols';
+
+// generate multi column rules for lists
+@include cols.allow-cols('li');
+
+// use .ptx-content to avoid styling lists in toc/header/etc...
+.ptx-content {
+  ol,
+  ul {
+
+    ol,
+    ul {
+      // margin-top: 0.5em;
+    }
+  }
+
+  li {
+    margin-top: 0.5em;
+    // margin-bottom: 0;
+
+    // & > .para:first-child {
+    //     margin-top: 0;
+    // }
+
+    .li--heading-title {
+      font-size: 100%;
+      font-weight: normal;
+      font-style: italic;
+    }
+  }
+}   // .ptx-content
+
+.para > :is(ol, ul) {
+  // add some space when inside a .para
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+// provide space for custom markers
+ol > li {
+  padding-left: 0.25em;
+}

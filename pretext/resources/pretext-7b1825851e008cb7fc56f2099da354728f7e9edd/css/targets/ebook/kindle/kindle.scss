@@ -1,0 +1,71 @@
+//********************************************************************
+// Copyright (C) 2024-2026  Robert A. Beezer
+//
+// This file is part of PreTeXt.
+//
+// PreTeXt is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 2 or version 3 of the
+// License (at your option).
+//
+// PreTeXt is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with PreTeXt.  If not, see <http://www.gnu.org/licenses/>.
+//********************************************************************
+
+/*! Theme: kindle */
+@use '../ebook-common';
+
+.ptx-content {
+    // default behavior is excessive space below display math. 
+    // should the selector be .mjpage__block? 
+    .mjpage {
+        margin-bottom: 0 !important;
+        vertical-align: -.68ex;
+    }
+
+    .mjpage + p {
+        margin-top: -0.5em !important;
+    }
+
+    .solution-like > .type {
+        font-weight: bold;
+    }
+
+    .solution-like .type + p {
+        display: inline;
+    }
+
+    // Greg's L was a line too long 
+    article.theorem-like::after,
+    article.definition-like::after,
+    article.example-like::after,
+    article.project-like::after,
+    article.remark-like::after,
+    article.computation-like::after {
+        margin-top: -1em;
+    }
+
+    section {
+        padding-top: 0 !important;
+    }
+
+    .subsection {
+        margin-top: 1.5em !important;
+    }
+
+    // kindle has these extra selectors... should epub? 
+    // use @extend to mix them in via placeholder in ebook-common.scss
+    section article > .heading {
+        @extend %section-heading;
+    }
+
+    section article > .heading + p,
+    section article > .heading + .introduction {
+        @extend %section-heading-p;
+    }
+}

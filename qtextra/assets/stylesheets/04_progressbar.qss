@@ -1,0 +1,131 @@
+/* ----------------- QProgressBar ------------------ */
+
+QProgressBar {
+    border: 1px solid {{ foreground }};
+    border-radius: 2px;
+    text-align: center;
+    padding: 0px;
+    font-size: {{ font_size }};
+}
+
+QProgressBar::horizontal {
+  height: 18px;
+}
+
+QProgressBar::vertical {
+  width: 18px;
+}
+
+QProgressBar::chunk {
+    width: 1px;
+    background-color: vgradient({{ highlight }} - {{ foreground }});
+}
+
+/* ----------------- QProgressBar variants ------------------ */
+
+QProgressBar#progress_timer {
+    border: 0px;
+    padding: 2x;
+    margin: 2px;
+    max-height: 4px;
+    background-color: {{ background }};
+}
+
+QProgressBar::chunk#progress_timer {
+    width: 1px;
+    background-color: {{ success }};
+}
+
+QProgressBar#step_indicator {
+    border: 1px;
+    border-color: {{ foreground }};
+    padding: 2x;
+    margin: 2px;
+    max-height: 10px;
+    background-color: {{ foreground }};
+}
+
+QProgressBar::chunk#step_indicator {
+    width: 5px;
+    background-color: {{ success }};
+
+
+/* ----------------- FloatingProgressBar ------------------ */}
+
+QFrame#floatingProgressCard {
+    background-color: vgradient({{ lighten(background, 4) }} - {{ darken(background, 3) }});
+    border: 1px solid {{ lighten(foreground, 8) }};
+    border-radius: 16px;
+}
+
+QFrame#floatingProgressCard {
+    padding: 8px;
+    border-color: {{ lighten(highlight, 18) }};
+}
+
+QLabel#floatingProgressText {
+    color: {{ text }};
+    font-weight: bold;
+    padding-bottom: 2px;
+}
+
+QProgressBar#floatingProgressBar {
+    border: 1px solid {{ lighten(foreground, 6) }};
+    border-radius: 999px;
+    background-color: {{ darken(background, 8) }};
+    padding: 1px;
+    min-height: 12px;
+    max-height: 12px;
+}
+
+QProgressBar#floatingProgressBar::chunk {
+    border-radius: 999px;
+    background-color: vgradient({{ highlight }} - {{ success }});
+}
+
+QFrame#floatingProgressCard:hover {
+    border-color: {{ highlight }};
+}
+
+QFrame#floatingProgressCard QLabel {
+    background: transparent;
+}
+
+/* ----------------- QtProgressReport ----------------- */
+
+QWidget#progressReport {
+    background-color: {{ canvas }};
+}
+
+QWidget#progressReportText {
+    background: transparent;
+}
+
+QLabel#progressReportTitle {
+    color: {{ text }};
+    font-size: {{ increase(font_size, 2) }};
+    font-weight: bold;
+}
+
+QLabel#progressReportSubtitle {
+    color: {{ text }};
+    font-size: {{ font_size }};
+}
+
+QLabel#progressReportSubtitle[active="false"] {
+    color: {{ text }};
+}
+
+QLabel#progressReportTitle[status="pending"],
+QLabel#progressReportSubtitle[status="pending"],
+QLabel#progressReportSubtitle[active="true"] {
+    color: {{ primary }};
+}
+
+QLabel#progressReportTitle[status="failed"] {
+    color: {{ warning }};
+}
+
+QLabel#progressReportTitle[active="true"] {
+    color: {{ secondary }};
+}

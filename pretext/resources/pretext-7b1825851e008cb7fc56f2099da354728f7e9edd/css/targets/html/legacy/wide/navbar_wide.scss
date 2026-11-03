@@ -1,0 +1,64 @@
+//********************************************************************
+// Copyright (C) 2024-2026  Robert A. Beezer
+//
+// This file is part of PreTeXt.
+//
+// PreTeXt is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 2 or version 3 of the
+// License (at your option).
+//
+// PreTeXt is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with PreTeXt.  If not, see <http://www.gnu.org/licenses/>.
+//********************************************************************
+
+@use '../default/navbar_default.css';
+
+
+:root {
+  --nav-background-color: #ededed;
+}
+
+.pretext .ptx-navbar {
+  max-width: 100%;
+  margin: 0 auto;
+  display: flex;
+  width: var(--page-width);
+  background: var(--nav-background-color);
+  border-top: 0;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+}
+
+.ptx-navbar-contents {
+  display: flex;
+  flex: 1;
+  max-width: 100%;
+}
+
+.pretext .ptx-navbar .toc-toggle {
+  border-left: 0;
+}
+
+.ptx-navbar .ptx-calculator-toggle {
+  width: auto;
+  height: 35px;
+  text-align: center;
+  border-radius: 0;
+  margin-left: 0;
+  border: 0;
+  border-right: 1px solid #bababa;
+  line-height: inherit;
+  margin-top: 0;
+  background-color: #ededed;
+  padding: 0 15px;
+}
+
+
+.ptx-navbar > :last-child > :last-child {
+  border-right: none;
+}

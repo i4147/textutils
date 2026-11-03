@@ -1,0 +1,57 @@
+//********************************************************************
+// Copyright (C) 2024-2026  Robert A. Beezer
+//
+// This file is part of PreTeXt.
+//
+// PreTeXt is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 2 or version 3 of the
+// License (at your option).
+//
+// PreTeXt is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with PreTeXt.  If not, see <http://www.gnu.org/licenses/>.
+//********************************************************************
+
+// turn on some optional design features
+@use 'components/page-parts/extras/navbar-btn-borders';
+@use 'components/page-parts/extras/toc-last-level-plain';
+@use 'components/page-parts/extras/toc-borders';
+@use 'components/page-parts/extras/toc-expand-chevrons';
+
+// used to expand math and RS blocks
+@use 'components/helpers/expandable';
+
+// underlines to headings
+@use 'components/elements/extras/heading-underlines';
+
+// let math stretch out to fill space on right
+.displaymath {
+  @include expandable.expandable;
+}
+
+.code-display {
+  @include expandable.expandable;
+}
+
+// grow some rs elements
+$wide-rs-elements: ".parsons_section, .ac_section, .codelens";
+
+.ptx-runestone-container:has(#{$wide-rs-elements}) {
+  @include expandable.expandable($always-expand: true);
+}
+
+// horizontal scroll for tabular boxes
+.tabular-box {
+  @include expandable.expandable;
+}
+
+body.ptx-runestone-template {
+  .ptx-runestone-container:has(#{$wide-rs-elements}) {
+    --max-width: 100%;
+  }
+}

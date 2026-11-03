@@ -1,0 +1,33 @@
+<?xml version="1.0" ?>
+
+<!--********************************************************************
+Copyright (C) 2021-2026  Robert A. Beezer
+
+This file is part of PreTeXt.
+
+PreTeXt is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 2 or version 3 of the
+License (at your option).
+
+PreTeXt is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with PreTeXt.  If not, see <http://www.gnu.org/licenses/>.
+*****************************************************************-->
+<all>
+    <js type="list">
+        <item type="str">prefix-runtime.00db6230172ad960.bundle.js</item>
+        <item type="str">prefix-347.8328b60515045466.bundle.js</item>
+        <item type="str">prefix-runestone.aa624e4071d017c3.bundle.js</item>
+    </js>
+    <css type="list">
+        <item type="str">prefix-347.f9add1ca35d5ad93.css</item>
+        <item type="str">prefix-runestone.51d479d87f8466bb.css</item>
+    </css>
+    <cdn-url type="str">https://runestone.academy/cdn/runestone/</cdn-url>
+    <version type="str">7.4.4</version>
+</all>

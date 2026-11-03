@@ -1,0 +1,519 @@
+
+            grammar {
+
+            start = Publication
+
+            Publication =
+                element publication {
+                    Common? &
+                    Source? &
+                    Numbering? &
+                    Latex? &
+                    Pdf? &
+                    Html? &
+                    Revealjs? &
+                    Beamer? &
+                    Epub? &
+                    Jupyter? &
+                    Braille? &
+                    Text? &
+                    Webwork? &
+                    Dynamics?
+                }
+
+            Common =
+                element common {
+                    element chunking {
+                        attribute level { "0" | "1" | "2" | "3" | "4" | "5" | "6" }
+                    }? &
+                    element tableofcontents {
+                        attribute level { "0" | "1" | "2" | "3" | "4" | "5" | "6" }
+                    }? &
+                    element exercise-inline {
+                        ExerciseAttributes
+                    }? &
+                    element exercise-divisional {
+                        ExerciseAttributes
+                    }? &
+                    element exercise-worksheet {
+                        ExerciseAttributes
+                    }? &
+                    element exercise-reading {
+                        ExerciseAttributes
+                    }? &
+                    element exercise-project {
+                        ExerciseAttributes
+                    }? &
+                    element fillin {
+                        attribute textstyle { "underline" | "box" | "shade" }?,
+                        attribute mathstyle { "underline" | "box" | "shade" }?
+                    }? &
+                    element watermark {
+                        attribute scale { xsd:decimal },
+                        text
+                    }? &
+                    element mermaid {
+                        attribute theme { text }
+                    }? &
+                    element qrcode {
+                        attribute image { text }
+                    }? &
+                    element journal {
+                        attribute name {text}
+                    }? &
+                    element worksheet {
+                        attribute margin {text}?,
+                        attribute top {text}?,
+                        attribute right {text}?,
+                        attribute bottom {text}?,
+                        attribute left {text}?,
+                        HeaderFooterElements?
+                    }?
+                }
+
+            ExerciseAttributes =
+                attribute statement { "yes" | "no" }?,
+                attribute hint { "yes" | "no" }?,
+                attribute answer { "yes" | "no" }?,
+                attribute solution { "yes" | "no" }?
+
+            HeaderFooterElements =
+                element first-page-header {
+                    attribute left { text }?,
+                    attribute center { text }?,
+                    attribute right { text }?
+                }? &
+                element running-header {
+                    attribute left { text }?,
+                    attribute center { text }?,
+                    attribute right { text }?
+                }? &
+                element first-page-footer {
+                    attribute left { text }?,
+                    attribute center { text }?,
+                    attribute right { text }?
+                }? &
+                element running-footer {
+                    attribute left { text }?,
+                    attribute center { text }?,
+                    attribute right { text }?
+                }?
+
+            Source =
+                element source {
+                    attribute customizations { text }?,
+                    attribute private-solutions { text }?,
+                    attribute webwork-solutions { text }?,
+                    (Directories? & Version?)
+                }
+
+            Directories =
+                element directories {
+                    # deprecated (2026-07-30): the external directory is a
+                    # property of the source and is declared as
+                    # "directories/@external" within "docinfo"; this entry
+                    # is honored while the "docinfo" is silent
+                    attribute external { text }?,
+                    # when absent, a directory named "generated" next to
+                    # the main source file is assumed
+                    attribute generated { text }?
+                }
+
+            Version =
+                element version {
+                    attribute include { text }
+                }
+
+            Numbering =
+                element numbering {
+                    Divisions? &
+                    Blocks? &
+                    Projects? &
+                    Figures? &
+                    InlineExercises? &
+                    OpenProblems? &
+                    Equations? &
+                    Footnotes?
+                }
+
+            Divisions =
+                element divisions {
+                    attribute level { "0" | "1" | "2" | "3" | "4" | "5" | "6" }?,
+                    attribute chapter-start { xsd:integer }?,
+                    attribute part-structure { "decorative" | "structural" }?
+                }
+
+            Blocks =
+                element blocks {
+                    attribute level { "0" | "1" | "2" | "3" | "4" | "5" | "6" }
+                }
+
+            Projects =
+                element projects {
+                    attribute level { "0" | "1" | "2" | "3" | "4" | "5" | "6" }?,
+                    attribute distinct { "yes" | "no" }?
+                }
+
+            Figures =
+                element figures {
+                    attribute level { "0" | "1" | "2" | "3" | "4" | "5" | "6" }?,
+                    attribute distinct { "yes" | "no" }?
+                }
+
+            InlineExercises =
+                element exercises {
+                    attribute level { "0" | "1" | "2" | "3" | "4" | "5" | "6" }?,
+                    attribute distinct { "yes" | "no" }?
+                }
+
+            OpenProblems =
+                element openproblems {
+                    attribute level { "0" | "1" | "2" | "3" | "4" | "5" | "6" }?,
+                    attribute distinct { "yes" | "no" }?
+                }
+
+            Equations =
+                element equations {
+                    attribute level { "0" | "1" | "2" | "3" | "4" | "5" | "6" }
+                }
+
+            Footnotes =
+                element footnotes {
+                    attribute level { "0" | "1" | "2" | "3" | "4" | "5" | "6" }?
+                }
+
+            Latex =
+                element latex {
+                    attribute latex-style {text}?,
+                    attribute print { "yes" | "no" }?,
+                    attribute sides { "one" | "two" }?,
+                    attribute open-odd { "add-blanks" | "skip-pages" | "no" }?,
+                    attribute font-size { "8" | "9" | "10" | "11" | "12" | "14" | "17" | "20" }?,
+                    attribute page-ref { "yes" | "no" }?,
+                    attribute draft { "yes" | "no" }?,
+                    attribute snapshot { "yes" | "no" }?,
+                    attribute link-highlight { "none" | "underline" }?,
+                    ( Page? & Worksheet? & Cover? & Asymptote?)
+                }
+
+            Page =
+                element page {
+                    attribute right-alignment { "flush" | "ragged" }?,
+                    attribute bottom-alignment { "flush" | "ragged" }?,
+                    attribute crop-marks { "none" | "a0" | "a1" | "a2" | "a3" | "a4" | "a5" | "a6" | "b0" | "b1" | "b2" | "b3" | "b4" | "b5" | "b6" | "letter" | "legal" | "executive" }?,
+                    element geometry { text }?
+                }
+
+            Worksheet =
+                element worksheet {
+                    attribute formatted { "yes" | "no" }?
+                }
+
+            Cover =
+                element cover {
+                    attribute front { text }?,
+                    attribute back { text }?
+                }
+
+            Asymptote =
+                element asymptote {
+                    attribute links { "yes" | "no" }?
+                }
+
+            Pdf =
+                element pdf {
+                    attribute font { "latin-modern" | "alegreya" }?
+                }
+
+            Html =
+                element html {
+                    attribute design-width { xsd:integer }?,
+                    attribute favicon { "none" | "simple" | "svg" }?,
+                    attribute read-aloud { "yes" | "no" }?,
+                    attribute short-answer-responses { "graded" | "always" }?,
+                    (
+                        Analytics? &
+                        Annotation? &
+                        Asymptote? &
+                        Baseurl? &
+                        Brandlogo? &
+                        Calculator? &
+                        Css? &
+                        Crossreferences? &
+                        Exercises? &
+                        Feedback? &
+                        Images? &
+                        Indexpage? &
+                        Interactives? &
+                        Knowls? &
+                        NavigationHTML? &
+                        Platform? &
+                        Resources? &
+                        Search? &
+                        Tableofcontents? &
+                        Video? &
+                        WebworkDynamism?
+                    )
+                }
+
+            Analytics =
+                element analytics {
+                    attribute google-gst { text }?,
+                    attribute statcounter-project { text }?,
+                    attribute statcounter-security { text }?
+                }
+
+            Annotation =
+                element annotation {
+                    attribute platform { "hypothesis" | "none" }?
+                }
+
+            Baseurl =
+                element baseurl {
+                    attribute href { text }
+                }
+
+            Brandlogo =
+                element brandlogo {
+                    attribute source { text },
+                    attribute url { text }?
+                }
+
+            Calculator =
+                element calculator {
+                    attribute model { "geogebra-classic" | "geogebra-graphing" | "geogebra-geometry" | "geogebra-3d" | "none "}?,
+                    attribute activecode { "python" | "javascript" | "html" | "sql" | "c" | "cpp" | "gdscript" | "java" | "kotlin" | "python3" | "octave" | "none"}?
+                }
+
+            Crossreferences =
+                element cross-references {
+                    attribute knowled { "maximum" | "never" | "cross-page" }
+                }
+
+            Css =
+                element css {
+                    attribute colors { text }?,
+                    attribute style { text }?,
+                    attribute knowls { text }?,
+                    attribute toc { text }?,
+                    attribute banner { text }?,
+                    attribute navbar { text }?,
+                    attribute shell { text }?
+                }
+
+            Exercises =
+                element exercises {
+                    attribute tabbed-tasks { "divisional" | "inline" | "reading" | "project" }
+                }
+
+            Feedback =
+                element feedback {
+                    attribute href { text }
+                }
+
+            Images =
+                element images {
+                    element archive {
+                        attribute from { text }?,
+                        text
+                    }+
+                }
+
+            Indexpage =
+                element index-page {
+                    attribute ref { text }
+                }
+
+            Interactives =
+                element interactives {
+                    attribute resize-behavior { "fixed-height" | "responsive" }?,
+                    InteractiveTypes*
+                }
+
+            InteractiveTypes =
+                element (
+                    desmos |
+                    calcplot3d |
+                    circuitjs |
+                    d3 |
+                    iframe |
+                    javascript |
+                    jsxgraph |
+                    sage
+                ) {
+                    attribute resize-behavior { "fixed-height" | "responsive" }?
+                }
+                | Doenetml
+                | Geogebra
+
+            # A GeoGebra applet is costly to start, so a page carrying several
+            # can hold each one behind a play button until a reader asks for it.
+            Geogebra =
+                element geogebra {
+                    attribute resize-behavior { "fixed-height" | "responsive" }?,
+                    attribute play-button { "yes" | "no" }?
+                }
+
+            # DoenetML activities are additionally managed on the page by a
+            # "coordinator" script, which starts them a few at a time as the
+            # reader nears them and puts away the ones left well behind.
+            Doenetml =
+                element doenetml {
+                    attribute resize-behavior { "fixed-height" | "responsive" }?,
+                    attribute coordinator { "yes" | "no" }?,
+                    attribute shared-core-workers { "yes" | "no" }?,
+                    attribute max-live-viewers { xsd:positiveInteger }?,
+                    attribute max-concurrent-boots { xsd:positiveInteger }?
+                }
+
+            Knowls =
+                element knowl {
+                    attribute theorem { "yes" | "no" }?,
+                    attribute proof { "yes" | "no" }?,
+                    attribute definition { "yes" | "no" }?,
+                    attribute example { "yes" | "no" }?,
+                    attribute example-solution { "yes" | "no" }?,
+                    attribute project { "yes" | "no" }?,
+                    attribute task { "yes" | "no" }?,
+                    attribute remark { "yes" | "no" }?,
+                    attribute objectives { "yes" | "no" }?,
+                    attribute outcomes { "yes" | "no" }?,
+                    attribute figure { "yes" | "no" }?,
+                    attribute table { "yes" | "no" }?,
+                    attribute listing { "yes" | "no" }?,
+                    attribute list { "yes" | "no" }?,
+                    attribute exercise-inline { "yes" | "no" }?,
+                    attribute exercise-divisional { "yes" | "no" }?,
+                    attribute exercise-worksheet { "yes" | "no" }?,
+                    attribute exercise-readingquestion { "yes" | "no" }?
+                }
+
+            NavigationHTML =
+                element navigation {
+                    attribute logic { "linear" | "tree" }?,
+                    attribute upbutton { "yes" | "no" }?
+                }
+            Platform =
+                element platform {
+                    attribute host { "web" | "runestone" },
+                    attribute portable { "yes" | "no" }
+                }
+            Search =
+                element search {
+                    attribute variant { "textbook" | "reference" | "none" }?,
+                    attribute google-cx { text }?
+                }
+
+            Tableofcontents =
+                element table-of-contents {
+                    attribute focused { "yes" | "no" }?,
+                    attribute preexpanded-levels { "0" | "1" | "2" | "3" | "4" | "5" | "6"}?
+                }
+
+            Video =
+                element video {
+                    attribute privacy { "yes" | "no" }
+                }
+
+            WebworkDynamism =
+                element webwork {
+                    attribute inline { "dynamic" | "static" }?,
+                    attribute divisional { "dynamic" | "static" }?,
+                    attribute reading { "dynamic" | "static" }?,
+                    attribute worksheet { "dynamic" | "static" }?,
+                    attribute project { "dynamic" | "static" }?
+                }
+
+            Revealjs =
+                element revealjs {
+                    Appearance? &
+                    Controls? &
+                    NavigationReveal? &
+                    Resources?
+                }
+
+            Appearance =
+                element appearance {
+                    attribute theme { text }?,
+                    attribute custom-css { text }?
+                }
+
+            Controls =
+                element controls {
+                    attribute backarrows { "faded" | "hidden" | "visible" }?,
+                    attribute display { "yes" | "no" }?,
+                    attribute layout { "edges" | "bottom-right" }?,
+                    attribute tutorial { "yes" | "no" }?
+                }
+
+            NavigationReveal =
+                element navigation {
+                    attribute mode { "default" | "linear" | "grid" }
+                }
+
+            Resources =
+                element resources {
+                    attribute host { "local" | "cdn" | "embedded" }?,
+                    attribute math { "online" | "embedded" }?
+                }
+
+            Beamer =
+                element beamer {
+                    attribute font-size { "8" | "9" | "10" | "11" | "12" | "14" | "17" | "20" }?,
+                    ( AppearanceBeamer? & PageBeamer? )
+                }
+
+            AppearanceBeamer =
+                element appearance {
+                    attribute theme { text }
+                }
+
+            PageBeamer =
+                element page {
+                    attribute aspect-ratio { "4:3" | "16:9" | "16:10" | "14:9" | "5:4" | "3:2" }?
+                }
+
+            Epub =
+                element epub {
+                    element cover {
+                        attribute front { text }
+                    }
+                }
+
+            Jupyter =
+                element jupyter {
+                    attribute kernel { "sagemath" | "python3" }
+                }
+
+            Braille =
+                element braille {
+                    element page {
+                        attribute width { xsd:positiveInteger }?,
+                        attribute height { xsd:positiveInteger }?
+                    }
+                }
+
+            Text =
+                element text {
+                    attribute characters { "unicode" | "ascii" }?
+                }
+
+            Webwork =
+                element webwork {
+                    attribute server { text },
+                    attribute course { text }?,
+                    attribute user { text }?,
+                    attribute password { text }?,
+                    attribute task-reveal { "preceding-correct" | "all" }?
+                }
+
+            Dynamics =
+                element dynamics {
+                    element remote-libraries {
+                        element library {
+                            attribute url { xsd:string { pattern = "https://.*" } }
+                        }*
+                    }?
+                }
+
+            }

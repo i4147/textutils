@@ -1,0 +1,213 @@
+/* ----------------- QLabel ------------------ */
+
+QLabel {
+  background-color: transparent;
+  font-size: {{ increase(font_size, 1) }};
+}
+
+QLabel#error_label, QLabel#error_status_label {
+    color : {{ error }};
+}
+
+QLabel#warning_label, QLabel#warning_status_label {
+    color : {{ warning }};
+}
+
+QLabel#success_label, QLabel#success_status_label {
+    color : {{ success }};
+}
+QLabel#success_status_label_bold {
+    color: {{ success }};
+    font-weight: bold;
+}
+
+QLabel#field_label {
+    color: {{ text }};
+    font-size: 14px;
+    font-weight: bold;
+}
+
+QLabel#pick_option_label {
+    font-size: {{ increase(font_size, 2) }};
+}
+
+QLabel#window_title {
+    font-size: {{ increase(font_size, 4) }};
+    font-weight: bold;
+}
+
+QLabel#overlay_label {
+    font-size: {{ increase(font_size, 14) }};
+    color: {{ lighten(text, 40) }};
+}
+
+QLabel#step_label {
+    color: {{ highlight }};
+    background: transparent;
+}
+
+QtWelcomeLabel {
+    font-size: 20px;
+    color: {{ text }};
+    background: transparent;
+}
+
+QtShortcut {
+    color: {{ text }};
+    font-size: 16px;
+    font-weight: bold;
+    text-align: top left;
+}
+
+
+QtShortcutLabel {
+    background: transparent;
+    color: {{ text }};
+    font-size: 16px;
+}
+
+QtLargeLabel {
+    min-width : 60px;
+    max-width : 60px;
+    min-height : 60px;
+    max-height : 60px;
+    padding: 1px;
+    border: 1px;
+    margin: 1px;
+    background: transparent;
+}
+QLabel#h1 {
+  font-size: 28px;
+}
+QLabel#h1_b {
+    font-size: 28px;
+    font-weight: bold;
+}
+QLabel#h2 {
+  font-size: 22px;
+  color: {{ secondary }};
+}
+QLabel#h2_b {
+    font-size: 22px;
+    font-weight: bold;
+}
+QLabel#h3 {
+  font-size: 18px;
+  color: {{ secondary }};
+}
+QLabel#h3_b {
+    font-size: 18px;
+    font-weight: bold;
+}
+QLabel#96px {
+    font-size: 96px;
+}
+QLabel#96px_t {
+    font-size: 96px;
+    background: transparent;
+}
+QLabel#96px_300w {
+    font-size: 96px;
+    font-weight: 300;
+}
+
+QLabel#72px {
+    font-size: 72px;
+}
+QLabel#72px_300w {
+    font-size: 72px;
+    font-weight: 300;
+}
+QLabel#empty_label {
+    font-size: {{ increase(font_size, 18) }};
+}
+QLabel#extra_large_text {
+    font-size: {{ increase(font_size, 8) }};
+}
+QLabel#large_text {
+    font-size: {{ increase(font_size, 4) }};
+}
+QLabel#medium_text {
+    font-size: {{ increase(font_size, 2) }};
+}
+/*QLabel#error_label {*/
+/*    font-size: {{ increase(font_size, 4) }};*/
+/*}*/
+QLabel#title_label {
+    font-size: {{ increase(font_size, 3) }};
+}
+QLabel#header_label {
+    font-size: {{ increase(font_size, 6) }};
+    font-weight: bold;
+}
+QLabel#hint_label {
+    color: {{ lighten(text, 30) }};
+}
+QLabel#tip_label {
+    font-size: {{ decrease(font_size, 1) }};
+    color: {{ lighten(text, 30) }};
+}
+QLabel#watch_dir {
+    font-size: {{ increase(font_size, 2) }};
+    font-weight: bold;
+    min-height: 80px;
+}
+QLabel#match_label {
+    padding: 2px 8px;
+    border-radius: 5px;
+    color: {{ text }};
+    background-color: {{ highlight }};
+    font-weight: 600;
+}
+QLabel#toolbar_label {
+    /*font-size: {{ decrease(font_size, 2) }};*/
+    padding: 0px;
+    margin: 0px;
+    background: transparent;
+}
+QLabel#version_label {
+    font-size: {{ increase(font_size, 2) }};
+    font-weight: bold;
+}
+QLabel#version_label[text='N/A'] {
+    color: {{ darken_or_lighten(warning, 30) }};
+}
+QLabel#version_label[text="v1"],
+QLabel#version_label[text="v2"],
+QLabel#version_label[text="v3"],
+QLabel#version_label[text="v4"],
+QLabel#version_label[text="v5"],
+QLabel#version_label[text="v6"],
+QLabel#version_label[text="v7"],
+QLabel#version_label[text="v8"],
+QLabel#version_label[text="v9"] {
+    color: {{ darken_or_lighten(success, 30) }};
+}
+
+/* ------------- QtClickableLabel --------- */
+QtClickableLabel{
+    color: {{ text }};
+}
+QtClickableLabel#warning{
+    color: {{ warning }};
+}
+
+QLabel#ToolTip {
+    background-color: {{ background }};
+    color: {{ text }};
+    border: 1px solid {{ foreground }};
+    padding: 2px;
+}
+
+
+/* ----------------- QLabel type variants ----------------- */
+
+QLabel[type="error"] {
+    color: {{ error }};
+}
+QLabel[type="warning"] {
+    color: {{ warning }};
+}
+QLabel[type="success"] {
+    color: {{ success }};
+}

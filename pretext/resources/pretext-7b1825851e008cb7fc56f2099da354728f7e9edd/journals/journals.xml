@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--********************************************************************
+Copyright (C) 2025-2026  Robert A. Beezer
+
+This file is part of PreTeXt.
+
+PreTeXt is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 2 or version 3 of the
+License (at your option).
+
+PreTeXt is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with PreTeXt.  If not, see <http://www.gnu.org/licenses/>.
+*****************************************************************-->
+<ptx-journals>
+  <!-- We might want some categories or other way to break these up?  More likely just use tags -->
+
+  <journal>
+    <code>ams</code>
+    <name>AMS journals</name>
+    <publisher>American Mathematical Society</publisher>
+  </journal>
+
+  <journal>
+    <code>elsevier</code>
+    <name>Elsevier journals</name>
+    <publisher>Elsevier</publisher>
+  </journal>
+
+  <journal>
+    <code>springer-nature</code>
+    <name>Springer Nature journals</name>
+    <publisher>Springer Nature</publisher>
+  </journal>
+
+  <journal>
+    <code>taylor-francis</code>
+    <name>Taylor Francis journals</name>
+    <publisher>Taylor &amp; Francis</publisher>
+  </journal>
+
+  <journal>
+    <code>ann-pure-appl-logic</code>
+    <name>Annals of Pure and Applied Logic</name>
+    <publisher>Elsevier</publisher>
+    <method texstyle="elsevier"/>
+  </journal>
+
+  <journal>
+    <code>bull-amer-math-soc</code>
+    <name>Bulletin (New Series) of the American Mathematical Society</name>
+    <publisher>American Mathematical Society</publisher>
+    <method dependent="yes"/>
+  </journal>
+
+  <journal>
+    <code>conform-geom-dyn</code>
+    <name>Conformal Geometry and Dynamics</name>
+    <publisher>American Mathematical Society</publisher>
+    <method dependent="yes"/>
+  </journal>
+
+  <journal>
+    <code>electron-j-combin</code>
+    <name>Electronic Journal of Combinatorics</name>
+    <publisher>Electronic Journal of Combinatorics</publisher>
+  </journal>
+
+  <journal>
+    <code>exp-math</code>
+    <name>Experimental Mathematics</name>
+    <publisher>Taylor &amp; Francis</publisher>
+    <method texstyle="taylor-francis"/>
+  </journal>
+
+  <journal>
+    <code>j-algebraic-geom</code>
+    <name>Journal of Algebraic Geometry</name>
+    <publisher>American Mathematical Society</publisher>
+    <method dependent="yes"/>
+  </journal>
+
+
+  <journal>
+    <code>j-amer-math-soc</code>
+    <name>Journal of the American Mathematical Society</name>
+    <publisher>American Mathematical Society</publisher>
+    <method dependent="yes"/>
+  </journal>
+
+  <journal>
+    <code>math-comp</code>
+    <name>Mathematics of Computation</name>
+    <publisher>American Mathematical Society</publisher>
+    <method dependent="yes"/>
+  </journal>
+
+  <journal>
+    <code>quart-appl-math</code>
+    <name>Quarterly of Applied Mathematics</name>
+    <publisher>American Mathematical Society</publisher>
+    <method dependent="yes"/>
+  </journal>
+
+  <journal>
+    <code>proc-amer-math-soc</code>
+    <name>Proceedings of the American Mathematical Society</name>
+    <publisher>American Mathematical Society</publisher>
+    <method dependent="yes"/>
+  </journal>
+
+  <journal>
+    <code>represent-theory</code>
+    <name>Representation Theory</name>
+    <publisher>American Mathematical Society</publisher>
+    <method dependent="yes"/>
+  </journal>
+
+  <journal>
+    <code>theory-probab-math-statist</code>
+    <name>Theory of Probability and Mathematical Statistics</name>
+    <publisher>American Mathematical Society</publisher>
+    <method dependent="yes"/>
+  </journal>
+
+  <journal>
+    <code>trans-ams</code>
+    <name>Transactions of the American Mathematical Society</name>
+    <publisher>American Mathematical Society</publisher>
+    <method dependent="yes"/>
+  </journal>
+
+</ptx-journals>

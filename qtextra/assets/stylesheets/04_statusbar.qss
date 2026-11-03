@@ -1,0 +1,73 @@
+QStatusBar {
+    background-color: {{ darken(background, 5) }};
+    color: {{ text }};
+    max-height: 28px;
+}
+
+QStatusBar::item{
+    border: none;
+}
+
+/* ------------ QtStatusbarWidget ------------ */
+QtStatusbarIconWidget {
+    background-color: {{ darken(background, 5) }};
+    /*background-color: {{ foreground }};*/
+}
+
+QtStatusbarIconWidget > QtIconLabel {
+    background-color: {{ darken(background, 5) }};
+}
+
+QtStatusbarIconWidget > QtIconLabel::hover {
+    border-radius: 5px;
+    background-color: {{ darken(foreground, 5) }};
+}
+
+QtStatusbarIconWidget > QtIconLabel::pressed {
+    border-radius: 5px;
+    background-color: {{ darken(foreground, 5) }};
+}
+
+QtStatusbarWidget > QLabel, QtStatusbarWidget > QtStatusbarLabel {
+    /*background-color: {{ darken(background, 5) }};*/
+    background-color: transparent;
+}
+
+
+QtStatusbarWidget > QtIconLabel::hover {
+    /*background-color: {{ darken(foreground, 5) }};*/
+    background-color: transparent;
+    border-radius: 5px;
+}
+
+QtStatusbarWidget > QtIconLabel::pressed {
+    background-color: {{ darken(foreground, 5) }};
+    border-radius: 5px;
+}
+
+QQtStatusbarSpinner {
+    background: transparent;
+}
+
+/* ------------ QStatusBar QSpinBox ------------ */
+
+QStatusBar QSpinBox {
+    background-color: {{ background }};
+    color: {{ text }};
+}
+
+QStatusBar QSpinBox::up-button, QStatusBar QSpinBox::down-button {
+    border: 1px solid {{ background }};
+    background-color: {{ foreground }};
+}
+
+QStatusBar QSpinBox::up-button:hover, QStatusBar QSpinBox::down-button:hover {
+    background-color: {{ darken(foreground, 10) }};
+}
+
+/* ------------ QStatusBar QCheckBox ------------ */
+
+QStatusBar QCheckBox::indicator {
+    background-color: {{ background }};
+    color: {{ text }};
+}

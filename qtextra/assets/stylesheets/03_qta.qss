@@ -1,0 +1,3 @@
+QtImagePushButton[checkable=true]::checked {
+    background: {{ darken_or_lighten(background, 30) }};
+}

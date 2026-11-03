@@ -1,0 +1,197 @@
+from __future__ import annotations
+
+import typing as ty
+
+from qtpy.QtCore import QEvent, QPointF, QSize, Qt, Signal
+from qtpy.QtGui import QColor, QMovie, QPainter, QPolygonF
+from qtpy.QtWidgets import QHBoxLayout, QLabel, QPushButton, QSizePolicy, QWidget
+
+from qtextra.config import THEMES
+
+
+class QtPushButton(QPushButton):
+    """Standard Qt button. Here to enable easier styling."""
+
+    evt_right_click = Signal()
+    has_right_click: bool = False
+
+    def __init__(self, *args: ty.Any, text: str | None = None, **kwargs: ty.Any):
+        super().__init__(*args, **kwargs)
+        self._label = QLabel(self)
+        self._layout = QHBoxLayout()
+        self._layout.setContentsMargins(0, 0, 0, 0)
+        self._layout.setSpacing(0)
+        self.setLayout(self._layout)
+        self._label.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self._label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        self._label.setAlignment(Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignVCenter)
+        self._label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self._layout.addWidget(self._label)
+
+        if text is not None:
+            self.setText(text)
+
+    def setWordWrap(self, state: bool) -> None:
+        """Set word wrap on the button."""
+        label = self.findChild(QLabel)
+        if label:
+            label.setWordWrap(state)
+
+    def setText(self, text: str) -> None:
+        """Set text on the label."""
+        self._label.setText(text)
+
+    def setTextFormat(self, fm: Qt.TextFormat) -> None:
+        """SEt text format."""
+        self._label.setTextFormat(fm)
+
+    def text(self) -> str:
+        """Return text."""
+        return self._label.text()
+
+    def mousePressEvent(self, evt: QEvent) -> None:
+        """Mouse press event."""
+        if evt.button() == Qt.MouseButton.RightButton:
+            self.evt_right_click.emit()
+        else:
+            super().mousePressEvent(evt)
+
+    def sizeHint(self) -> QSize:
+        """Return size hints."""
+        sh = super().sizeHint()
+        lb_sh = self._label.sizeHint()
+        width = max(sh.width(), lb_sh.width())
+        height = max(sh.height(), lb_sh.height())
+        sh.setWidth(width)
+        sh.setHeight(height)
+        return sh
+
+    def paintEvent(self, event) -> None:
+        """Paint event/."""
+        super().paintEvent(event)
+        if self.has_right_click:
+            self._paint_right_click_corner()
+
+    def _paint_menu_corner(self) -> None:
+        """Draw a small downward chevron in the bottom-right corner."""
+        self._paint_corner("info")
+
+    def _paint_right_click_corner(self) -> None:
+        """Draw a filled triangular 'page-fold' in the bottom-right corner."""
+        self._paint_corner("success")
+
+    def _paint_corner(self, color: str) -> None:
+        rect = self.rect()
+        edge = min(rect.width(), rect.height())
+        glyph_size = max(5, min(14, int(edge * 0.35)))
+        margin = max(1, edge // 12)
+        right = rect.right() - margin
+        bottom = rect.bottom() - margin
+        points = [
+            QPointF(right, bottom - glyph_size),
+            QPointF(right - glyph_size, bottom),
+            QPointF(right, bottom),
+        ]
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        color = QColor(THEMES.get_hex_color(color))
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(color)
+        painter.drawPolygon(QPolygonF(points))
+
+    def connect_to_right_click(self, func: ty.Callable) -> None:
+        """Connect function right right-click.
+
+        It is not possible to check whether a function is connected to a signal so its better to use this function to
+        connect via this function which leaves behind a flag so the paint event will add rectangle to the edge so the
+        user knows there is a right-click menu available.
+        """
+        from qtextra.helpers import set_properties
+
+        self.evt_right_click.connect(func)
+        self.has_right_click = True
+        set_properties(self, {"right_click": True})
+
+
+class QtActivePushButton(QtPushButton):
+    """Qt button with activity indicator built-in."""
+
+    _pixmap = None
+
+    def __init__(self, *args: ty.Any, which: str = "infinity", **kwargs: ty.Any):
+        super().__init__(*args, **kwargs)
+        from qtextra.helpers import make_gif
+
+        self.loading_movie = make_gif(which)
+        self.loading_movie.frameChanged.connect(self._update_icon)
+        self.active = False
+
+    def _update_icon(self, _frame: int) -> None:
+        """Update frame."""
+        self.setIcon(self.loading_movie.currentPixmap())
+
+    @property
+    def active(self) -> bool:
+        """Update the state of the loading label."""
+        return self.loading_movie.state() == QMovie.MovieState.Running
+
+    @active.setter
+    def active(self, value: bool) -> None:
+        self.loading_movie.start() if value else self.loading_movie.stop()
+        if not value:
+            self.setIcon(None)
+
+    def setIcon(self, icon):
+        """Set icon."""
+        self._pixmap = icon
+        self.repaint()
+
+    def paintEvent(self, event) -> None:
+        """Paint event/."""
+        super().paintEvent(event)
+        painter = QPainter(self)
+        if self._pixmap is not None:
+            y = int((self.height() - self._pixmap.height()) / 2)
+            painter.drawPixmap(5, y, self._pixmap)
+
+
+class QtRichTextButton(QtPushButton):
+    """Rich-text button."""
+
+    def __init__(self, parent: QWidget | None = None, text: str | None = None):
+        super().__init__(parent=parent, text=text)
+        self._label.setTextFormat(Qt.TextFormat.RichText)
+
+
+if __name__ == "__main__":
+    import sys
+
+    from qtextra.utils.dev import qframe
+
+    def _test():
+        btn2.active = not btn2.active
+
+    def _test2():
+        print("clicked")
+
+    app, frame, ha = qframe(False)
+    frame.setMinimumSize(600, 600)
+
+    btn1 = QtPushButton(frame)
+    btn1.clicked.connect(_test2)
+    btn1.connect_to_right_click(_test2)
+    btn1.setText("TEST STANDARD BUTTON")
+    ha.addWidget(btn1)
+
+    btn2 = QtActivePushButton(frame)
+    btn2.clicked.connect(_test)
+    btn2.setText("TEST ACTIVE BUTTON")
+    ha.addWidget(btn2)
+
+    btn3 = QtRichTextButton(frame)
+    btn3.clicked.connect(_test2)
+    btn3.setText("<span style='color:#ff00ff;'>TEST</span> <i>RICH</i> <b>button</b>")
+    ha.addWidget(btn3)
+
+    frame.show()
+    sys.exit(app.exec_())

@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--********************************************************************
+Copyright (C) 2025-2026  Robert A. Beezer
+
+This file is part of PreTeXt.
+
+PreTeXt is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 2 or version 3 of the
+License (at your option).
+
+PreTeXt is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with PreTeXt.  If not, see <http://www.gnu.org/licenses/>.
+*****************************************************************-->
+<texstyle>
+    <metadata>
+        <code>ams</code>
+        <name>AMS journals</name>
+        <publisher>American Mathematical Society</publisher>
+        <latex-engine command="pdflatex"/>
+        <bibliography-style>spbasic</bibliography-style>
+
+        <style-author>Oscar Levin</style-author>
+        <date>2025-03-12</date>
+    </metadata>
+
+    <documentclass name="amsart"/>
+
+
+    <ptx-preamble>
+        <theoremstyle name="plain" environments="theorem, proposition, lemma, corollary, claim, fact, identity, conjecture"/>
+        <theoremstyle name="definition" environments=", definition, axiom,, principle, heuristic, hypothesis, assumption, openproblem, openquestion, algorithm, question, activity, exercise, inlineexercise, investigation, exploration, problem, example, project"/>
+        <theoremstyle name="remark" environments="remark, warning, convention, insight, note, observation, computation, technology, data"/>
+    </ptx-preamble>
+
+    <begin-document/>
+
+    <title cmd="title">
+        <opt><ptx-short-title/></opt>
+        <arg><ptx-title/></arg>
+    </title>
+
+    <!-- the article-level statement; amsart sets every "\thanks" as an unmarked footnote, in order -->
+    <support cmd="thanks">
+        <arg><ptx-bibinfo-support/></arg>
+    </support>
+
+    <author-list>
+        <author cmd="author" corresponding="author*">
+            <arg><ptx-personname/></arg>
+        </author>
+        <affiliation cmd="address">
+            <arg><ptx-affiliation/></arg>
+        </affiliation>
+        <email cmd="email">
+            <arg><ptx-email/></arg>
+        </email>
+        <support cmd="thanks">
+            <arg><ptx-support/></arg>
+        </support>
+    </author-list>
+
+    <keywords authority="msc" cmd="subjclass" variant-style="opt" sep=", "/>
+
+    <date cmd="date">
+        <arg><ptx-date/></arg>    
+    </date>
+
+    <dedication cmd="dedicatory">
+        <arg><ptx-dedication/></arg>
+    </dedication>
+
+
+    <keywords authority="author" cmd="keywords" sep=", "/>
+
+    <abstract env="abstract">
+        <ptx-abstract/>
+    </abstract>
+
+    <maketitle/>
+
+
+    <mainmatter/>
+
+
+    <acknowledgments heading="\section*{Acknowledgments}"/>
+
+    <appendices />
+
+    <bibliography cmd="bibliography">
+        <arg><bib-file/></arg>
+    </bibliography>
+
+    <end-document/>
+</texstyle>
