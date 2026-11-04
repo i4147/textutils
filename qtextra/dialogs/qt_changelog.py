@@ -18,8 +18,6 @@ from qtextra.widgets.qt_dialog import QtFramelessTool
 
 
 class QtChangelogDialog(QtFramelessTool):
-    """Changelog."""
-
     HIDE_WHEN_CLOSE = False
 
     def __init__(
@@ -43,7 +41,6 @@ class QtChangelogDialog(QtFramelessTool):
         self.setMinimumHeight(400)
 
     def make_panel(self) -> QFormLayout:
-        """Make panel."""
         self.text_edit = QTextEdit()
         self._highlight = Codelighter(self.text_edit.document(), THEMES.syntax_style, self.language)
         self.text_edit.setText(self.text)
@@ -77,7 +74,6 @@ class QtChangelogDialog(QtFramelessTool):
 
     # @ensure_main_thread()
     def on_download(self, *_args: ty.Any) -> None:
-        """Download."""
         if self.download_url is None:
             return
 
@@ -104,14 +100,12 @@ class QtChangelogDialog(QtFramelessTool):
 
     @ensure_main_thread()
     def _on_download_started(self) -> None:
-        """Download start."""
         self.progress_bar.show()
         self.progress_label.show()
         self.download_btn.hide()
 
     @ensure_main_thread()
     def _on_download_finished(self, res: tuple[tqdm, str]) -> None:
-        """Download finished."""
         pbar, text = res
         pbar.close()
         self.progress_bar.hide()
@@ -124,7 +118,6 @@ ChangelogDialog = QtChangelogDialog
 
 
 def get_path(path_to_file: PathLike) -> Path:
-    """Get a formatted path."""
     path_to_file = Path(path_to_file)
     if path_to_file.suffix == ".zip":
         return path_to_file.parent / path_to_file.stem
@@ -136,21 +129,11 @@ def report_hook(
     label: QLabel,
     pbar: tqdm,
 ) -> ty.Callable[[int, int, int | None], None]:
-    """Download progress."""
     last_b = [0]
 
     @ensure_main_thread()
     @qthrottled(timeout=500)
     def update_to(b: int = 1, bsize: int = 1, tot_size: int | None = None) -> None:
-        """Update progress.
-
-        b  : int, optional
-            Number of blocks transferred so far [default: 1].
-        bsize  : int, optional
-            Size of each block (in tqdm units) [default: 1].
-        tot_size  : int, optional
-            Total size (in tqdm units). If [default: None] remains unchanged.
-        """
         with suppress(RuntimeError):
             if tot_size is not None:
                 progress_bar.setMaximum(tot_size)
@@ -171,7 +154,6 @@ def download_file(
     reporthook: ty.Callable,
     pbar: tqdm,
 ) -> ty.Generator[str, None, None] | tuple[tqdm, str]:
-    """Download data."""
     path_to_file = Path(path_to_file)
     if not path_to_file.exists():
         temp_file = path_to_file.parent / (path_to_file.name + ".temp")

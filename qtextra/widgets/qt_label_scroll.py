@@ -7,8 +7,6 @@ from qtpy.QtWidgets import QLabel, QScrollArea, QWidget
 
 
 class QtScrollableLabel(QScrollArea):
-    """Scrollable label."""
-
     evt_clicked = Signal()
 
     def __init__(
@@ -36,21 +34,17 @@ class QtScrollableLabel(QScrollArea):
         self.setContentsMargins(0, 0, 0, 0)
 
     def setText(self, text: str) -> None:
-        """Set label text."""
         self.label.setText(text)
 
     def set_image(self, image_path: PathLike) -> None:
-        """Set image."""
         pixmap = QPixmap(str(image_path))
         self.label.setPixmap(pixmap)
         self.label.adjustSize()
 
     def clear(self) -> None:
-        """Clear label."""
         self.label.clear()
 
     def mousePressEvent(self, event) -> None:
-        """Mouse press event."""
         self.evt_clicked.emit()
         return super().mousePressEvent(event)
 

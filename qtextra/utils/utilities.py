@@ -12,28 +12,18 @@ from qtextra.typing import Connectable
 
 
 def running_under_pytest() -> bool:
-    """Return True if currently running under py.test.
-
-    This function is used to do some adjustment for testing. The environment
-    variable ORIGAMI_PYTEST is defined in conftest.py.
-    """
     import os
 
     return bool(os.environ.get("QTEXTRA_PYTEST"))
 
 
 def get_docs_path() -> Path:
-    """Get path to docs directory."""
     base_path = Path(sys.executable).parent
 
     return base_path if running_as_pyinstaller_app() else base_path.parent
 
 
 def check_url(url: str) -> bool:
-    """Parse typical URL.
-
-    See: https://stackoverflow.com/a/50352868
-    """
     from urllib.parse import urljoin, urlparse
 
     final_url = urlparse(urljoin(url, "/"))
@@ -41,11 +31,6 @@ def check_url(url: str) -> bool:
 
 
 def memory_usage() -> float:
-    """
-    Return physical memory usage (float)
-    Requires the cross-platform psutil (>=v0.3) library
-    (https://github.com/giampaolo/psutil).
-    """
     import psutil
 
     try:
@@ -56,7 +41,6 @@ def memory_usage() -> float:
 
 
 def process_memory_usage() -> float:
-    """Return process memory usage (float)."""
     import psutil
 
     process = psutil.Process()
@@ -65,13 +49,6 @@ def process_memory_usage() -> float:
 
 @lru_cache(maxsize=2)
 def get_system_info(as_html=False) -> str:
-    """Gathers relevant module versions for troubleshooting purposes.
-
-    Parameters
-    ----------
-    as_html : bool
-        if True, info will be returned as HTML, suitable for a QTextEdit widget
-    """
     import platform
     import sys
 
@@ -154,7 +131,6 @@ def connect(
     source: str = "",
     silent: bool = False,
 ) -> None:
-    """Function that connects/disconnects."""
     try:
         connectable_func = connectable.connect if state else connectable.disconnect
         connectable_func(func)
@@ -170,12 +146,10 @@ def connect(
 
 
 def s(path: Path) -> str:
-    """Return a short path."""
     return f"{path.parent.name}/{path.name}"
 
 
 def hyper(link: Path | str, value: str | Path | None = None, prefix: str = "goto") -> str:
-    """Parse into a hyperlink."""
     if value is None:
         value = link
     if isinstance(link, Path):

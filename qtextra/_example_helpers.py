@@ -3,7 +3,6 @@ from qtpy.QtWidgets import QFrame, QLabel
 
 
 def section(title):
-    """Helper function for the UI."""
     lbl = QLabel(title)
 
     f = QFont()
@@ -15,7 +14,6 @@ def section(title):
 
 
 def divider():
-    """Helper function for the UI."""
     f = QFrame()
     f.setFrameShape(QFrame.Shape.HLine)
     f.setStyleSheet("color: #eee;")

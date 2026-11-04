@@ -8,8 +8,6 @@ from qtpy.QtWidgets import QProgressBar
 
 
 class QtLineProgressBar(QProgressBar):
-    """Thin progress bar."""
-
     Direction = 0
     Height = 2
     Color = QColor("#00d989")
@@ -39,7 +37,6 @@ class QtLineProgressBar(QProgressBar):
 
     @property
     def alpha(self):
-        """Return alpha."""
         return self._alpha
 
     @alpha.setter
@@ -48,7 +45,6 @@ class QtLineProgressBar(QProgressBar):
         QProgressBar.update(self)
 
     def paintEvent(self, _):
-        """Paint event."""
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
@@ -66,7 +62,6 @@ class QtLineProgressBar(QProgressBar):
         painter.drawRoundedRect(QRectF(0, 0, width, self.height()), 2, 2)
 
     def eventFilter(self, obj, event):
-        """Filter events."""
         if event.type() == event.Resize:
             widget = QtLineProgressBar.Instances.get(obj, None)
             if widget:
@@ -81,23 +76,6 @@ class QtLineProgressBar(QProgressBar):
         return super().eventFilter(obj, event)
 
     def start(self, minimum=0, maximum=100, height=None, direction=None, color=None, failed_color=None):
-        """Create a loading bar.
-
-        Parameters
-        ----------
-        minimum : int
-            Lower step value.
-        maximum : int
-            Upper step value.
-        height : int
-            Height of the progress bar.
-        direction : int
-            Progress bar position
-        color : str
-            Success color
-        failed_color : str
-            Fail color.
-        """
         self._height = height
         self._color = color
         self._failed_color = failed_color
@@ -114,21 +92,18 @@ class QtLineProgressBar(QProgressBar):
         )
 
     def finish(self):
-        """Finish."""
         self._alpha = 255
         self.is_error = False
         self.setValue(self.maximum())
         self.animation.start()
 
     def error(self):
-        """Raise error."""
         self._alpha = 255
         self.is_error = True
         self.setValue(self.maximum())
         self.animation.start()
 
     def update_value(self, value):
-        """Update."""
         self._alpha = 255
         self.is_error = False
         self.show()

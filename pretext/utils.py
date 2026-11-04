@@ -18,32 +18,23 @@ import logging
 import logging.handlers
 import psutil
 import typing as t
-from . import types as pt  # PreTeXt types
-from lxml import etree as ET  # noqa: N812
+from . import types as pt
+from lxml import etree as ET
 from lxml.etree import _ElementTree, _Element
 
 try:
-    import pelican.settings  # type: ignore
+    import pelican.settings
 except ImportError:
     pass
 from typing import Any, cast, List, Optional
 
 from . import core, constants, resources, VERSION
 
-# Get access to logger
 log = logging.getLogger("ptxlogger")
 
 
 @contextmanager
 def working_directory(path: Path) -> Generator:
-    """
-    Temporarily change the current working directory.
-
-    Usage:
-    with working_directory(path):
-        do_things()   # working in the given path
-    do_other_things() # back to original path
-    """
     current_directory = Path.cwd()
     os.chdir(path)
     log.debug(f"Now working in directory {path}")
@@ -59,9 +50,6 @@ def manage_directories(
     external_abs: Optional[Path] = None,
     generated_abs: Optional[Path] = None,
 ) -> None:
-    """
-    Copies external and generated directories from absolute paths set in external_abs and generated_abs (unless set to None) into the specified output_dir.
-    """
     if external_abs is not None:
         external_dir = os.path.join(output_dir, "external")
         shutil.copytree(external_abs, external_dir, dirs_exist_ok=True)
@@ -76,35 +64,26 @@ def manage_directories(
         )
 
 
-# Grabs project directory based on presence of `project.ptx`
 def project_path(dirpath: Optional[Path] = None) -> Optional[Path]:
     if dirpath is None:
-        dirpath = Path().resolve()  # current directory
+        dirpath = Path().resolve()
     if (dirpath / "project.ptx").is_file():
-        # we're at the project root
         return dirpath
     if dirpath.parent == dirpath:
-        # cannot ascend higher, no project found
         return None
     else:
-        # check parent instead
         return project_path(dirpath=dirpath.parent)
 
 
-# Like above, but asserts if the project path can't be found.
 def project_path_found(dirpath: Optional[Path] = None) -> Path:
     pp = project_path(dirpath)
     assert pp is not None, "Invalid project path"
     return pp
 
 
-# Install's a default project.ptx manifest in the ~/.ptx/{version} directory if missing
 def ensure_default_project_manifest() -> None:
-    # Get the path to the default project.ptx manifest
     template_manifest = resources.resource_base_path() / "templates" / "project.ptx"
-    # Get the path to the user's default project.ptx manifest
     user_project_manifest = resources.resource_base_path().parent / "project.ptx"
-    # If the user's default project.ptx manifest is missing, copy the default project.ptx manifest to the user's default project.ptx manifest
     log.debug(f"Checking for user's default project.ptx manifest at {user_project_manifest}")
     if not user_project_manifest.exists():
         shutil.copy(template_manifest, user_project_manifest)
@@ -113,7 +92,7 @@ def ensure_default_project_manifest() -> None:
 
 def project_xml(dirpath: t.Optional[Path] = None) -> _ElementTree:
     if dirpath is None:
-        dirpath = Path.cwd()  # current directory
+        dirpath = Path.cwd()
     pp = project_path(dirpath)
     if pp is None:
         project_manifest = resources.resource_base_path() / "templates" / "project.ptx"
@@ -124,7 +103,7 @@ def project_xml(dirpath: t.Optional[Path] = None) -> _ElementTree:
 
 def requirements_version(dirpath: Optional[Path] = None) -> Optional[str]:
     if dirpath is None:
-        dirpath = Path.cwd()  # current directory
+        dirpath = Path.cwd()
     pp = project_path(dirpath)
     if pp is None:
         return None
@@ -143,11 +122,10 @@ def requirements_version(dirpath: Optional[Path] = None) -> Optional[str]:
 
 def project_xml_string(dirpath: Optional[Path] = None) -> str:
     if dirpath is None:
-        dirpath = Path.cwd()  # current directory
+        dirpath = Path.cwd()
     return ET.tostring(project_xml(dirpath), encoding="unicode")
 
 
-# Returns the pretext directory under home.
 def home_path() -> Path:
     return Path.home() / ".ptx"
 
@@ -156,15 +134,13 @@ def hash_path(project_path: Path) -> str:
     return sha256(str(project_path).encode("utf-8")).hexdigest()[:10]
 
 
-# TODO: is this ever called?
 def target_xml(alias: t.Optional[str] = None, dirpath: t.Optional[Path] = None) -> Optional[_Element]:
     if dirpath is None:
-        dirpath = Path.cwd()  # current directory
+        dirpath = Path.cwd()
     if alias is None:
-        return project_xml().find("targets/target")  # first target
+        return project_xml().find("targets/target")
     xpath = f'targets/target[@name="{alias}"]'
     _matches = project_xml().xpath(xpath)
-    # Given that this is a project target, narrow the type of the match: ``xpath`` can return a wide variety of results.
     matches = cast(List[_Element], _matches)
     if len(matches) == 0:
         log.info(f"No targets with alias {alias} found in project manifest file project.ptx.")
@@ -172,9 +148,7 @@ def target_xml(alias: t.Optional[str] = None, dirpath: t.Optional[Path] = None) 
     return matches[0]
 
 
-# check xml syntax
 def xml_syntax_is_valid(xmlfile: Path, root_tag: str = "pretext") -> bool:
-    # parse xml
     try:
         source_xml = ET.parse(xmlfile)
         source_xml.xinclude()
@@ -184,10 +158,8 @@ def xml_syntax_is_valid(xmlfile: Path, root_tag: str = "pretext") -> bool:
                 f"The file {xmlfile} does not have `{root_tag}` element as its root element.  Did you use a subfile as your source?  Check the project manifest (project.ptx)."
             )
             return False
-    # check for file IO error
     except IOError:
         raise IOError(f"The file {xmlfile} does not exist")
-    # check for XML syntax errors
     except ET.XMLSyntaxError as err:
         log.error("XML Syntax Error caused build to fail:")
         log.error(str(err.error_log))
@@ -200,16 +172,6 @@ def xml_syntax_is_valid(xmlfile: Path, root_tag: str = "pretext") -> bool:
 
 
 def warn_on_schema_errors(etree: _Element, log_dir: Path) -> Optional[bool]:
-    """A quick, warn-only schema check to accompany a build or generate.
-
-    Runs jing over the assembled source when jing is available, and otherwise
-    checks nothing (returning `None`) -- a build should not depend on having a
-    validator installed. Messages are written to a log file rather than the
-    terminal: they are numerous, they refer to lines of the *assembled* source
-    (deposited alongside the log so those numbers mean something), and the
-    consolidated report from `pretext validate` is the better place to read
-    them. Returns whether the source validated.
-    """
     schema_file = schema_path()
     log.debug(f"Validating PreTeXt source against schema {schema_file}")
     log_dir.mkdir(parents=True, exist_ok=True)
@@ -218,7 +180,6 @@ def warn_on_schema_errors(etree: _Element, log_dir: Path) -> Optional[bool]:
     etree.getroottree().write(str(assembled_source), encoding="utf-8", xml_declaration=True)
 
     def _discard() -> None:
-        # Leave nothing behind to be mistaken for the result of this run.
         assembled_source.unlink(missing_ok=True)
         error_log.unlink(missing_ok=True)
 
@@ -251,36 +212,15 @@ def warn_on_schema_errors(etree: _Element, log_dir: Path) -> Optional[bool]:
 
 
 def _jing_command() -> Optional[List[str]]:
-    """The `jing` invocation to use, or `None` when jing is unavailable.
-
-    Prefers the project's configured `jing` executable (from `executables.ptx`),
-    which lets a user point at a jing outside the search path; falls back to a
-    `jing` on the PATH when no project has been loaded. The configured value may
-    carry options (e.g. `java -jar /usr/share/java/jing.jar`), so the whole
-    command line is returned rather than just the executable.
-    """
     try:
         return core.get_executable_cmd("jing")
     except (KeyError, TypeError, OSError) as e:
-        # In turn: core's executables have no `jing` key (a manifest read by an
-        # older CLI), no project has been loaded so core has no executables at
-        # all, or the configured command isn't on the PATH.
         log.debug(f"Could not use a configured jing command: {e}")
     jing_executable = shutil.which("jing")
     return [jing_executable] if jing_executable is not None else None
 
 
 def salve_shim_command() -> Optional[List[str]]:
-    """The command that runs the salve-annos validator as a stand-in for jing.
-
-    An experimental alternative engine, so that it can be compared with jing
-    without anyone having to install jing at all. The shim presents a
-    jing-compatible interface, so it drops into core's `validate()` as the
-    `jing` executable. Returns `None` (with a warning) if it can't be set up.
-
-    Its npm dependencies are installed on first use into the CLI's resource
-    directory -- the same pattern as the other node packages the CLI needs.
-    """
     node_cmd = shutil.which("node")
     if node_cmd is None:
         log.warning("The salve validator needs node, which could not be found.")
@@ -316,12 +256,6 @@ def salve_shim_command() -> Optional[List[str]]:
 
 
 def validate_with_jing(source_file: Path, schema_file: Path) -> Optional[tuple[bool, str]]:
-    """Check an XML file against a RELAX-NG schema with jing.
-
-    Returns `(is_valid, messages)`, or `None` when jing isn't available. jing is
-    the only engine: lxml cannot compile the PreTeXt schema, which incorporates
-    PreFigure's schema in a way libxml2 won't accept.
-    """
     jing_command = _jing_command()
     if jing_command is None:
         return None
@@ -336,8 +270,6 @@ def validate_with_jing(source_file: Path, schema_file: Path) -> Optional[tuple[b
     except OSError:
         return None
     output = "\n".join(chunk for chunk in [result.stdout.strip(), result.stderr.strip()] if chunk)
-    # jing exits 0 when the document is valid and 1 when it has messages;
-    # anything more means jing itself failed, so nothing was checked.
     if result.returncode > 1:
         log.debug(f"The jing program failed (code {result.returncode}): {output}")
         return None
@@ -349,8 +281,6 @@ def schema_path(dev: bool = False) -> Path:
     return resources.resource_base_path() / "core" / "schema" / schema_name
 
 
-# boilerplate to prevent overzealous caching by preview server, and
-# avoid port issues
 def binding_for_access(access: t.Literal["public", "private"] = "private") -> str:
     if access == "private":
         return "localhost"
@@ -373,8 +303,6 @@ def serve_forever(
 ) -> None:
     binding = binding_for_access(access)
 
-    # Previously we defined a custom handler to prevent caching, but we don't need to do that anymore.  It was causing issues with the _static js/css files inside codespaces for an unknown reason.  Might bring this back in the future.
-    # 2024-04-05: try using this again to let Firefox work
     class RequestHandler(SimpleHTTPRequestHandler):
         def __init__(self, *args: Any, **kwargs: Any):
             super().__init__(*args, directory=base_dir.as_posix(), **kwargs)
@@ -409,9 +337,6 @@ def start_codespace_server(
     access: t.Literal["public", "private"] = "private",
     port: int = 8128,
 ) -> None:
-    """
-    Temporary hack until we can figure out what is going on with codespaces an the (possibly more robust) server process we usually define.
-    """
     subprocess.Popen(
         f"python -m http.server {port}",
         shell=True,
@@ -419,7 +344,6 @@ def start_codespace_server(
     return
 
 
-# Info on namespaces: http://lxml.de/tutorial.html#namespaces
 NSMAP = {
     "xi": "http://www.w3.org/2001/XInclude",
     "xml": "http://www.w3.org/XML/1998/namespace",
@@ -431,25 +355,18 @@ def nstag(prefix: str, suffix: str) -> str:
 
 
 def copy_custom_xsl(xsl_path: Path, output_dir: Path) -> None:
-    """
-    Copy relevant files that share a directory with `xsl_path`.
-    Pre-processing the `.xsl` files to point to subdirectory for graceful deprecation.
-    """
     xsl_dir = xsl_path.parent.resolve()
     output_dir = output_dir.resolve()
     log.debug(f"Copying all files in {xsl_dir} to {output_dir}")
     shutil.copytree(xsl_dir, output_dir, dirs_exist_ok=True)
     log.debug(f"Copying core XSL to {output_dir}/core")
     shutil.copytree(resources.resource_base_path() / "core" / "xsl", output_dir / "core")
-    # Create a symlink to the {output_dir}/core from the parent of the output_dir
-    # This supports custom xsl that includes "../xsl" instead of "./core".
     try:
         symlink = output_dir.parent / "xsl"
         if symlink.exists():
             symlink.unlink()
         symlink.symlink_to(output_dir / "core")
     except Exception as e:
-        # If the symlink fails, likely because of a Window's permission problem, we just make a second copy.
         log.debug(f"Could not create symlink to {output_dir}/core")
         log.debug(e)
         log.debug("Copying core XSL to {symlink} instead.")
@@ -471,17 +388,11 @@ def check_asset_execs(
     outformats: Optional[List[str]] = None,
     engine: str = "xelatex",
 ) -> None:
-    # outformats is assumed to be a list of formats.
     if outformats is None:
         outformats = []
-    # Note that asymptote is done via server, so doesn't require asy.  We could check for an internet connection here for that and webwork, etc.
     log.debug(f"trying to check assets for {element} and output format {outformats}")
-    # Create list of executables needed based on output format
     required_execs = []
     if element == "latex-image":
-        # svg and png conversions go through the pyMuPDF library, so they need no
-        # executable beyond the LaTeX engine itself -- whichever one the target's
-        # `latex-engine` names, which is not always xelatex.
         required_execs = [engine]
         if "eps" in outformats or "all" in outformats:
             required_execs.append("pdfeps")
@@ -514,17 +425,11 @@ def check_asset_execs(
             log.warning(
                 f"In order to generate {element} into formats {outformats}, you must have {required_exec} installed, but this appears to be missing or configured incorrectly in pretext.ptx"
             )
-            # print installation hints based on operating system and missing program.
             log.info(install_hints.get(required_exec, {}).get(platform.system(), ""))
 
 
 def clean_asset_table(dirty_table: pt.AssetTable, clean_table: pt.AssetTable) -> pt.AssetTable:
-    """
-    Removes any assets from the dirty_table that are not in the clean_table.
-    """
-    # Purge any asset types that are no longer in the clean table:
     dirty_table = {asset: dirty_table[asset] for asset in dirty_table if asset in clean_table}
-    # Then purge ids of assets that no longer exist in the clean table:
     # for asset in dirty_table:
     #    dirty_table[asset] = {
     #        id: dirty_table[asset][id]
@@ -535,9 +440,6 @@ def clean_asset_table(dirty_table: pt.AssetTable, clean_table: pt.AssetTable) ->
 
 
 def cannot_find_project(task: str) -> bool:
-    """
-    Standard messages to be displayed when no project.ptx is found, customized by the "task" to be preformed.
-    """
     if project_path() is None:
         log.critical(
             f"Before you can {task} your PreTeXt project, you must be in a (sub)directory initialized with a project.ptx manifest."
@@ -551,17 +453,11 @@ def cannot_find_project(task: str) -> bool:
 
 def show_target_hints(
     target_format: Optional[str],
-    # TODO: the type is ``project.Project``, but we can't ``import project`` due to circular imports.
     project: Any,
     task: str,
 ) -> None:
-    """
-    This will give the user hints about why they have provided a bad target and make helpful suggestions for them to fix the problem.  We will only run this function when the target_name is not the name in any target in project.ptx.
-    """
-    # just in case this was called in the wrong place:
     if project.has_target(name=target_format):
         return
-    # Otherwise continue with hints:
     if target_format is None:
         log.critical(
             f"No viable targets found in project.ptx.  The available targets are named: {project.target_names()}."
@@ -604,9 +500,7 @@ def mjsre_npm_install() -> None:
 
 
 def ensure_css_node_modules() -> None:
-    # Look for node_modules and install if we can.
     with working_directory(resources.resource_base_path() / "core" / "script" / "cssbuilder"):
-        # Make sure node version is at least 18:
         try:
             node_cmd = shutil.which("node")
             if node_cmd is None:
@@ -624,11 +518,9 @@ def ensure_css_node_modules() -> None:
         except Exception as e:
             log.debug(e)
             log.debug("", exc_info=True)
-        # Check if node_modules is already present:
         if Path("node_modules").exists():
             log.debug("Node modules already installed.")
             return
-        # If not, try to install them:
         log.debug("Attempting to install/update required node packages to generate css from sass.")
         try:
             npm_cmd = shutil.which("npm")
@@ -645,9 +537,7 @@ def ensure_css_node_modules() -> None:
 
 
 def ensure_dynsub_node_modules() -> None:
-    # Look for node_modules and install if we can.
     with working_directory(resources.resource_base_path() / "core" / "script" / "dynsub"):
-        # Make sure node version is at least 22.10:
         try:
             node_cmd = shutil.which("node")
             if node_cmd is None:
@@ -668,11 +558,9 @@ def ensure_dynsub_node_modules() -> None:
         except Exception as e:
             log.debug(e)
             raise e
-        # Check if node_modules is already present:
         if Path("node_modules").exists():
             log.debug("Node modules already installed.")
             return
-        # If not, try to install them:
         log.debug("Attempting to install/update required node packages extract dynamic susbstitutions.")
         try:
             npm_cmd = shutil.which("npm")
@@ -687,9 +575,6 @@ def ensure_dynsub_node_modules() -> None:
 
 
 def playwright_install() -> None:
-    """
-    Run `playwright install` to ensure that its required browsers and tools are available to it.
-    """
     try:
         log.info("Checking for update for required playwright chromium browser.")
         # subprocess.run("playwright install-deps", shell=True)
@@ -703,24 +588,16 @@ def playwright_install() -> None:
 
 def remove_path(path: Path) -> None:
     if path.is_file() or path.is_symlink():
-        path.unlink()  # remove the file
+        path.unlink()
     elif path.is_dir():
-        shutil.rmtree(path)  # remove dir and all it contains
+        shutil.rmtree(path)
 
 
 def has_errors(mh: logging.handlers.MemoryHandler) -> bool:
-    """
-    Checks to see if anything (errors etc.) is in the memory handler.
-    """
     return len(mh.buffer) > 0
 
 
 def exit_command(mh: logging.handlers.MemoryHandler) -> None:
-    """
-    Clean up at the end of a run.
-    Reports that there are errors before the handler gets flushed, then exits with errors.
-    Otherwise, logs a blank line.
-    """
     if has_errors(mh):
         log.info("\n----------------------------------------------------")
         log.info("While running pretext, the following errors occurred:\n")
@@ -734,13 +611,6 @@ def exit_command(mh: logging.handlers.MemoryHandler) -> None:
 
 
 def format_docstring_as_help_str(string: str) -> str:
-    """
-    Formats a docstring so that it is suitable to pass in as a help string
-    in the `click` library.
-
-    Specifically, this function removes leading whitespace and single newlines.
-    However, double newlines are preserved.
-    """
     import re
 
     lines = (re.sub(r"\s+", " ", line).strip() for line in string.splitlines())
@@ -748,13 +618,6 @@ def format_docstring_as_help_str(string: str) -> str:
 
 
 def parse_git_remote(string: str) -> t.List[str]:
-    """
-    Given a Git remote such as
-    git@github.com:PreTeXtBook/pretext-cli.git or
-    https://github.com/PreTeXtBook/pretext-cli.git or
-    https://github.com/PreTeXtBook/pretext-cli
-    return a list with the username (PreTeXtBook) and reponame (pretext-cli).
-    """
     repo_info = list(filter(None, re.split(r"\/|\:|\.git$", string)))
     return repo_info[-2:]
 
@@ -765,12 +628,6 @@ def publish_to_ghpages(
     no_push: bool = False,
     cname: t.Optional[str] = None,
 ) -> None:
-    """
-    Publish the current project to GitHub pages.
-    """
-    # Try to import git.repo and ghp_import to make sure git is installed.
-    # These need to be done here, because if git is not installed, then this will break,
-    # and not everyone will need deploy functionality.
     try:
         import git.repo
         import git.exc
@@ -807,13 +664,11 @@ def publish_to_ghpages(
             log.info("Committing these changes to local Git repository.\n")
             repo.git.add(all=True)
             repo.git.commit(message="Update to PreTeXt project source.")
-            # Should we push this commit?
         else:
             log.warning(
                 "Don't forget to either add and commit the changes to your source with git, or run `pretext deploy -u` to have these changes updated automatically."
             )
             log.warning("Just deploying your built project will not save changes to your source on GitHub.`")
-            # Note, we no longer return here; continue with deployment even though repo isn't clean.
     try:
         origin = repo.remotes.origin
     except AttributeError:
@@ -840,8 +695,6 @@ def publish_to_ghpages(
         origin = repo.remotes.origin
     log.info("Committing your latest build to the `gh-pages` branch.")
     log.info("")
-    # Should we let ghp_import do the push for us?
-    # Should we remove the history?
     ghp_import.ghp_import(directory, mesg="Latest build deployed.", nojekyll=True, cname=cname)
     log.info(f"Attempting to connect to remote repository at `{origin.url}`...")
     # log.info("(Your SSH password may be required.)")
@@ -849,7 +702,6 @@ def publish_to_ghpages(
     try:
         repo_user, repo_name = parse_git_remote(origin.url)
         repo_url = f"https://github.com/{repo_user}/{repo_name}/"
-        # Set pages_url depending on whether project is base pages for the user or a separate repo
         if "github.io" in repo_name:
             pages_url = f"https://{repo_name}"
         else:
@@ -859,14 +711,12 @@ def publish_to_ghpages(
         log.error("Deploy unsuccessful")
         log.debug(e, exc_info=True)
         return
-    # Stop here if we are not pushing to GitHub.
     if no_push:
         log.info("Skipping push to GitHub.  You can push manually with `git push origin gh-pages`.")
         log.info("")
         log.info("Output committed to the `gh-pages` branch.")
         return
 
-    # Otherwise we try to push to GitHub.
     def _report_push_failure(detail: str) -> None:
         log.warning(f"There was an issue connecting to GitHub repository located at {repo_url}\n")
         log.debug(detail)
@@ -887,16 +737,11 @@ def publish_to_ghpages(
     try:
         branch_push_result = origin.push(refspec=f"{repo.active_branch.name}:{repo.active_branch.name}")
         gh_push_result = origin.push(refspec="gh-pages:gh-pages", force=True)
-    except git.exc.GitCommandError as e:  # type: ignore
+    except git.exc.GitCommandError as e:
         _report_push_failure(str(e))
         return
-    # `push()` does not raise on a rejected/failed push, so each `PushInfo`
-    # entry's flags must be checked explicitly for errors.
     error_flags = (
-        git.PushInfo.ERROR  # type: ignore
-        | git.PushInfo.REJECTED  # type: ignore
-        | git.PushInfo.REMOTE_REJECTED  # type: ignore
-        | git.PushInfo.REMOTE_FAILURE  # type: ignore
+        git.PushInfo.ERROR | git.PushInfo.REJECTED | git.PushInfo.REMOTE_REJECTED | git.PushInfo.REMOTE_FAILURE
     )
     push_errors = [
         info.summary.strip() for info in list(branch_push_result) + list(gh_push_result) if info.flags & error_flags
@@ -918,20 +763,14 @@ def publish_to_ghpages(
 
 
 def active_server_port() -> t.Optional[int]:
-    """
-    Check if a pretext-view server is running already, and if so, return its port number.
-    """
-    # We look at all currently running processes and check if any are a pretext process that is a child of a pretext process.  This would only happen if we have run a `pretext view` command to start the server, so we can assume that this is the server we are looking for.
     for proc in psutil.process_iter():
         if proc is None:
             continue
-        if is_pretext_proc(proc):  # type: ignore
+        if is_pretext_proc(proc):
             log.debug(f"Found pretext server running with pid {proc.pid}")
-            # Sometimes the process stops but doesn't get removed from the process list.  We check if the process is still running by checking its status.
             if proc.status() not in [psutil.STATUS_RUNNING, psutil.STATUS_SLEEPING]:
                 log.debug("Server is stopped.")
                 return None
-            # To get the port number, we look at the connections the process has open.  We assume that the server is running on the first port that is open.
             try:
                 port = proc.connections()[0].laddr.port
                 log.debug(f"Server is running on port {port}")
@@ -943,23 +782,18 @@ def active_server_port() -> t.Optional[int]:
 
 
 def stop_server(port: t.Optional[int] = None) -> None:
-    """
-    Terminate a server running in the background.
-    """
-    # If a port was passed, we look for a "pretext" process that has a connection on that port, and kill it if we find it.
     if port is not None:
         log.debug(f"Terminating server running on port {port}")
         for proc in psutil.process_iter():
             if len(proc.connections()) > 0:
                 if (
                     proc.name() == "pretext"
-                    and proc.parent().name() == "pretext"  # type: ignore
+                    and proc.parent().name() == "pretext"
                     and proc.connections()[0].laddr.port == port
                 ):
                     log.debug(f"Terminating process with PID {proc.pid} hosting on port {port}")
                     proc.terminate()
     else:
-        # As before, we look for a pretext process that is a child of a pretext process.  This time we terminate that process.
         for proc in psutil.process_iter():
             if is_pretext_proc(proc):
                 log.debug(f"Terminating process with PID {proc.pid}")
@@ -983,20 +817,16 @@ def pelican_default_settings() -> t.Dict[str, t.Any]:
     config["AUTHOR_FEED_ATOM"] = None
     config["AUTHOR_FEED_RSS"] = None
     config["STATIC_PATHS"] = ["images", "static"]
-    # for now, all PTX_ custom settings are strings (due to use of XML)
     config["PTX_SHOW_TARGETS"] = "yes"
     return config
 
 
 def latest_version() -> t.Optional[str]:
-    """
-    Get the latest version of the pretext package from PyPI.
-    """
     import requests
 
     url = "https://pypi.org/pypi/pretext/json"
     try:
-        response = requests.get(url, timeout=1)  # 1 second timeout; not critical.
+        response = requests.get(url, timeout=1)
         return response.json()["info"]["version"]
     except Exception as e:
         log.debug("Could not determine latest version of pretext.")
@@ -1005,9 +835,6 @@ def latest_version() -> t.Optional[str]:
 
 
 def is_earlier_version(v1: str, v2: str) -> bool:
-    """
-    Check if version v1 is earlier than version v2.
-    """
     v1_parts = v1.split(".")
     v2_parts = v2.split(".")
     for i in range(min(len(v1_parts), len(v2_parts))):
@@ -1015,20 +842,12 @@ def is_earlier_version(v1: str, v2: str) -> bool:
             return True
         if int(v1_parts[i]) > int(v2_parts[i]):
             return False
-    # The only way the first three digits would be equal but the strings would not be equal is if the longer was
-    # a pre-release, such as 2.11.5.dev... vs 2.11.5.  In this case, the shorter is the later version.
     if len(v1_parts) < len(v2_parts):
         return True
-    # If the lengths are equal, then the versions are equal.
     return False
 
 
 def check_for_updates() -> None:
-    """
-    Check if the installed version of pretext is the latest version.
-    This is done at most once per day.
-    """
-    # check whether we have looked for updates today
     last_check = resources.resource_base_path() / "last_update_check.txt"
     current_version = VERSION
     if last_check.exists():
@@ -1043,7 +862,6 @@ def check_for_updates() -> None:
                 )
                 log.info("To upgrade, run `pretext upgrade`.")
             return
-    # Check for updates
     latest = latest_version()
     if latest is None:
         log.debug("Could not check for updates.")
@@ -1055,16 +873,12 @@ def check_for_updates() -> None:
         log.warning(f"You are using a nightly release, {current_version}.  The latest stable release is {latest}.\n")
     else:
         log.info(f"You are using the latest version of pretext, {current_version}.\n")
-    # update the last check date
     with open(last_check, "w") as f:
         f.write(str(datetime.date.today()) + "\n")
         f.write(latest + "\n")
 
 
 def report_version() -> None:
-    """
-    Report the current version of pretext.
-    """
     log.info(f"PreTeXt CLI version: {VERSION}")
 
 
@@ -1080,23 +894,16 @@ def is_unmodified(
     contents: bytes,
     resource_hash_table: Any = resources.get_resource_hash_table(),
 ) -> bool:
-    """
-    Check if a resource file with `contents` has been modified compared to the hash in `resource_hash_table`.  If the file contains a magic comment, it is considered unmodified.
-    """
     lines = contents.decode().splitlines()
-    # Old style of keeping track of whether a resource file was managed: a comment at the top of the file hasn't been removed.
     if "<!-- Managed automatically by PreTeXt authoring tools -->" in contents.decode():
         log.debug(f"Resource file {resource} is managed by PreTeXt using magic comment.")
         return True
-    # Look in the first two lines for the version number.  This is always in the first or second line if it exists.
     for i in range(min(2, len(lines))):
         if "automatically generated with PreTeXt" in lines[i]:
-            # use regex to get version number:
             version = re.search(r"\d+\.\d+\.\d+", lines[i])
             if resource == "requirements.txt" and version:
                 return True
             elif version and version[0] in resource_hash_table:
-                # Hash file and compare to hash in resource_hash_table
                 hash = hashlib.sha256()
                 hash.update(contents)
                 if hash.hexdigest() == resource_hash_table[version[0]].get(resource):
@@ -1108,20 +915,15 @@ def is_unmodified(
 
 
 def rs_methods(url: str = "", out_path: str = "", format: str = "xml") -> t.Optional[str]:
-    """
-    Attempts to run core methods to get rs services files, and provides backup if no internet connection.
-    """
     cache_dir = resources.resource_base_path() / "rs_cache"
     if not cache_dir.exists():
         cache_dir.mkdir()
-    # Two cases: format is tgz or xml.  If tgz, then we are trying to download the full tgz file.  If xml, then we are trying to download the xml file.
     if format == "xml":
         assert url != "", "URL must be provided to download xml file."
         assert out_path == "", "Output path must not be provided to download xml file."
         try:
             log.info(f"Downloading rs services file from {url}.")
             services_xml = core.query_runestone_services(url)
-            # Write file to cache directory.
             with open(cache_dir / "rs_services.xml", "w") as f:
                 f.write(services_xml)
         except Exception as e:
@@ -1136,7 +938,6 @@ def rs_methods(url: str = "", out_path: str = "", format: str = "xml") -> t.Opti
         assert url != "", "URL must be provided to download tgz file."
         assert out_path != "", "Output path must be provided to download tgz file."
 
-        # Split the url into parts to get the filename.
         services_filename = url.split("/")[-1]
         services_cache_path = cache_dir / services_filename
         if not services_cache_path.exists():
@@ -1146,12 +947,10 @@ def rs_methods(url: str = "", out_path: str = "", format: str = "xml") -> t.Opti
             except Exception as e:
                 log.warning(f"Could not download rs services file from {url} and no cached version found.")
                 raise e
-        # get the parent directory of out_path and make sure it exists.
         out_dir = Path(out_path).parent
         if not out_dir.exists():
             out_dir.mkdir(parents=True)
         log.debug(f"Extracting rs services file to {out_dir}.")
-        # Copy the file to the output path.
         shutil.copyfile(services_cache_path, out_path)
 
     else:
@@ -1162,9 +961,7 @@ def rs_methods(url: str = "", out_path: str = "", format: str = "xml") -> t.Opti
 
 
 class Stopwatch:
-    """A simple stopwatch class for measuring elapsed time."""
-
-    """print_log set to false disables logging of elapsed time """
+    """print_log set to false disables logging of elapsed time"""
 
     def __init__(self, name: str = "", print_log: bool = True):
         self.name = name
@@ -1173,11 +970,9 @@ class Stopwatch:
         self.last_log_time = self.start_time
 
     def reset(self) -> None:
-        """Reset the log timer to the current time."""
         self.last_log_time = time.time()
 
     def log(self, timepoint_description: str = "") -> None:
-        """Print a log message with the elapsed time since the last log event."""
         if self.print_log:
             cur_time = time.time()
             elapsed_time = cur_time - self.start_time

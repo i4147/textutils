@@ -40,20 +40,16 @@ STYLE_OPTIONS = tuple(sorted(STYLE_MAP))
 
 
 def _field_label(key: str) -> str:
-    """Format a field name for display."""
     return key.replace("_", " ").title()
 
 
 def _font_size_value(value: str | int) -> int:
-    """Normalize a theme size to a spin-box value."""
     if isinstance(value, int):
         return value
     return int(str(value).replace("px", "").replace("pt", ""))
 
 
 class QtThemeEditorDialog(QtDialog):
-    """Theme editor."""
-
     def __init__(self, parent, dlg: QWidget | None = None):
         self.dlg = dlg
         self.widgets: dict[str, QWidget] = {}
@@ -63,7 +59,6 @@ class QtThemeEditorDialog(QtDialog):
             self.on_preview()
 
     def make_panel(self) -> QLayout:
-        """Make panel."""
         theme_label = hp.make_label(self, "Theme")
         self.theme = hp.make_combobox(self, THEMES.available_themes(), value=THEMES.theme)
         self.theme.currentTextChanged.connect(self.on_set_theme)
@@ -116,7 +111,6 @@ class QtThemeEditorDialog(QtDialog):
         return vertical_layout
 
     def _populate_theme_form(self) -> None:
-        """Create controls for all editable theme fields."""
         for key in GENERAL_KEYS + SIZE_KEYS + COLOR_KEYS:
             label = hp.make_label(self, _field_label(key))
             widget = self._make_editor_widget(key)
@@ -129,7 +123,6 @@ class QtThemeEditorDialog(QtDialog):
                 self.colors_form.addRow(label, widget)
 
     def _make_editor_widget(self, key: str) -> QWidget:
-        """Create an editor widget for a theme field."""
         if key == "type":
             return hp.make_combobox(
                 self,
@@ -169,11 +162,9 @@ class QtThemeEditorDialog(QtDialog):
 
     @staticmethod
     def on_save_theme() -> None:
-        """Save theme."""
         THEMES.save_config()
 
     def on_restore_theme(self) -> None:
-        """Restore original theme."""
         theme_name = self.theme.currentText()
         if theme_name not in {"dark", "light"}:
             return
@@ -186,7 +177,6 @@ class QtThemeEditorDialog(QtDialog):
         logger.debug(f"Restored defaults for '{theme_name}'")
 
     def on_restore_all_defaults(self) -> None:
-        """Restore built-in defaults for all bundled themes."""
         for theme_name in ("dark", "light"):
             theme_data = get_builtin_theme_data(theme_name)
             restored_theme = Theme(**theme_data)
@@ -196,7 +186,6 @@ class QtThemeEditorDialog(QtDialog):
         logger.debug("Restored built-in theme defaults")
 
     def _set_widget_value(self, key: str, value: str | Color) -> None:
-        """Synchronize the UI control for a field."""
         widget = self.widgets[key]
         with hp.qt_signals_blocked(widget):
             if isinstance(widget, QComboBox):
@@ -207,7 +196,6 @@ class QtThemeEditorDialog(QtDialog):
                 widget.setValue(_font_size_value(value))
 
     def on_set_theme(self, theme_name: str | None = None) -> None:
-        """Update theme."""
         theme_name = theme_name or self.theme.currentText()
         hp.disable_widgets(self.restore_btn, disabled=theme_name not in {"dark", "light"})
 
@@ -223,7 +211,6 @@ class QtThemeEditorDialog(QtDialog):
         logger.debug(f"Set theme '{theme_name}'")
 
     def on_add_new_theme(self) -> None:
-        """Add new theme."""
         new_theme = hp.get_text(self, "New theme name", "New theme name", f"{THEMES.theme} - copy")
         if new_theme is None:
             return
@@ -240,26 +227,21 @@ class QtThemeEditorDialog(QtDialog):
         logger.debug(f"Added new theme '{new_theme}'")
 
     def _update_live_theme(self, key: str, value: str | np.ndarray) -> None:
-        """Update the active theme and refresh the preview."""
         theme = self.theme.currentText()
         setattr(THEMES.themes[theme], key, value)
         if self.dlg is not None:
             THEMES.set_theme_stylesheet(self.dlg, theme)
 
     def on_text_change(self, key: str, value: str) -> None:
-        """Update text fields in the current theme."""
         self._update_live_theme(key, value)
 
     def on_color_change(self, key: str, new_color: np.ndarray) -> None:
-        """Update color in dictionary."""
         self._update_live_theme(key, new_color[0:3] * 255)
 
     def on_fontsize_change(self, key: str, value: int) -> None:
-        """Update font size in dictionary."""
         self._update_live_theme(key, f"{value}pt")
 
     def on_preview(self) -> None:
-        """Preview theme."""
         if self.dlg is None:
             self.dlg = PreviewDialog(self)
             THEMES.set_theme_stylesheet(self.dlg)
@@ -267,17 +249,13 @@ class QtThemeEditorDialog(QtDialog):
 
 
 class PreviewDialog(QtDialog):
-    """Preview dialog."""
-
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
     def closeEvent(self, event) -> None:
-        """Close window."""
         event.ignore()
 
     def make_panel(self) -> QLayout:
-        """Make panel."""
         from qtpy.QtWidgets import QHBoxLayout
 
         from qtextra.dialogs.qt_theme_sample import QtSampleWidget

@@ -7,11 +7,6 @@ from qtpy import QtGui
 
 
 def get_text_char_format(style: dict[str, str]) -> QtGui.QTextCharFormat:
-    """
-    Return a QTextCharFormat with the given attributes.
-
-    https://pygments.org/docs/formatterdevelopment/#html-3-2-formatter
-    """
     text_char_format = QtGui.QTextCharFormat()
     try:
         text_char_format.setFontFamilies(["monospace"])
@@ -34,19 +29,12 @@ def get_text_char_format(style: dict[str, str]) -> QtGui.QTextCharFormat:
 
 
 class QFormatter(Formatter):
-    """Formatter."""
-
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self.data = []
         self._style = {name: get_text_char_format(style) for name, style in self.style}
 
     def format(self, tokensource, outfile):
-        """
-        `outfile` is argument from parent class, but
-        in Qt we do not produce string output, but QTextCharFormat, so it needs to be
-        collected using `self.data`.
-        """
         self.data = []
 
         for token, value in tokensource:
@@ -59,15 +47,12 @@ class QFormatter(Formatter):
 
 
 class Codelighter(QtGui.QSyntaxHighlighter):
-    """Python highlighter."""
-
     def __init__(self, parent, theme: str, lang: str = "python") -> None:
         super().__init__(parent)
         self.formatter = QFormatter(style=theme)
         self.lexer = get_lexer_by_name(lang)
 
     def highlightBlock(self, text):
-        """Highlight block."""
         cb = self.currentBlock()
         p = cb.position()
         text = self.document().toPlainText() + "\n"

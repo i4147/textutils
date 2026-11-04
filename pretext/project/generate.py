@@ -8,7 +8,6 @@ from .. import core
 log = logging.getLogger("ptxlogger")
 
 
-# The individual asset type generation functions
 def individual_prefigure(
     pfdiagram: str,
     outformat: str,
@@ -16,16 +15,10 @@ def individual_prefigure(
     cache_dir: Path,
     skip_cache: bool = False,
 ) -> None:
-    """
-    Checks whether a cached version of the diagram in the correct outformat exists.  If it does, copies it to the tmp_dir and returns.  If it does not, calls the core.individual_prefigure_conversion function to generate the diagram in the correct outformat and then copies it to the tmp_dir.  In the latter case, also makes a copy to the cached version in the cache_dir.
-    - outformat will be a file extension.
-    """
     log.debug("Using the CLI's individual_prefigure function")
     asset_file = Path(pfdiagram).resolve()
-    # Set output directory and create it if it doesn't exist
     output_dir = Path(tmp_dir).resolve() / "output"
     output_dir.mkdir(parents=True, exist_ok=True)
-    # Set cache directory
     cache_dir = cache_dir / "prefigure"
     outformats = ["tactile", "pdf", "png", "svg"] if outformat == "all" else [outformat]
     if "tactile" in outformats:
@@ -41,7 +34,6 @@ def individual_prefigure(
             output_file = output_dir / asset_file.with_suffix(f".{format}").name
             log.debug(f"cache_file: {cache_file} and output_file: {output_file}; asset_file: {asset_file}")
         if format == "svg":
-            # look for file with -annotations suffix
             annotations_cache_file = cache_file.with_suffix("").with_name(cache_file.stem + "-annotations.xml")
             annotations_output_file = output_file.with_suffix("").with_name(output_file.stem + "-annotations.xml")
             log.debug(
@@ -81,10 +73,6 @@ def individual_asymptote(
     cache_dir: Path,
     skip_cache: bool = False,
 ) -> None:
-    """
-    Checks whether a cached version of the diagram in the correct outformat exists.  If it does, copies it to the dest_dir and returns.  If it does not, calls the core.individual_asymptote_conversion function to generate the diagram in the correct outformat and then copies it to the dest_dir.  In the latter case, also makes a copy to the cached version in the cache_dir.
-    - outformat will be a file extension.
-    """
     log.debug("Using the CLI's individual_asymptote function")
     asset_file = Path(asydiagram).resolve()
     cache_dir = cache_dir / "asymptote"
@@ -113,10 +101,6 @@ def individual_sage(
     cache_dir: Path,
     skip_cache: bool = False,
 ) -> None:
-    """
-    Checks whether a cached version of the diagram in the correct outformat exists.  If it does, copies it to the dest_dir and returns.  If it does not, calls the core.individual_asymptote_conversion function to generate the diagram in the correct outformat and then copies it to the dest_dir.  In the latter case, also makes a copy to the cached version in the cache_dir.
-    - outformat will be a file extension.
-    """
 
     log.debug("Using the CLI's individual_sage function")
     asset_file = Path(sageplot).resolve()
@@ -150,17 +134,12 @@ def individual_latex_image(
     cache_dir: Path,
     skip_cache: bool = False,
 ) -> None:
-    """
-    Checks whether a cached version of the diagram in the correct outformat exists.  If it does, copies it to the dest_dir and returns.  If it does not, calls the core.individual_latex_image_conversion function to generate the diagram in the correct outformat and then copies it to the dest_dir.  In the latter case, also makes a copy to the cached version in the cache_dir.
-    - outformat will be 'all' or a file extension.
-    """
     log.debug("Using the CLI's individual_latex function")
     asset_file = Path(latex_image).resolve()
     outformats = ["png", "pdf", "svg", "eps"] if outformat == "all" else [outformat]
     cache_dir = cache_dir / "latex-image"
     cache_files = {ext: cache_asset_filename(asset_file, ext, cache_dir) for ext in outformats}
     output_files = {ext: dest_dir / asset_file.with_suffix(f".{ext}").name for ext in outformats}
-    # In case outformat was "all", we check whether all the desired outformats are cached.  If not, we generate all of them (since it is only the first that is time-intensive)
     all_cached = True
     for ext in outformats:
         if not cache_files[ext].exists():
@@ -186,8 +165,6 @@ def individual_latex_image(
 def cache_asset_filename(asset_file: Path, extension: str, cache_dir: Path) -> Path:
     asset_content = asset_file.read_bytes()
     hash = hashlib.md5()
-    # hash the asset file
     hash.update(asset_content)
     asset_hash = hash.hexdigest()
-    # create the cache file name
     return cache_dir / f"{asset_hash}.{extension}"

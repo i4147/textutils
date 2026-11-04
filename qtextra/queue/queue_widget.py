@@ -20,8 +20,6 @@ QUEUE = CLIQueueHandler()
 
 
 class QueueList(QScrollArea):
-    """Manager object."""
-
     MAX_TASKS: int = 500
     AUTO_EXPAND: bool = False
 
@@ -64,27 +62,23 @@ class QueueList(QScrollArea):
         self._layout = main_layout
 
     def __repr__(self) -> str:
-        """Repr."""
         return (
             f"{self.__class__.__name__}<{len(self.widgets)} widgets; {len(self.finished_widgets)} finished;"
             f" {len(self.cancelled_widgets)} cancelled; {len(self.failed_widgets)} failed>"
         )
 
     def widget_iter(self) -> ty.Iterable[TaskWidget]:
-        """Iterate over widgets."""
         yield from self.widgets.values()
         yield from self.finished_widgets
         yield from self.cancelled_widgets
         yield from self.failed_widgets
 
     def task_iter(self) -> ty.Iterable[Task]:
-        """Iterate over all tasks."""
         for widget in self.widget_iter():
             if widget.task:
                 yield widget.task
 
     def validate(self, selected: ty.Sequence[str] | None = None) -> None:
-        """Validate."""
         if selected is not None:
             self.selected = selected
         for widget in self.widgets.values():
@@ -95,7 +89,6 @@ class QueueList(QScrollArea):
                 widget.setVisible(widget.task.state in self.selected)
 
     def purge_finished(self, max_tasks: ty.Union[None, int] = None) -> None:
-        """Purge tasks that are no longer necessary."""
         if max_tasks is None:
             max_tasks = self.MAX_TASKS
         if len(self.finished_widgets) > max_tasks:
@@ -110,7 +103,6 @@ class QueueList(QScrollArea):
         self.validate()
 
     def purge_all(self) -> None:
-        """Remove all tasks."""
         logger.trace("Purging all tasks...")
         for widget in self.widget_iter():
             with suppress(RuntimeError):
@@ -129,33 +121,27 @@ class QueueList(QScrollArea):
 
     @staticmethod
     def on_start_task(task: Task) -> None:
-        """Cancel task."""
         QUEUE.run_force(task)
 
     def on_requeue_task(self, task: Task) -> None:
-        """Re-add task to the queue."""
         self._remove_widget(task)
         task.state = TaskState.QUEUED
         QUEUE.requeue(task, remove=True)
 
     def on_remove_task(self, task: str | Task) -> None:
-        """Remove task from the queue."""
         self._remove_widget(task)
         QUEUE.remove(task)
 
     @staticmethod
     def on_check_task(task: Task) -> None:
-        """Check whether task is in the queue."""
         QUEUE.check(task)
 
     @staticmethod
     def on_cancel_task(task: Task) -> None:
-        """Cancel task."""
         QUEUE.cancel(task)
 
     @staticmethod
     def on_pause_task(task: Task, state: bool) -> None:
-        """Cancel task."""
         QUEUE.pause(task, state)
 
     def _remove_widget(self, task: str | Task) -> None:
@@ -176,7 +162,6 @@ class QueueList(QScrollArea):
             logger.trace(f"Removed widget for '{task_id}'")
 
     def _find_widget(self, task: str | Task) -> TaskWidget | None:
-        """Find widget by its task ID."""
         task_id = task.task_id if isinstance(task, Task) else task
         if task_id in self.widgets:
             return self.widgets[task_id]
@@ -192,11 +177,9 @@ class QueueList(QScrollArea):
         return None
 
     def check_if_exists(self, task: Task) -> bool:
-        """Check if task exists."""
         return any(task.task_id == task_.task_id for task_ in self.task_iter())
 
     def on_task_queued(self, task: Task) -> None:
-        """Task started."""
         if self.check_if_exists(task):
             logger.debug("Task already exists in the queue, skipping...")
             return
@@ -227,7 +210,6 @@ class QueueList(QScrollArea):
         self.purge_finished()
 
     def on_clear_queue(self, force: bool = False) -> None:
-        """Clear the table, but first ask for confirmation."""
         if force or hp.confirm(
             self,
             "Are you sure you wish to remove <b>all</b> tasks from the list?",
@@ -236,19 +218,16 @@ class QueueList(QScrollArea):
             self.purge_all()
 
     def on_requeue_failed(self) -> None:
-        """Requeue all failed tasks."""
         tasks = [task.task for task in self.failed_widgets if task.task]
         for task in tasks:
             self.on_requeue_task(task)
 
     def on_requeue_cancelled(self) -> None:
-        """Requeue all cancelled tasks."""
         tasks = [task.task for task in self.cancelled_widgets if task.task]
         for task in tasks:
             self.on_requeue_task(task)
 
     def on_task_started(self, task: Task) -> None:
-        """Task finished."""
         widget = self._find_widget(task)
         if widget:
             widget.started()
@@ -257,7 +236,6 @@ class QueueList(QScrollArea):
             logger.warning(f"Could not find widget for task '{task.task_id}' (start)")
 
     def on_task_paused(self, task: Task, paused: bool) -> None:
-        """Task finished."""
         widget = self._find_widget(task)
         if widget:
             widget.paused(paused)
@@ -266,7 +244,6 @@ class QueueList(QScrollArea):
             logger.warning(f"Could not find widget for task '{task.task_id}' (paused)")
 
     def on_task_next(self, task: Task) -> None:
-        """Task finished."""
         widget = self._find_widget(task)
         if widget:
             widget.next()
@@ -275,7 +252,6 @@ class QueueList(QScrollArea):
             logger.warning(f"Could not find widget for task '{task.task_id}' (next)")
 
     def on_task_finished(self, task: Task) -> None:
-        """Task finished."""
         widget = self.widgets.pop(task.task_id, None)
         if widget:
             widget.stop()
@@ -288,7 +264,6 @@ class QueueList(QScrollArea):
         self.purge_finished()
 
     def on_task_failed(self, task: Task, _exc_info: ty.Tuple) -> None:
-        """Task failed."""
         widget = self.widgets.pop(task.task_id, None)
         if widget:
             widget.stop()
@@ -302,14 +277,12 @@ class QueueList(QScrollArea):
 
     # @Slot(Task, tuple)
     def on_task_part_failed(self, task: Task, _exc_info: ty.Tuple) -> None:
-        """Task failed."""
         widget = self._find_widget(task)
         if widget:
             widget.part_failed()
 
     # @Slot(Task)
     def on_task_cancelled(self, task: Task) -> None:
-        """Task was cancelled."""
         widget = self.widgets.pop(task.task_id, None)
         if widget:
             widget.cancelled()
@@ -322,7 +295,6 @@ class QueueList(QScrollArea):
         self.purge_finished()
 
     def on_task_progress(self, task: Task) -> None:
-        """Task progressed."""
         widget = self._find_widget(task)
         if widget:
             widget.update_progress()

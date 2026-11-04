@@ -1,9 +1,7 @@
 from itertools import permutations
 from typing import List, Set
-
 from intervaltree import IntervalTree
 from nltk.corpus import stopwords
-
 from radtext.utils import intersect
 
 
@@ -35,15 +33,11 @@ def remove_duplicates(matches: List[NERMatch]) -> List[NERMatch]:
 def longest_matching2(matches: List[NERMatch]) -> List[NERMatch]:
     results = []
     for i, mi in enumerate(matches):
-        # print(mi.start, mi.end, mi.text)
         enclosed = False
         for j, mj in enumerate(matches):
             if i == j:
                 continue
             if (mj.start < mi.start and mi.end <= mj.end) or (mj.start <= mi.start and mi.end < mj.end):
-                # print(mj.start, mj.end, mj.text)
-                # print(mi.start, mi.end, mi.text)
-                # print('Remove', mi.start, mi.end, mi.text)
                 enclosed = True
                 break
         if not enclosed:
@@ -55,13 +49,11 @@ def longest_matching(matches: List[NERMatch]) -> List[NERMatch]:
     tree = IntervalTree()
     for m in matches:
         tree[m.start : m.end] = m
-
     nodes = list(tree)
     for n1, n2 in permutations(nodes, 2):
         if n2.begin <= n1.begin <= n1.end <= n2.end:
             if n1 in tree:
                 tree.remove(n1)
-
     results = [v.data for v in sorted(tree)]
     return results
 

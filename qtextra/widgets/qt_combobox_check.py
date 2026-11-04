@@ -9,12 +9,9 @@ from qtextra.helpers import call_later, qt_signals_blocked
 
 
 class CheckableAbstractModel(QStandardItemModel):
-    """Abstract model."""
-
     evt_checked = Signal(int, bool)
 
     def setData(self, index: QModelIndex, value: ty.Any, role: int = ...) -> bool:
-        """Set data."""
         if role == Qt.ItemDataRole.CheckStateRole:
             # self.evt_checked.emit(index.row(), not value)
             call_later(self, partial(self.evt_checked.emit, index.row(), not value), delay=50)
@@ -24,22 +21,18 @@ class CheckableAbstractModel(QStandardItemModel):
 
 
 class QtCheckableComboBox(QComboBox):
-    """Checkable combobox."""
-
     def __init__(self, *args: ty.Any, **kwargs: ty.Any):
         super().__init__(*args, **kwargs)
         self.setModel(CheckableAbstractModel(self))
         self.evt_checked = self.model().evt_checked
 
     def addItem(self, item: str, data: ty.Any = None):
-        """Add item."""
         super().addItem(item, data)
         item = self.model().item(self.count() - 1, 0)
         item.setFlags(Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled)
         item.setCheckState(Qt.CheckState.Unchecked)
 
     def addItems(self, texts: ty.Sequence[str]) -> None:
-        """Add items."""
         current = self.count()
         super().addItems(texts)
         for index in range(current, self.count()):
@@ -48,29 +41,23 @@ class QtCheckableComboBox(QComboBox):
             item.setCheckState(Qt.CheckState.Unchecked)
 
     def itemChecked(self, index):
-        """Item is checked."""
         item = self.model().item(index, 0)
         return item.checkState() == Qt.CheckState.Checked
 
     def setItemChecked(self, index: int, checked: bool) -> bool:
-        """Set item checked."""
         item = self.model().item(index, 0)
         item.setCheckState(Qt.CheckState.Checked if checked else Qt.CheckState.Unchecked)
 
     def get_checked(self) -> ty.List[int]:
-        """Get all checked items."""
         return [index for index in range(self.count()) if self.itemChecked(index)]
 
     def checked_texts(self) -> ty.List[str]:
-        """Get text for all checked items."""
         return [self.itemText(index) for index in self.get_checked()]
 
     def checked_data(self):
-        """Get data for all checked items."""
         return [self.itemData(index) for index in self.get_checked()]
 
     def set_checked_texts(self, texts: ty.List[str]):
-        """Set checked texts."""
         with qt_signals_blocked(self):
             [self.setItemChecked(index, False) for index in range(self.count())]
             for text in texts:

@@ -9,22 +9,6 @@ from qtextra.widgets.qt_dialog import QtDialog
 
 
 class UpdateInfo(BaseModel):
-    """Data model for an available-update notification.
-
-    Parameters
-    ----------
-    current_version : str
-        The version the user is currently running.
-    available_version : str
-        The version that is available to install.
-    app_name : str
-        Human-readable application name shown in the default message.
-    whats_new_url : str | None
-        When provided, a "what's new" hyperlink is shown in the body.
-    message : str | None
-        Custom body message; falls back to a generic string when ``None``.
-    """
-
     current_version: str
     available_version: str
     app_name: str = "Application"
@@ -33,8 +17,6 @@ class UpdateInfo(BaseModel):
 
 
 class QtUpdateAvailableDialog(QtDialog):
-    """Dialog informing the user that a newer version of the application is available."""
-
     evt_update_requested = Signal()
     evt_remind_later_requested = Signal()
     evt_whats_new_requested = Signal()
@@ -48,7 +30,6 @@ class QtUpdateAvailableDialog(QtDialog):
         self.resize(980, 560)
 
     def make_panel(self):
-        """Build and return the dialog layout."""
         title_lbl = hp.make_label(self, "Update available", bold=True, font_size=24)
         header = hp.make_h_layout(title_lbl)
 
@@ -129,14 +110,12 @@ class QtUpdateAvailableDialog(QtDialog):
         self.accept()
 
     def reject(self) -> None:
-        """Emit ``dismissed`` if no other action was taken before closing."""
         if self._result_action == "dismissed":
             self.evt_dismissed.emit()
         super().reject()
 
     @property
     def result_action(self) -> str:
-        """Return one of: ``update``, ``later``, ``whats_new``, ``dismissed``."""
         return self._result_action
 
 

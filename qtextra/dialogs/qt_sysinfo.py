@@ -8,32 +8,6 @@ from qtextra.widgets.qt_button_clipboard import QtCopyToClipboardButton
 
 
 class QtSystemInfo(QDialog):
-    """Qt dialog window for displaying 'About {APP}}' information.
-
-    Parameters
-    ----------
-    parent : QWidget, optional
-        Parent of the dialog, to correctly inherit and apply theme.
-        Default is None.
-
-    Attributes
-    ----------
-    citationCopyButton : napari._qt.qt_about.QtCopyToClipboardButton
-        Button to copy citation information to the clipboard.
-    citationTextBox : qtpy.QtWidgets.QTextEdit
-        Text box containing napari citation information.
-    citation_layout : qtpy.QtWidgets.QHBoxLayout
-        Layout widget for napari citation information.
-    infoCopyButton : napari._qt.qt_about.QtCopyToClipboardButton
-        Button to copy napari version information to the clipboard.
-    info_layout : qtpy.QtWidgets.QHBoxLayout
-        Layout widget for napari version information.
-    infoTextBox : qtpy.QtWidgets.QTextEdit
-        Text box containing napari version information.
-    layout : qtpy.QtWidgets.QVBoxLayout
-        Layout widget for the entire 'About napari' dialog.
-    """
-
     def __init__(self, system_info: str, citation_info: str, title: str = "", parent: QWidget | None = None):
         super().__init__(parent)
         self.setWindowFlags(self.windowFlags() | Qt.WindowType.WindowStaysOnTopHint)
@@ -87,20 +61,6 @@ class QtSystemInfo(QDialog):
         title: str = "System Information",
         parent: QWidget | None = None,
     ) -> None:
-        """Display the 'About napari' dialog box.
-
-        Parameters
-        ----------
-        system_info : str
-            Text containing system information.
-        citation_info : str
-            Text containing citation information.
-        title : str
-            Title of the dialog.
-        parent : QWidget, optional
-            Parent of the dialog, to correctly inherit and apply theme.
-            Default is None.
-        """
         from qtextra.config import THEMES
 
         d = QtSystemInfo(system_info, citation_info, title=title, parent=parent)

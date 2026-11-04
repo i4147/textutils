@@ -4,8 +4,6 @@ from qtpy.QtWidgets import QHBoxLayout, QProgressBar, QVBoxLayout, QWidget
 
 
 class QtActiveProgressBarButton(QWidget):
-    """Button with progress bar in a layout."""
-
     def __init__(self, parent: QWidget | None, text: str = "", which: str = "infinity"):
         super().__init__(parent=parent)
 
@@ -42,7 +40,6 @@ class QtActiveProgressBarButton(QWidget):
 
     @property
     def active(self) -> bool:
-        """Update the state of the loading label."""
         return self.active_btn.active
 
     @active.setter
@@ -55,7 +52,6 @@ class QtActiveProgressBarButton(QWidget):
 
     @property
     def step(self) -> int:
-        """Set a current step."""
         return self.progress_bar.value()
 
     @step.setter
@@ -64,22 +60,18 @@ class QtActiveProgressBarButton(QWidget):
         self.progress_bar.setToolTip(f"Step {value} of {self.progress_bar.maximum()}")
 
     def setMaximum(self, max_val: int) -> None:
-        """Set maximum."""
         self.progress_bar.setMaximum(max_val)
         self.progress_bar.setToolTip(f"Step {self.progress_bar.value()} of {max_val}")
 
     def setMinimum(self, min_val: int) -> None:
-        """Set minimum."""
         self.progress_bar.setMinimum(min_val)
         self.progress_bar.setToolTip(f"Step {self.progress_bar.value()} of {self.progress_bar.maximum()}")
 
     def setValue(self, value: int) -> None:
-        """Set value."""
         self.progress_bar.setValue(value)
         self.progress_bar.setToolTip(f"Step {value} of {self.progress_bar.maximum()}")
 
     def setRange(self, min_val: int, max_val: int) -> None:
-        """Set range."""
         self.progress_bar.setRange(min_val, max_val)
         self.progress_bar.setToolTip(f"Step {self.progress_bar.value()} of {max_val}")
 

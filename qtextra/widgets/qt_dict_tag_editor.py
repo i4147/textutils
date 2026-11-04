@@ -25,8 +25,6 @@ VALUE_ROLE = Qt.ItemDataRole.UserRole + 2
 
 
 class QtDictTagEditor(QWidget):
-    """Editor for managing a searchable dictionary with typed values."""
-
     evt_items_changed = Signal(dict)
     evt_item_added = Signal(str, object)
     evt_item_removed = Signal(str)
@@ -111,7 +109,6 @@ class QtDictTagEditor(QWidget):
         self._resize_columns()
 
     def items(self) -> dict[str, DictTagValue]:
-        """Return the current items in table order."""
         exported: dict[str, DictTagValue] = {}
         for row in range(self.table.rowCount()):
             key_item = self.table.item(row, 0)
@@ -122,11 +119,9 @@ class QtDictTagEditor(QWidget):
         return exported
 
     def export_dict(self) -> dict[str, DictTagValue]:
-        """Export the current dictionary."""
         return self.items()
 
     def set_items(self, items: Mapping[str, DictTagValue]) -> None:
-        """Replace all items."""
         self.clear_items(emit_signal=False)
         for key, value in items.items():
             self._set_row(key, value, emit_signal=False)
@@ -134,13 +129,11 @@ class QtDictTagEditor(QWidget):
         self._emit_items_changed()
 
     def add_item(self, key: str, value: DictTagValue) -> bool:
-        """Add or replace a single item."""
         if value is not None and not isinstance(value, (str, int, float)):
             raise TypeError("Value must be str, int, float, or None.")
         return self._set_row(key, value, emit_signal=True)
 
     def add_items(self, items: Mapping[str, DictTagValue]) -> list[str]:
-        """Add or replace multiple items and return affected keys."""
         changed: list[str] = []
         for key, value in items.items():
             if self.add_item(key, value):
@@ -148,7 +141,6 @@ class QtDictTagEditor(QWidget):
         return changed
 
     def add_current_item(self) -> bool:
-        """Add or update the current key/value input."""
         key = self.key_edit.text().strip()
         if not key:
             return False
@@ -167,7 +159,6 @@ class QtDictTagEditor(QWidget):
         return added
 
     def remove_item(self, key: str) -> bool:
-        """Remove an item by key."""
         row = self._find_row(key)
         if row is None:
             return False
@@ -180,7 +171,6 @@ class QtDictTagEditor(QWidget):
         return True
 
     def remove_selected_item(self) -> bool:
-        """Remove the currently selected row."""
         row = self.table.currentRow()
         if row < 0:
             return False
@@ -190,7 +180,6 @@ class QtDictTagEditor(QWidget):
         return self.remove_item(key_item.text())
 
     def clear_items(self, emit_signal: bool = True) -> None:
-        """Remove all items."""
         self.table.setRowCount(0)
         self.table.clearSelection()
         self._resize_columns()
@@ -198,18 +187,15 @@ class QtDictTagEditor(QWidget):
             self._emit_items_changed()
 
     def confirm_clear_items(self) -> bool:
-        """Ask for confirmation before clearing all items."""
         if not hp.confirm(self, "Are you sure you want to clear all items?", "Clear items?"):
             return False
         self.clear_items()
         return True
 
     def has_item(self, key: str) -> bool:
-        """Return whether a key is present."""
         return self._find_row(key) is not None
 
     def get_value(self, key: str) -> DictTagValue:
-        """Return the value for a key."""
         row = self._find_row(key)
         if row is None:
             raise KeyError(key)

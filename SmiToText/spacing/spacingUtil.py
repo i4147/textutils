@@ -98,15 +98,6 @@ class spacingUtil(object):
         return x_data, y_data, next_pos, count
 
     def next_batch(self, sentence, pos, char_dic, vocab_size, n_steps, padd):
-        """
-        y_data =  1 or 0     => n_steps unfolding => [0,0,1,0,...]
-        ^
-        |
-        x_data = [1,0,...,0] => n_steps unfolding => [[1,0,..0],..,[0,0,1,..0]]
-
-        batch_xs.shape => (batch_size=1, n_steps, n_input)
-        batch_ys.shape => (batch_size=1, n_steps)
-        """
         batch_xs = []
         batch_ys = []
         x_data, y_data, next_pos, count = self.get_xy_data(sentence, pos, n_steps, padd)
@@ -207,15 +198,6 @@ class spacingUtil(object):
         return ch2id, id2ch, id2emb, embedding_dim
 
     def next_batch_emb(self, sentence, pos, char_dic, id2emb, n_steps, padd):
-        """
-        y_data =  1 or 0     => n_steps unfolding => [0,0,1,0,...]
-        ^
-        |
-        x_data = [1,0,...,0] => n_steps unfolding => [[1.0,1.4,..3.2],..,[0.2,0.6,3.7,..,0.0]]
-
-        batch_xs.shape => (batch_size=1, n_steps, n_input)
-        batch_ys.shape => (batch_size=1, n_steps)
-        """
         batch_xs = []
         batch_ys = []
         x_data, y_data, next_pos, count = self.get_xy_data(sentence, pos, n_steps, padd)

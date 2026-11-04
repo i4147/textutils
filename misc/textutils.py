@@ -12,6 +12,7 @@ from string import ascii_lowercase, ascii_uppercase, digits
 from typing import TYPE_CHECKING
 from .const import DOC_TH1, DOC_TH2
 from .fileutils import is_binary
+
 if TYPE_CHECKING:
     from collections.abc import Sequence
 DOC_TH = DOC_TH1, DOC_TH2
@@ -150,6 +151,8 @@ EMOJI_POSITIVE = {
     "🔥",
 }
 EMOJI_NEGATIVE = {"😢", "😭", "😞", "😔", "😡", "🤬", "👎", "💔", "😣", "😫", "☹️", "🙁"}
+
+
 def clean_text(text: str, keep_emoji: bool = True) -> str:
     if not text:
         return ""
@@ -159,16 +162,24 @@ def clean_text(text: str, keep_emoji: bool = True) -> str:
         text = _EMOJI_RE.sub(SPACE, text)
     text = text.lower()
     return _MULTISPACE_RE.sub(SPACE, text).strip()
+
+
 def remove_stop_words(tokens: Sequence[str], stop_words: set[str] = STOP_WORDS) -> list[str]:
     return [t for t in tokens if t not in stop_words]
+
+
 def get_sentences(text: str) -> list[str]:
     if not text:
         return []
     text = text.strip()
     parts = _SENTENCE_RE.split(text)
     return [p.strip() for p in parts if p.strip()]
+
+
 def tokenize(text: str) -> list[str]:
     return get_words(text)
+
+
 def sentiment_score(text: str) -> float:
     if not text:
         return 0.0
@@ -186,6 +197,8 @@ def sentiment_score(text: str) -> float:
         elif t in EMOJI_NEGATIVE:
             score -= 1.0
     return max(-1.0, min(1.0, score / max(1.0, math_sqrt(len(tokens)))))
+
+
 def sentiment_label(text: str, positive_threshold: float = 0.15, negative_threshold: float = -0.15) -> str:
     s = sentiment_score(text)
     if s >= positive_threshold:
@@ -193,6 +206,8 @@ def sentiment_label(text: str, positive_threshold: float = 0.15, negative_thresh
     if s <= negative_threshold:
         return "negative"
     return "neutral"
+
+
 def jaccard_similarity(a: str | Sequence[str], b: str | Sequence[str]) -> float:
     ta = set(get_words(a) if isinstance(a, str) else a)
     tb = set(get_words(b) if isinstance(b, str) else b)
@@ -201,6 +216,8 @@ def jaccard_similarity(a: str | Sequence[str], b: str | Sequence[str]) -> float:
     if not ta or not tb:
         return 0.0
     return len(ta & tb) / len(ta | tb)
+
+
 def cosine_similarity(a: str | Sequence[str], b: str | Sequence[str]) -> float:
     ta = get_words(a) if isinstance(a, str) else list(a)
     tb = get_words(b) if isinstance(b, str) else list(b)
@@ -215,6 +232,8 @@ def cosine_similarity(a: str | Sequence[str], b: str | Sequence[str]) -> float:
     if norm_a == 0 or norm_b == 0:
         return 0.0
     return dot / (norm_a * norm_b)
+
+
 @lru_cache(maxsize=4096)
 def levenshtein_distance(a: str, b: str) -> int:
     if a == b:
@@ -235,11 +254,15 @@ def levenshtein_distance(a: str, b: str) -> int:
             current.append(min(ins, dele, sub))
         previous = current
     return previous[-1]
+
+
 def levenshtein_similarity(a: str, b: str) -> float:
     if not a and not b:
         return 1.0
     dist = levenshtein_distance(a, b)
     return 1.0 - dist / max(len(a), len(b), 1)
+
+
 def jaro_winkler_similarity(s1: str, s2: str, prefix_scale: float = 0.1) -> float:
     if s1 == s2:
         return 1.0
@@ -286,6 +309,8 @@ def jaro_winkler_similarity(s1: str, s2: str, prefix_scale: float = 0.1) -> floa
         if prefix == 4:
             break
     return jaro + prefix * prefix_scale * (1.0 - jaro)
+
+
 def partial_ratio(a: str, b: str) -> float:
     if not a and not b:
         return 1.0
@@ -303,11 +328,15 @@ def partial_ratio(a: str, b: str) -> float:
             if best == 1.0:
                 break
     return best * 100
+
+
 LOWER = set(ascii_lowercase)
 UPPER = set(ascii_uppercase)
 DIGIT = set(digits)
 ALPHA = set(list(LOWER) + list(UPPER))
 SPACE = {" "}
+
+
 def is_digit(txt, ps: bool = False) -> bool:
     dps = set(list(DIGIT) + list(SPACE)) if ps else DIGIT
     for k in range(len(txt) - 1):
@@ -315,6 +344,8 @@ def is_digit(txt, ps: bool = False) -> bool:
             return False
     del dps
     return True
+
+
 def is_alphanum(txt, ps: bool = False) -> bool:
     dps = set(list(ALPHA) + list(DIGIT) + list(SPACE)) if ps else set(list(ALPHA) + list(DIGIT))
     for k in range(len(txt) - 1):
@@ -322,6 +353,8 @@ def is_alphanum(txt, ps: bool = False) -> bool:
             return False
     del dps
     return True
+
+
 def is_alpha(txt, ps: bool = False) -> bool:
     dps = set(list(ALPHA) + list(SPACE)) if ps else ALPHA
     for k in range(len(txt) - 1):
@@ -329,6 +362,8 @@ def is_alpha(txt, ps: bool = False) -> bool:
             return False
     del dps
     return True
+
+
 def is_lower(txt, ps: bool = False) -> bool:
     dps = set(list(LOWER) + list(SPACE)) if ps else LOWER
     for k in range(len(txt) - 1):
@@ -336,6 +371,8 @@ def is_lower(txt, ps: bool = False) -> bool:
             return False
     del dps
     return True
+
+
 def is_upper(txt, ps: bool = False) -> bool:
     dps = set(list(UPPER) + list(SPACE)) if ps else UPPER
     for k in range(len(txt) - 1):
@@ -343,8 +380,11 @@ def is_upper(txt, ps: bool = False) -> bool:
             return False
     del dps
     return True
+
+
 def is_none_english(path: (str | Path)) -> bool:
     from string import printable
+
     path = Path(path)
     try:
         if not path.is_file():
@@ -356,9 +396,12 @@ def is_none_english(path: (str | Path)) -> bool:
         return any(char not in english_chars and not char.isspace() for char in content)
     except Exception:
         return False
+
+
 def count_words(path: (str | Path)) -> dict:
     from collections import Counter
     from string import punctuation
+
     path = Path(path)
     if is_binary(path):
         return {}
@@ -371,8 +414,11 @@ def count_words(path: (str | Path)) -> dict:
         words = text.split()
         return Counter(words)
     return {}
+
+
 def get_words(text: str) -> list[str]:
     from re import finditer as re_finditer
+
     if not text:
         return []
     text = clean_text(text, keep_emoji=True)
@@ -386,9 +432,14 @@ def get_words(text: str) -> list[str]:
         tokens.append(m.group(0))
         i += 1
     return tokens or words
+
+
 def html_escape(text: str) -> str:
     from html import escape
+
     return escape(text, quote=True)
+
+
 def has_doc(code: str) -> bool:
     try:
         tokens = tokenize.generate_tokens(StringIO(code).readline)
@@ -398,6 +449,7 @@ def has_doc(code: str) -> bool:
     except:
         pass
     import ast
+
     try:
         tree = ast.parse(code)
         for node in ast.walk(tree):
@@ -407,6 +459,8 @@ def has_doc(code: str) -> bool:
     except SyntaxError:
         pass
     return False
+
+
 def remove_blank_lines(text: str | Path) -> str:
     content = text
     if isinstance(text, Path):

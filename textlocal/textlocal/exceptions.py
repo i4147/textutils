@@ -1,0 +1,2 @@
+class TextlocalException(Exception):
+    pass

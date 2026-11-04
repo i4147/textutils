@@ -21,14 +21,11 @@ FEEDBACK_URL = f"https://sentry.io/api/0/projects/{ORGANIZATION_SLUG}/{PROJECT_S
 
 
 class FeedbackDialog(QtDialog):
-    """Dialog to give the user an option to provide feedback."""
-
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent=parent, title="Share Feedback")
         self.setMinimumSize(600, 400)
 
     def accept(self):
-        """Submit message."""
         self.on_apply()
         title = self.title.text()
         message = self.message.toPlainText()
@@ -48,7 +45,6 @@ class FeedbackDialog(QtDialog):
         super().accept()
 
     def make_panel(self) -> QFormLayout:
-        """Dialog to provide feedback."""
         self.info = hp.make_label(
             self,
             "<b>Send feedback</b><br><br>"
@@ -92,17 +88,14 @@ class FeedbackDialog(QtDialog):
 
 
 def get_feedback_url() -> str:
-    """Return the Sentry user-feedback endpoint."""
     return FEEDBACK_URL
 
 
 def is_feedback_configured() -> bool:
-    """Return whether user feedback can be submitted."""
     return bool(SENTRY_DSN and ORGANIZATION_SLUG and PROJECT_SLUG)
 
 
 def _post_feedback(data: dict[str, str]) -> bool:
-    """Post feedback to Sentry."""
     url = get_feedback_url()
     request = Request(
         url=url,
@@ -123,7 +116,6 @@ def _post_feedback(data: dict[str, str]) -> bool:
 
 
 def submit_feedback(title: str, message: str, name: str = "", email: str = ""):
-    """Submit feedback."""
     import sentry_sdk
 
     if not is_feedback_configured():

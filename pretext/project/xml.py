@@ -9,10 +9,6 @@ from pydantic_xml.element.element import SearchMode
 
 log = logging.getLogger("ptxlogger")
 
-# Executables that the core script once used but no longer does. They are still
-# accepted (silently deleting them would make every older `executables.ptx` a
-# hard parse error, since the model forbids extra attributes), but they are
-# excluded from `model_dump()` and so never reach core.
 DEPRECATED_EXECUTABLES = {
     "liblouis": "braille is now translated with the `louis` Python bindings",
     "pdfsvg": "PDFs are now converted with the pyMuPDF library",
@@ -20,31 +16,21 @@ DEPRECATED_EXECUTABLES = {
 }
 
 
-# To prevent circular imports, put this here instead of in `__init__`; however, it's not used in this file.
 class Executables(pxml.BaseXmlModel, tag="executables"):
-    """The executables the core script invokes; keep in sync with the
-    `[executables]` section of the core script's `pretext.cfg`."""
-
     model_config = ConfigDict(extra="forbid")
     latex: str = pxml.attr(default="latex")
     pdflatex: str = pxml.attr(default="pdflatex")
     xelatex: str = pxml.attr(default="xelatex")
     lualatex: str = pxml.attr(default="lualatex")
-    # If not specified, use a local executable if it exists; if it doesn't exist, choose `None`, which allows the generation logic to use the server instead.
     asy: t.Optional[str] = pxml.attr(default=shutil.which("asy"))
-    # No sage server, so we don't do the same for sage.
     sage: t.Optional[str] = pxml.attr(default="sage")
     mermaid: str = pxml.attr(default="mmdc")
     pdfeps: str = pxml.attr(default="pdftops")
     node: str = pxml.attr(default="node")
     perl: str = pxml.attr(default="perl")
     fop: str = pxml.attr(default="fop")
-    # `jing` is a Java program, so this can be the name of an executable (from a
-    # system package) or a command with options, e.g. `java -jar /usr/share/java/jing.jar`.
     jing: str = pxml.attr(default="jing")
 
-    # Deprecated: see `DEPRECATED_EXECUTABLES`. `exclude=True` keeps these out of
-    # `model_dump()`, which is what gets handed to core.
     liblouis: t.Optional[str] = pxml.attr(default=None, exclude=True)
     pdfsvg: t.Optional[str] = pxml.attr(default=None, exclude=True)
     pdfpng: t.Optional[str] = pxml.attr(default=None, exclude=True)
@@ -61,8 +47,6 @@ class Executables(pxml.BaseXmlModel, tag="executables"):
 
     @classmethod
     def from_legacy(cls, legacy: "LegacyExecutables") -> "Executables":
-        """Build from a v1 manifest's `<executables>`, which names only a subset
-        of the executables core needs; the rest keep their defaults."""
         return cls(**{
             key: value for key, value in legacy.model_dump().items() if value is not None and key in cls.model_fields
         })
@@ -90,21 +74,10 @@ class LatexEngine(str, Enum):
 
 
 class Method(str, Enum):
-    """The route a `pdf` target takes to its PDF.
-
-    `latex` compiles an assembled LaTeX document with the engine named by
-    `latex-engine`.  `fo` converts to XSL-FO and renders it with Apache FOP,
-    a LaTeX-free route that needs no TeX installation for the document
-    itself (`latex-image` assets still do).
-    """
-
     LATEX = "latex"
     FO = "fo"
 
 
-# Deprecated in favor of `Method` plus `LatexEngine`, which separate the route
-# to the PDF from the engine that compiles it.  Still parsed so that existing
-# manifests keep working; `Target.method_validator` folds it into the two.
 class PdfMethod(str, Enum):
     XELATEX = "xelatex"
     LATEX = "latex"
@@ -128,7 +101,6 @@ class LegacyTarget(pxml.BaseXmlModel, tag="target", search_mode=SearchMode.UNORD
     publication: str = pxml.element()
     output_dir: Path = pxml.element(tag="output-dir")
     output_filename: t.Optional[str] = pxml.element(tag="output-filename", default=None)
-    # The v1 file called this `deploy-dir`; the v2 file uses `site`.
     deploy_dir: t.Optional[str] = pxml.element(tag="deploy-dir", default=None)
     xsl: t.Optional[str] = pxml.element(default=None)
     asy_method: t.Optional[str] = pxml.element(tag="asy-method", default="local")
@@ -144,8 +116,6 @@ class LegacyExecutables(pxml.BaseXmlModel, tag="executables", search_mode=Search
     sage: str = pxml.element()
     pdfeps: str = pxml.element()
     node: str = pxml.element()
-    # Deprecated (see `DEPRECATED_EXECUTABLES`), but optional rather than absent,
-    # since legacy manifests in the wild still carry these elements.
     liblouis: t.Optional[str] = pxml.element(default=None)
     pdfsvg: t.Optional[str] = pxml.element(default=None)
     pdfpng: t.Optional[str] = pxml.element(default=None)

@@ -65,8 +65,6 @@ TaskMetadata = tuple[Task, int, str, str, str, str, str, list[str]]
 
 
 class TaskInfoDialog(QtDialog):
-    """Task info."""
-
     HIDE_WHEN_CLOSE = False
 
     evt_update = Signal()
@@ -87,14 +85,12 @@ class TaskInfoDialog(QtDialog):
         )
 
     def close(self) -> bool:
-        """Close the window."""
         parent = self.parent()
         if parent and hasattr(parent, "dlg_info"):
             parent.dlg_info = None
         return super().close()
 
     def update_progress(self) -> None:
-        """Update progress."""
         task = self.task
         self.stdout_edit.appendPlainText(task.current_std_out)
         if task.start_time:
@@ -114,7 +110,6 @@ class TaskInfoDialog(QtDialog):
 
     @staticmethod
     def _on_get_task_choice_data(task: Task) -> TaskMetadata:
-        """Get task choice data."""
         with MeasureTimer() as timer:
             cmd_idx = -1
             state, start, end, dur, stdout, cmds = "", "", "", "", "", []
@@ -138,7 +133,6 @@ class TaskInfoDialog(QtDialog):
         return task, cmd_idx, state, start, end, dur, cmd, stdout, cmds, timer()
 
     def _on_set_task_choice_failed(self, res: Exception) -> None:
-        """Set task choice failed."""
         logger.exception(f"Failed to get task choice data: {res}")
         self.task_id.setText("<Failed to retrieve>")
         self.task_title.setText("<Failed to retrieve>")
@@ -155,7 +149,6 @@ class TaskInfoDialog(QtDialog):
 
     @ensure_main_thread
     def _on_set_task_choice(self, res: TaskMetadata) -> None:
-        """Set task choice."""
         try:
             task, _cmd_idx, state, start, end, dur, cmd, stdout, cmds, ret_time = res
             with MeasureTimer() as update_time:
@@ -182,7 +175,6 @@ class TaskInfoDialog(QtDialog):
             pass
 
     def copy_selection_to_clipboard(self, res=None):
-        """Copy items to clipboard."""
         sel_model = self.command_table.selectionModel()
         if sel_model.hasSelection():
             indices = sel_model.selectedRows()
@@ -193,15 +185,12 @@ class TaskInfoDialog(QtDialog):
             logger.trace(f"Copied {len(commands)} commands to clipboard.")
 
     def on_scroll_to_top(self) -> None:
-        """Scroll to end."""
         self.stdout_edit.verticalScrollBar().setValue(self.stdout_edit.verticalScrollBar().minimum())
 
     def on_scroll_to_end(self) -> None:
-        """Scroll to end."""
         self.stdout_edit.verticalScrollBar().setValue(self.stdout_edit.verticalScrollBar().maximum())
 
     def make_panel(self) -> QVBoxLayout:
-        """Make panel."""
         self.task_title = hp.make_label(self, "")
         self.task_id = hp.make_label(self, "")
         self.task_state = hp.make_label(self, "", object_name="task_state")
@@ -290,5 +279,4 @@ class TaskInfoDialog(QtDialog):
         return main_layout
 
     def _on_filter_command_changed(self, text: str) -> None:
-        """Filter the command table by command text."""
         self.table_proxy.setFilterByColumn(text, TABLE_CONFIG.command)

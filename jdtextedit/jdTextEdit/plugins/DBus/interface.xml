@@ -1,0 +1,8 @@
+<interface name="page.codeberg.JakobDev.jdTextEdit">
+    <method name="OpenFile">
+        <arg direction="in" type="s" name="path"/>
+    </method>
+    <method name="GetVersion">
+        <arg direction="out" type="s" name="version"/>
+    </method>
+</interface>

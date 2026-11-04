@@ -14,21 +14,6 @@ if ty.TYPE_CHECKING:
 
 
 class QtSegmentedButton(QFrame):
-    """Segmented button: a main text button with attached icon action buttons.
-
-    Layout: [ Main Button Text | action1 | action2 | ... ]
-
-    The whole widget renders as a single unified frame. Actions are appended
-    dynamically via :meth:`add_action`.
-
-    Example usage::
-
-        btn = QtSegmentedButton("Run", parent)
-        btn.evt_clicked.connect(on_run)
-        btn.add_action("settings", "Configure", on_settings)
-        btn.add_action("close", "Cancel", on_cancel)
-    """
-
     evt_clicked = Signal()
 
     def __init__(
@@ -71,28 +56,6 @@ class QtSegmentedButton(QFrame):
         size_preset: QtaSizePreset = "average",
         hide: bool = False,
     ) -> tuple[QtImagePushButton, QtVertLine]:
-        """Append an icon action button to the right side of the widget.
-
-        Parameters
-        ----------
-        icon_name:
-            Icon key from ``QTA_MAPPING`` (e.g. ``"settings"``) or a full
-            qtawesome string (e.g. ``"mdi6.cog"``).
-        tooltip:
-            Tooltip text shown on hover.
-        func:
-            Callable or list of callables connected to the button's
-            ``clicked`` signal.
-        size_preset: str
-            QtaMixin size preset controlling icon/button size.
-        hide : bool
-            Hide the button and the separator.
-
-        Returns
-        -------
-        QtImagePushButton
-            The newly created action button, for further customisation.
-        """
         sep = hp.make_v_line(self, hide=hide)
         self._layout.addWidget(sep)
         self._separators.append(sep)
@@ -113,26 +76,21 @@ class QtSegmentedButton(QFrame):
 
     @property
     def text(self) -> str:
-        """Return the main button label."""
         return self.button.text()
 
     def setText(self, text: str) -> None:
-        """Set the main button label."""
         self.button.setText(text)
 
     def setEnabled(self, enabled: bool) -> None:
-        """Enable or disable the whole widget including all action buttons."""
         self.button.setEnabled(enabled)
         for btn in self._actions:
             btn.setEnabled(enabled)
 
     def set_flat(self, flat: bool) -> None:
-        """Toggle flat (borderless) appearance."""
         self.setProperty("flat", str(flat).lower())
         hp.polish_widget(self)
 
     def sizeHint(self) -> QSize:
-        """Return combined size hint."""
         w = self.button.sizeHint().width()
         h = self.button.sizeHint().height()
         for btn in self._actions:
@@ -146,7 +104,6 @@ class QtSegmentedButton(QFrame):
         return QSize(w, h)
 
     def minimumSizeHint(self) -> QSize:
-        """Return minimum size hint."""
         return self.sizeHint()
 
 

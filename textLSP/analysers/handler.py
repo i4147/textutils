@@ -1,0 +1,292 @@
+import logging
+import asyncio
+
+from typing import List, Optional
+from lsprotocol.types import MessageType
+from lsprotocol.types import (
+    DidOpenTextDocumentParams,
+    DidChangeTextDocumentParams,
+    DidCloseTextDocumentParams,
+    DidSaveTextDocumentParams,
+    TextDocumentContentChangeEvent,
+    CodeActionParams,
+    CodeAction,
+    CompletionParams,
+    CompletionList,
+    ShowMessageParams,
+)
+from pygls.workspace import TextDocument
+
+from .. import analysers
+from .analyser import Analyser, AnalysisError
+from ..utils import get_class
+from ..types import ConfigurationError, ProgressBar
+
+
+logger = logging.getLogger(__name__)
+
+
+class AnalyserHandler:
+    def __init__(self, language_server, settings=None):
+        self.language_server = language_server
+        self.analysers = dict()
+        self.update_settings(settings)
+
+    def update_settings(self, settings):
+        if settings is None:
+            return
+
+        old_analysers = self.analysers
+        self.analysers = dict()
+        for name, config in settings.items():
+            if not config.setdefault("enabled", False):
+                continue
+            if name in old_analysers:
+                analyser = old_analysers[name]
+                analyser.update_settings(config)
+                self.analysers[name] = analyser
+            else:
+                try:
+                    with ProgressBar(self.language_server, f"{name} init"):
+                        cls = get_class(
+                            "{}.{}".format(analysers.__name__, name),
+                            Analyser,
+                        )
+                        self.analysers[name] = cls(self.language_server, config, name)
+                except ImportError as e:
+                    self.language_server.window_show_message(
+                        ShowMessageParams(
+                            message=f"Error ({name}): {str(e)}",
+                            type=MessageType.Error,
+                        )
+                    )
+                except ConfigurationError as e:
+                    self.language_server.window_show_message(
+                        ShowMessageParams(
+                            message=f"Error ({name}): {str(e)}",
+                            type=MessageType.Error,
+                        )
+                    )
+
+        for name, analyser in old_analysers.items():
+            if name not in self.analysers:
+                analyser.close()
+
+    def shutdown(self):
+        for analyser in self.analysers.values():
+            analyser.close()
+
+    def get_diagnostics(self, doc: TextDocument):
+        try:
+            return [analyser.get_diagnostics(doc) for analyser in self.analysers.values()]
+        except Exception as e:
+            self.language_server.window_show_message(
+                ShowMessageParams(
+                    message=str("Server error. See log for details."),
+                    type=MessageType.Error,
+                )
+            )
+            logger.exception(str(e))
+        return []
+
+    def get_code_actions(self, params: CodeActionParams) -> Optional[List[CodeAction]]:
+        res = list()
+        try:
+            for analyser in self.analysers.values():
+                tmp_lst = analyser.get_code_actions(params)
+                if tmp_lst is not None and len(tmp_lst) > 0:
+                    res.extend(tmp_lst)
+        except Exception as e:
+            self.language_server.window_show_message(
+                ShowMessageParams(
+                    message=str("Server error. See log for details."),
+                    type=MessageType.Error,
+                )
+            )
+            logger.exception(str(e))
+
+        return res if len(res) > 0 else None
+
+    async def _submit_task(self, function, *args, **kwargs):
+        functions = list()
+        for name, analyser in self.analysers.items():
+            functions.append(asyncio.create_task(function(name, analyser, *args, **kwargs)))
+
+        if len(functions) == 0:
+            return
+
+        done, pending = await asyncio.wait(functions)
+        for task in done:
+            try:
+                task.result()
+            except Exception as e:
+                self.language_server.window_show_message(
+                    ShowMessageParams(
+                        message=str("Server error. See log for details."),
+                        type=MessageType.Error,
+                    )
+                )
+                logger.exception(str(e))
+
+    async def _did_open(
+        self,
+        analyser_name: str,
+        analyser: Analyser,
+        params: DidOpenTextDocumentParams,
+    ):
+        try:
+            analyser.did_open(
+                params,
+            )
+        except AnalysisError as e:
+            self.language_server.window_show_message(
+                ShowMessageParams(
+                    message=str(f"{analyser_name}: {e}"),
+                    type=MessageType.Error,
+                )
+            )
+
+    async def did_open(self, params: DidOpenTextDocumentParams):
+        await self._submit_task(self._did_open, params=params)
+
+    async def _did_change(
+        self,
+        analyser_name: str,
+        analyser: Analyser,
+        params: DidChangeTextDocumentParams,
+    ):
+        try:
+            analyser.did_change(
+                params,
+            )
+        except AnalysisError as e:
+            self.language_server.window_show_message(
+                ShowMessageParams(
+                    message=str(f"{analyser_name}: {e}"),
+                    type=MessageType.Error,
+                )
+            )
+
+    async def did_change(self, params: DidChangeTextDocumentParams):
+        await self._submit_task(self._did_change, params=params)
+
+    async def _did_save(
+        self,
+        analyser_name: str,
+        analyser: Analyser,
+        params: DidSaveTextDocumentParams,
+    ):
+        try:
+            analyser.did_save(
+                params,
+            )
+        except AnalysisError as e:
+            self.language_server.window_show_message(
+                ShowMessageParams(
+                    message=str(f"{analyser_name}: {e}"),
+                    type=MessageType.Error,
+                )
+            )
+
+    async def did_save(self, params: DidSaveTextDocumentParams):
+        await self._submit_task(self._did_save, params=params)
+
+    async def _did_close(self, analyser_name: str, analyser: Analyser, params: DidCloseTextDocumentParams):
+        analyser.did_close(
+            params,
+        )
+
+    async def did_close(self, params: DidCloseTextDocumentParams):
+        await self._submit_task(self._did_close, params=params)
+
+    async def _command_analyse(
+        self,
+        analyser_name: str,
+        analyser: Analyser,
+        args,
+    ):
+        try:
+            analyser.command_analyse(*args)
+        except AnalysisError as e:
+            self.language_server.window_show_message(
+                ShowMessageParams(
+                    message=str(f"{analyser_name}: {e}"),
+                    type=MessageType.Error,
+                )
+            )
+
+    async def command_analyse(self, *args):
+        kwargs = args[0]
+        if "analyser" in kwargs:
+            analyser_name = kwargs.pop("analyser")
+            analyser = self.analysers[analyser_name]
+            try:
+                analyser.command_analyse(**kwargs)
+            except AnalysisError as e:
+                self.language_server.window_show_message(
+                    ShowMessageParams(
+                        message=str(f"{analyser_name}: {e}"),
+                        type=MessageType.Error,
+                    )
+                )
+            except Exception as e:
+                self.language_server.window_show_message(
+                    ShowMessageParams(
+                        message=str("Server error. See log for details."),
+                        type=MessageType.Error,
+                    )
+                )
+                logger.exception(str(e))
+        else:
+            await self._submit_task(self._command_analyse, args)
+
+    async def command_custom_command(self, *args):
+        kwargs = args[0]
+        assert "analyser" in kwargs
+        analyser = self.analysers[kwargs.pop("analyser")]
+        command = kwargs.pop("command")
+        ext_command = f"command_{command}"
+
+        if hasattr(analyser, ext_command):
+            try:
+                getattr(analyser, ext_command)(**kwargs)
+            except Exception as e:
+                self.language_server.window_show_message(
+                    ShowMessageParams(
+                        message=str("Server error. See log for details."),
+                        type=MessageType.Error,
+                    )
+                )
+                logger.exception(str(e))
+        else:
+            self.language_server.window_show_message(
+                ShowMessageParams(
+                    message=str(f"No custom command supported by {analyser}: {command}"),
+                    type=MessageType.Error,
+                )
+            )
+
+    def update_document(self, doc: TextDocument, change: TextDocumentContentChangeEvent):
+        for name, analyser in self.analysers.items():
+            analyser.update_document(doc, change)
+
+    def get_completions(self, params: Optional[CompletionParams] = None) -> CompletionList:
+        comp_lst = list()
+        try:
+            for _, analyser in self.analysers.items():
+                tmp = analyser.get_completions(params)
+                if tmp is not None and len(tmp) > 0:
+                    comp_lst.extend(tmp)
+        except Exception as e:
+            self.language_server.window_show_message(
+                ShowMessageParams(
+                    message=str("Server error. See log for details."),
+                    type=MessageType.Error,
+                )
+            )
+            logger.exception(str(e))
+
+        return CompletionList(
+            is_incomplete=False,
+            items=comp_lst,
+        )

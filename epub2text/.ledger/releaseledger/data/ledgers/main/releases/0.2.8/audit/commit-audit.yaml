@@ -1,0 +1,127 @@
+schema_version: 1
+object_type: commit_audit_sheet
+versioning:
+  schema_version: 1
+  revision: 4
+release_version: 0.2.8
+git_base_ref: v0.2.7
+git_base_sha: 2d6e4d9639e1589234fad094d0de09c393c53ce3
+git_head_ref: HEAD
+git_head_sha: 007081994097c086c72dc95a6c2c9b898fa12764
+git_range: 2d6e4d9639e1589234fad094d0de09c393c53ce3..007081994097c086c72dc95a6c2c9b898fa12764
+commit_count: 3
+rows:
+  - sha: 831e6ffc831fceefc80cf72d519d862e82d03859
+    source_ref: git:831e6ffc831fceefc80cf72d519d862e82d03859
+    short_sha: 831e6ff
+    changed_paths:
+      - epub2text/__init__.py
+      - epub2text/cleaner.py
+      - epub2text/formatters.py
+      - epub2text/parser.py
+    stats:
+      files_changed: 0
+      insertions: 41
+      deletions: 55
+    inspected: true
+    inspected_paths:
+      - epub2text/__init__.py
+      - epub2text/cleaner.py
+      - epub2text/formatters.py
+      - epub2text/parser.py
+    observed_behavior: Documentation formatting fix — no user-facing change
+    public_impact: internal
+    decision: internal
+    evidence_subject: "doc: format fix"
+  - sha: e8d926cd5e9c4c82b07af08ab07a656bc58e03d0
+    source_ref: git:e8d926cd5e9c4c82b07af08ab07a656bc58e03d0
+    short_sha: e8d926c
+    changed_paths:
+      - .ledger/ledger.toml
+      - .ledger/migrations/eeeb540d63e347a29eef83c7aff6f5d3.toml
+      - .ledger/migrations/write.lock
+      - .ledger/taskledger/.ledger-project.toml
+      - .ledger/taskledger/config.toml
+      - .taskledger.toml
+    stats:
+      files_changed: 0
+      insertions: 106
+      deletions: 81
+    inspected: true
+    inspected_paths:
+      - .ledger/ledger.toml
+      - .taskledger.toml
+    observed_behavior: Internal taskledger migration — no user-facing change
+    public_impact: internal
+    decision: internal
+    evidence_subject: "chore: migrate taskledger"
+  - sha: 007081994097c086c72dc95a6c2c9b898fa12764
+    source_ref: git:007081994097c086c72dc95a6c2c9b898fa12764
+    short_sha: 0070819
+    changed_paths:
+      - .ledger/ledger.toml
+      - .ledger/migrations/111e2d33-5416-4a30-bed3-8892dfd15bc0.toml
+      - .ledger/migrations/write.lock
+      - .ledger/releaseledger/.ledger-project.toml
+      - .ledger/releaseledger/.releaseledger-migration.jsonl
+      - .ledger/releaseledger/config.toml
+      - .ledger/releaseledger/data/.ledger-project.toml
+      - .ledger/releaseledger/data/ledgers/main/events/events.jsonl
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.1.0/entries/entry-0001.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.1.0/entries/entry-0002.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.1.0/entries/entry-0003.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.1.0/entries/entry-0004.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.1.0/entries/entry-0005.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.1.0/release.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.2.0/entries/entry-0001.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.2.0/entries/entry-0002.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.2.0/entries/entry-0003.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.2.0/entries/entry-0004.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.2.0/entries/entry-0005.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.2.0/release.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.2.1/entries/entry-0001.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.2.1/entries/entry-0002.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.2.1/entries/entry-0003.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.2.1/entries/entry-0004.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.2.1/entries/entry-0005.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.2.1/release.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.2.2/entries/entry-0001.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.2.2/entries/entry-0002.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.2.2/entries/entry-0003.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.2.2/entries/entry-0004.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.2.2/entries/entry-0005.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.2.2/entries/entry-0006.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.2.2/release.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.2.3/entries/entry-0001.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.2.3/release.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.2.4/entries/entry-0001.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.2.4/release.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.2.5/entries/entry-0001.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.2.5/entries/entry-0002.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.2.5/entries/entry-0003.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.2.5/entries/entry-0004.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.2.5/release.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.2.6/entries/entry-0001.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.2.6/entries/entry-0002.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.2.6/entries/entry-0003.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.2.6/entries/entry-0004.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.2.6/release.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.2.7/entries/entry-0001.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.2.7/entries/entry-0002.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.2.7/release.md
+      - .ledger/releaseledger/migrations/111e2d33-5416-4a30-bed3-8892dfd15bc0.toml
+      - .ledger/releaseledger/write.lock
+      - .releaseledger/ledgers/main/indexes/entries.json
+      - .releaseledger/ledgers/main/indexes/releases.json
+    stats:
+      files_changed: 0
+      insertions: 258
+      deletions: 620
+    inspected: true
+    inspected_paths:
+      - .ledger/ledger.toml
+      - .releaseledger/ledgers/main/indexes/releases.json
+    observed_behavior: Internal releaseledger migration — no user-facing change
+    public_impact: internal
+    decision: internal
+    evidence_subject: "chore: migrate releaseledger"

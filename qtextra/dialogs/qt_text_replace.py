@@ -11,8 +11,6 @@ SEPARATOR = " → "
 
 
 class QtTextReplace(QtDialog):
-    """Text replace dialog."""
-
     TABLE_CONFIG = (
         TableConfig()
         .add("original text", "old", "int", 300, sizing="stretch")
@@ -36,12 +34,10 @@ class QtTextReplace(QtDialog):
         self.populate()
 
     def populate(self) -> None:
-        """Populate table."""
         for text in self.original_texts:
             self.table.add_row([text, text])
 
     def on_preview(self) -> None:
-        """Preview text."""
         texts = self.table.get_col_data(self.TABLE_CONFIG.old)
         self.search_for_text = self.search_edit.text()
         self.replace_with_text = self.replace_edit.text()
@@ -51,13 +47,11 @@ class QtTextReplace(QtDialog):
             # self.table.set_value(self.TABLE_CONFIG.changed, row, "True" if changed else "False")
 
     def on_add(self) -> None:
-        """Add replacement text."""
         search_for = self.search_edit.text()
         replace_with = self.replace_edit.text()
         self.add(search_for, replace_with)
 
     def add(self, search_for: str, replace_with: str) -> None:
-        """Add text replacement."""
         if search_for in self.search_and_replace_map and self.search_and_replace_map[search_for] == replace_with:
             return
         if search_for == replace_with:
@@ -79,7 +73,6 @@ class QtTextReplace(QtDialog):
         self.on_preview()
 
     def on_remove(self, hash_id: str) -> None:
-        """Remove filter."""
         hash_ids = [
             self.search_replace_layout.get_widget(index).text for index in range(self.search_replace_layout.count() - 1)
         ]
@@ -90,7 +83,6 @@ class QtTextReplace(QtDialog):
         self.on_preview()
 
     def process_text(self, current: str) -> tuple[bool, str]:
-        """Process single text item."""
         new_text = current
         for search, replace in self.search_and_replace_map.items():
             new_text = new_text.replace(search, replace)
@@ -99,7 +91,6 @@ class QtTextReplace(QtDialog):
 
     @property
     def new_texts(self) -> list[str]:
-        """Text that was entered."""
         new_texts = []
         for current in self.original_texts:
             _, new_text = self.process_text(current)
@@ -107,7 +98,6 @@ class QtTextReplace(QtDialog):
         return new_texts
 
     def make_panel(self) -> QLayout:
-        """Make panel."""
         self.table = QtCheckableTableView(self, config=self.TABLE_CONFIG, sortable=True, checkable=False)
         self.table.setCornerButtonEnabled(False)
         hp.set_font(self.table, 10)

@@ -10,8 +10,6 @@ import qtextra.helpers as hp
 
 
 class QtScrollableLayoutWidget(QScrollArea):
-    """Scrollable horizontal layout."""
-
     MIN_HEIGHT: int = 30
 
     def __init__(self, parent: QWidget | None = None):
@@ -27,48 +25,39 @@ class QtScrollableLayoutWidget(QScrollArea):
         raise NotImplementedError("Must implement method")
 
     def count(self) -> int:
-        """Return count of widgets."""
         return self._main_layout.count()
 
     def get_widget(self, index: int) -> QWidget | None:
-        """Get widget at position."""
         item = self._main_layout.itemAt(index)
         if not item:
             return None
         return item.widget()
 
     def setSpacing(self, spacing: int) -> None:
-        """Set spacing."""
         self._main_layout.setSpacing(spacing)
 
     def addWidget(self, widget: QWidget, **kwargs: ty.Any) -> None:
-        """Add widget."""
         self._main_layout.addWidget(widget, **kwargs)
         self._update_scroll()
 
     def insertWidget(self, index: int, widget: QWidget, **kwargs: ty.Any) -> None:
-        """Insert widget."""
         self._main_layout.insertWidget(index, widget, **kwargs)
         self._update_scroll()
 
     def addLayout(self, layout: QLayout, **kwargs: ty.Any) -> None:
-        """Add layout."""
         self._main_layout.addLayout(layout, **kwargs)
         self._update_scroll()
 
     def insertLayout(self, index: int, layout: QLayout, **kwargs: ty.Any) -> None:
-        """Insert layout."""
         self._main_layout.insertLayout(index, layout, **kwargs)
         self._update_scroll()
 
     def removeWidget(self, widget: QWidget) -> None:
-        """Remove widget."""
         index = self._main_layout.indexOf(widget)
         if index != -1:
             self.removeWidgetOrLayout(index)
 
     def removeWidgetOrLayout(self, index: int) -> None:
-        """Remove widget or layout based on index position."""
         widget = self.get_widget(index)
         if widget:
             self._main_layout.removeWidget(widget)
@@ -76,7 +65,6 @@ class QtScrollableLayoutWidget(QScrollArea):
             self._update_scroll()
 
     def minimum_height_for_widgets(self) -> int:
-        """Return minimum height for all widgets."""
         height = 0
         for i in range(self.count()):
             widget = self.get_widget(i)
@@ -87,7 +75,6 @@ class QtScrollableLayoutWidget(QScrollArea):
         return height
 
     def minimum_width_for_widgets(self) -> int:
-        """Return minimum height for all widgets."""
         height = 0
         for i in range(self.count()):
             widget = self.get_widget(i)
@@ -96,31 +83,25 @@ class QtScrollableLayoutWidget(QScrollArea):
         return height
 
     def _content_size_hint(self) -> QSize:
-        """Return the inner widget size hint including layout margins."""
         return self._widget.sizeHint().expandedTo(self._widget.minimumSizeHint()).expandedTo(self._widget.minimumSize())
 
     def set_min_height(self, min_height: int) -> None:
-        """Set minimum height."""
         self.MIN_HEIGHT = min_height
         self._update_scroll()
 
     def _update_scroll(self) -> None:
-        """Update scroll."""
+        pass
 
     def showEvent(self, event: QShowEvent) -> None:
-        """Refresh scroll geometry when the widget is shown."""
         super().showEvent(event)
         self._update_scroll()
 
     def resizeEvent(self, event: QResizeEvent) -> None:
-        """Refresh scroll geometry when the widget is resized."""
         super().resizeEvent(event)
         self._update_scroll()
 
 
 class QtScrollableHLayoutWidget(QtScrollableLayoutWidget):
-    """Scrollable horizontal layout."""
-
     MIN_HEIGHT: int = 30
 
     def __init__(self, parent: QWidget | None = None):
@@ -133,12 +114,10 @@ class QtScrollableHLayoutWidget(QtScrollableLayoutWidget):
         return hp.make_h_layout(stretch_after=True, spacing=1, margin=1, parent=self._widget)
 
     def set_min_height(self, min_height: int) -> None:
-        """Set minimum height."""
         self.MIN_HEIGHT = min_height
         self._update_scroll()
 
     def _update_scroll(self) -> None:
-        """Update scroll."""
         height = self.MIN_HEIGHT
         if self.count() > 0:
             height = max(height, self.minimum_height_for_widgets(), self._content_size_hint().height())
@@ -155,8 +134,6 @@ class QtScrollableHLayoutWidget(QtScrollableLayoutWidget):
 
 
 class QtScrollableVLayoutWidget(QtScrollableLayoutWidget):
-    """Scrollable vertical layout."""
-
     MIN_WIDTH: int = 30
 
     def __init__(self, parent: QWidget | None = None):

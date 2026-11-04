@@ -1,0 +1,201 @@
+schema_version = 3
+migration_id = "111e2d33-5416-4a30-bed3-8892dfd15bc0"
+project_uuid = "f7c37f77-6d31-4ddc-9544-f5f055ecd180"
+phase = "complete"
+mode = "copy"
+verify = "sha256"
+project_root = "/data/data/com.termux/files/home/src/epub2text"
+requires_staged_validation = true
+requires_activated_validation = true
+requires_finalization = true
+quiescence_completed = true
+staged_validated = [0, 1, 2]
+activated_validated = [0, 1, 2]
+finalized = true
+plan_digest = "3d1ced06fd360fc8c6f178211e7b2920292101d5fa3e5388247d4c27131309a3"
+created_at = "2026-08-01T21:40:50Z"
+updated_at = "2026-08-01T21:40:52Z"
+
+[lock_identity]
+migration_id = "111e2d33-5416-4a30-bed3-8892dfd15bc0"
+owner = "ledgercore"
+pid = 27076
+
+[items.0]
+item_index = 0
+component = "mount"
+tool_name = "releaseledger"
+mount_name = "indexes"
+source = "/data/data/com.termux/files/home/src/epub2text/.ledger/releaseledger/.migration/111e2d33-5416-4a30-bed3-8892dfd15bc0/data"
+destination = "/data/data/com.termux/files/home/.cache/ledgerwerk/releaseledger/f7c37f77-6d31-4ddc-9544-f5f055ecd180/epub2text-d8a34c44b1c0/indexes"
+strategy = "rebuild"
+destination_policy = "create-only"
+state = "complete"
+expected_before_state = "absent"
+stage_path = "/data/data/com.termux/files/home/.cache/ledgerwerk/releaseledger/f7c37f77-6d31-4ddc-9544-f5f055ecd180/epub2text-d8a34c44b1c0/.indexes.migrating-111e2d33-5416-4a30-bed3-8892dfd15bc0-0"
+backup_path = "/data/data/com.termux/files/home/.cache/ledgerwerk/releaseledger/f7c37f77-6d31-4ddc-9544-f5f055ecd180/epub2text-d8a34c44b1c0/.indexes.backup-111e2d33-5416-4a30-bed3-8892dfd15bc0-0"
+
+[items.0.source_binding]
+schema_version = 1
+layout_version = 3
+project_uuid = "f7c37f77-6d31-4ddc-9544-f5f055ecd180"
+tool = "releaseledger"
+mount = "data"
+storage = "project"
+project_name = "epub2text"
+
+[items.0.destination_binding]
+schema_version = 1
+layout_version = 3
+project_uuid = "f7c37f77-6d31-4ddc-9544-f5f055ecd180"
+tool = "releaseledger"
+mount = "indexes"
+storage = "cache"
+project_name = "epub2text"
+
+[items.0.staged_fingerprint]
+algorithm = "sha256-tree-v1"
+digest = "67c302ed399e464c83131bbb40f5d5602d902543ff26aa016b2602d6b6a4db7d"
+file_count = 43
+total_bytes = 31890
+
+[items.0.activated_fingerprint]
+algorithm = "sha256-tree-v1"
+digest = "67c302ed399e464c83131bbb40f5d5602d902543ff26aa016b2602d6b6a4db7d"
+file_count = 43
+total_bytes = 31890
+
+[items.1]
+item_index = 1
+component = "mount"
+tool_name = "releaseledger"
+mount_name = "data"
+source = "/data/data/com.termux/files/home/src/epub2text/.ledger/releaseledger/.migration/111e2d33-5416-4a30-bed3-8892dfd15bc0/data"
+destination = "/data/data/com.termux/files/home/src/epub2text/.ledger/releaseledger/data"
+strategy = "copy"
+destination_policy = "create-only"
+state = "complete"
+expected_before_state = "absent"
+stage_path = "/data/data/com.termux/files/home/src/epub2text/.ledger/releaseledger/.data.migrating-111e2d33-5416-4a30-bed3-8892dfd15bc0-1"
+backup_path = "/data/data/com.termux/files/home/src/epub2text/.ledger/releaseledger/.data.backup-111e2d33-5416-4a30-bed3-8892dfd15bc0-1"
+
+[items.1.source_binding]
+schema_version = 1
+layout_version = 3
+project_uuid = "f7c37f77-6d31-4ddc-9544-f5f055ecd180"
+tool = "releaseledger"
+mount = "data"
+storage = "project"
+project_name = "epub2text"
+
+[items.1.destination_binding]
+schema_version = 1
+layout_version = 3
+project_uuid = "f7c37f77-6d31-4ddc-9544-f5f055ecd180"
+tool = "releaseledger"
+mount = "data"
+storage = "project"
+project_name = "epub2text"
+
+[items.1.source_fingerprint]
+algorithm = "sha256-tree-v1"
+digest = "67c302ed399e464c83131bbb40f5d5602d902543ff26aa016b2602d6b6a4db7d"
+file_count = 43
+total_bytes = 31890
+
+[items.1.expected_target_fingerprint]
+algorithm = "sha256-tree-v1"
+digest = "67c302ed399e464c83131bbb40f5d5602d902543ff26aa016b2602d6b6a4db7d"
+file_count = 43
+total_bytes = 31890
+
+[items.1.staged_fingerprint]
+algorithm = "sha256-tree-v1"
+digest = "67c302ed399e464c83131bbb40f5d5602d902543ff26aa016b2602d6b6a4db7d"
+file_count = 43
+total_bytes = 31890
+
+[items.1.activated_fingerprint]
+algorithm = "sha256-tree-v1"
+digest = "67c302ed399e464c83131bbb40f5d5602d902543ff26aa016b2602d6b6a4db7d"
+file_count = 43
+total_bytes = 31890
+
+[items.2]
+item_index = 2
+component = "config"
+tool_name = "releaseledger"
+mount_name = "config"
+source = "/data/data/com.termux/files/home/src/epub2text/.ledger/releaseledger/.migration/111e2d33-5416-4a30-bed3-8892dfd15bc0/config.toml"
+destination = "/data/data/com.termux/files/home/src/epub2text/.ledger/releaseledger/config.toml"
+strategy = "copy"
+destination_policy = "create-only"
+state = "complete"
+expected_before_state = "absent"
+stage_path = "/data/data/com.termux/files/home/src/epub2text/.ledger/releaseledger/.config.toml.migrating-111e2d33-5416-4a30-bed3-8892dfd15bc0-2"
+backup_path = "/data/data/com.termux/files/home/src/epub2text/.ledger/releaseledger/.config.toml.backup-111e2d33-5416-4a30-bed3-8892dfd15bc0-2"
+
+[items.2.source_binding]
+schema_version = 1
+layout_version = 3
+project_uuid = "f7c37f77-6d31-4ddc-9544-f5f055ecd180"
+tool = "releaseledger"
+mount = "config"
+storage = "project"
+project_name = "epub2text"
+
+[items.2.destination_binding]
+schema_version = 1
+layout_version = 3
+project_uuid = "f7c37f77-6d31-4ddc-9544-f5f055ecd180"
+tool = "releaseledger"
+mount = "config"
+storage = "project"
+project_name = "epub2text"
+
+[items.2.source_fingerprint]
+algorithm = "sha256-file-v1"
+digest = "47469a018e9a0a94265210f7ee06204b97b1890b8b7155834f7d05010874e48d"
+file_count = 1
+total_bytes = 1392
+
+[items.2.expected_target_fingerprint]
+algorithm = "sha256-file-v1"
+digest = "47469a018e9a0a94265210f7ee06204b97b1890b8b7155834f7d05010874e48d"
+file_count = 1
+total_bytes = 1392
+
+[items.2.staged_fingerprint]
+algorithm = "sha256-file-v1"
+digest = "47469a018e9a0a94265210f7ee06204b97b1890b8b7155834f7d05010874e48d"
+file_count = 1
+total_bytes = 1392
+
+[items.2.activated_fingerprint]
+algorithm = "sha256-file-v1"
+digest = "47469a018e9a0a94265210f7ee06204b97b1890b8b7155834f7d05010874e48d"
+file_count = 1
+total_bytes = 1392
+
+[config_switches.0]
+kind = "manifest"
+destination = "/data/data/com.termux/files/home/src/epub2text/.ledger/ledger.toml"
+state = "activated"
+backup_path = "/data/data/com.termux/files/home/src/epub2text/.ledger/.ledger.toml.backup-111e2d33-5416-4a30-bed3-8892dfd15bc0"
+intent_written = true
+applied = true
+verified = true
+previous_content = "schema_version = 3\n\n[project]\nuuid = \"f7c37f77-6d31-4ddc-9544-f5f055ecd180\"\nname = \"epub2text\"\n\n[ledgers.taskledger.mounts.data]\nstorage = \"external\"\nroot = \"../ledger\"\n\n[ledgers.taskledger.mounts.indexes]\nstorage = \"cache\"\n"
+target_content = "schema_version = 3\n\n[project]\nuuid = \"f7c37f77-6d31-4ddc-9544-f5f055ecd180\"\nname = \"epub2text\"\n\n[ledgers.taskledger.mounts.data]\nstorage = \"external\"\nroot = \"../ledger\"\n\n[ledgers.taskledger.mounts.indexes]\nstorage = \"cache\"\n\n[ledgers.releaseledger.mounts.data]\nstorage = \"project\"\n\n[ledgers.releaseledger.mounts.indexes]\nstorage = \"cache\"\n"
+
+[config_switches.0.expected_before_fingerprint]
+algorithm = "sha256-file-v1"
+digest = "29ef4382500c6b5f114d9b5b37b88de5cd84372d1739d64264b82edef307d41d"
+file_count = 1
+total_bytes = 224
+
+[config_switches.0.target_fingerprint]
+algorithm = "sha256-file-v1"
+digest = "2e0945a7b197cbc4f831ea25c7fc46922d778df8ddc673a3ba481abb305aeb46"
+file_count = 1
+total_bytes = 339

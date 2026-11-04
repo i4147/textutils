@@ -13,15 +13,11 @@ from qtextra.widgets.qt_layout_scroll import QtScrollableHLayoutWidget
 
 
 class QtLeftPillLabel(QLabel):
-    """Left label."""
-
     def __init__(self, *args: ty.Any, **kwargs: ty.Any):
         super().__init__(*args, **kwargs)
 
 
 class QtPillActionButton(QtImagePushButton):
-    """Delete button."""
-
     def __init__(self, *args: ty.Any, **kwargs: ty.Any):
         super().__init__(*args, **kwargs)
         self._mode = self._icon = "delete"
@@ -29,18 +25,15 @@ class QtPillActionButton(QtImagePushButton):
 
     @property
     def icon(self) -> str:
-        """Get icon."""
         return self._icon
 
     @icon.setter
     def icon(self, value: str):
-        """Set icon."""
         self._icon = value
         self.set_qta(value)
 
     @property
     def mode(self) -> str:
-        """Get mode."""
         return self._mode
 
     @mode.setter
@@ -51,11 +44,6 @@ class QtPillActionButton(QtImagePushButton):
 
 
 class QtTagButton(QFrame):
-    """Two-sided pill button.
-
-    The left side is used to show text of some kind and the right has delete button
-    """
-
     evt_action = Signal(str)
     evt_clicked = Signal(str)
     evt_checked = Signal(str, bool)
@@ -121,7 +109,6 @@ class QtTagButton(QFrame):
 
     @property
     def text(self) -> str:
-        """Get name of the tag."""
         return self.label.text()
 
     @text.setter
@@ -131,7 +118,6 @@ class QtTagButton(QFrame):
 
     @property
     def active(self) -> bool:
-        """Get checked state."""
         return self._active
 
     @active.setter
@@ -143,7 +129,6 @@ class QtTagButton(QFrame):
         self.evt_checked.emit(self.hash_id, state)
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
-        """Process mouse press event."""
         if event.button() == Qt.MouseButton.LeftButton:
             if self._allow_selected:
                 self.active = not self._active
@@ -155,7 +140,6 @@ class QtTagButton(QFrame):
         self.evt_clicked.emit(self.hash_id)
 
     def sizeHint(self) -> QSize:
-        """Get size hint."""
         selected_hint = self.selected.sizeHint()
         label_hint = self.label.sizeHint()
         action_hint = self.action_btn.sizeHint() if self.action_btn.isVisible() else QSize(0, 0)
@@ -169,17 +153,13 @@ class QtTagButton(QFrame):
         return QSize(width, height)
 
     def minimumSizeHint(self) -> QSize:
-        """Return minimum size hint."""
         return self.sizeHint()
 
     def _on_action(self) -> None:
-        """On delete."""
         self.evt_action.emit(self.hash_id)
 
 
 class QtTagManager(QWidget):
-    """Manager class that contains multiple QtTagButtons."""
-
     evt_changed = Signal(str, bool)
     evt_checked = Signal(list)
     evt_clicked = Signal(str)
@@ -230,7 +210,6 @@ class QtTagManager(QWidget):
         hide_check: bool = False,
         set_property: bool = False,
     ) -> str:
-        """Add tag to the Tag manager.."""
         if not hash_id:
             hash_id = get_short_hash()
         allow_action = self.allow_action if allow_action is None else allow_action
@@ -262,7 +241,6 @@ class QtTagManager(QWidget):
         hide_check: bool = False,
         set_property: bool = False,
     ) -> None:
-        """Add tags."""
         for tag in options:
             self.add_tag(
                 tag,
@@ -274,7 +252,6 @@ class QtTagManager(QWidget):
 
     @Slot(str)
     def remove_tag(self, hash_id: str) -> None:
-        """Remove tag."""
         widget = self.widgets.pop(hash_id, None)
         if widget:
             hp.disconnect_event(widget, "evt_action", self.remove_tag)
@@ -283,25 +260,21 @@ class QtTagManager(QWidget):
             widget.deleteLater()
 
     def remove_tags(self) -> None:
-        """Clear all options."""
         for widget in self.widgets.values():
             widget.deleteLater()
         self.widgets.clear()
 
     def update_label(self, hash_id: str, new_label: str) -> None:
-        """Update label of specified tag."""
         tag = self.widgets[hash_id]
         tag.text = new_label
 
     def add_button(self, icon_name: str, tooltip: str = "") -> QtImagePushButton:
-        """Add button."""
         button = hp.make_qta_btn(self, icon_name, tooltip=tooltip, size_preset="average", standout=True)
         self._action_layout.addWidget(button)
         self.buttons[icon_name] = button
         return button
 
     def add_plus(self) -> QtImagePushButton:
-        """Add plus button."""
         if self._plus_btn is not None:
             raise ValueError("Add button already exists.")
 
@@ -310,14 +283,12 @@ class QtTagManager(QWidget):
         return self._plus_btn
 
     def _handle_add_click(self) -> None:
-        """Handle add click."""
         text = hp.get_text(self, "Type-in new label.", "New label")
         if text:
             self.add_tag(text, allow_action=self.allow_action)
             self.evt_plus_clicked.emit()
 
     def add_clear(self) -> QtImagePushButton:
-        """Add plus button."""
         if self._clear_btn is not None:
             raise ValueError("Clear button already exists.")
 
@@ -331,7 +302,6 @@ class QtTagManager(QWidget):
         max_width: int = 150,
         case_sensitive: bool = False,
     ) -> None:
-        """Add filter."""
         if self._filter_edit is not None:
             raise ValueError("Filter edit already exists.")
 
@@ -368,13 +338,11 @@ class QtTagManager(QWidget):
 
     @Slot(str, bool)
     def _tag_changed(self, hash_id: str, state: bool) -> None:
-        """Tag was checked or unchecked."""
         self.evt_changed.emit(hash_id, state)
         self.evt_checked.emit(self.selected_options)
 
     @property
     def selected_ids(self) -> list[str]:
-        """Get list of selected tags."""
         selected = []
         for hash_id, tag in self.widgets.items():
             if tag.active:
@@ -383,7 +351,6 @@ class QtTagManager(QWidget):
 
     @property
     def selected_options(self) -> list[str]:
-        """Get list of selected tags."""
         selected = []
         for _hash_id, tag in self.widgets.items():
             if tag.active:
@@ -391,7 +358,6 @@ class QtTagManager(QWidget):
         return selected
 
     def clear_selection(self) -> None:
-        """Clear selections."""
         for widget in self.widgets.values():
             if widget.active:
                 widget.active = False

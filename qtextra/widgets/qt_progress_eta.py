@@ -8,8 +8,6 @@ from qtextra.utils.progress import Progress
 
 
 class QtLabeledProgressBar(QWidget):
-    """QProgressBar with QLabels for description and ETA."""
-
     def __init__(self, parent: QWidget | None = None, progress: Progress | None = None) -> None:
         super().__init__(parent)
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_DeleteOnClose)
@@ -33,16 +31,13 @@ class QtLabeledProgressBar(QWidget):
         self.setMaximum = self.qt_progress_bar.setMaximum
 
     def setRange(self, min_value: int, max_value: int) -> None:
-        """Set range."""
         self.qt_progress_bar.setRange(min_value, max_value)
 
     def setValue(self, value: int) -> None:
-        """Set value."""
         self.qt_progress_bar.setValue(value)
         QApplication.processEvents()
 
     def setDescription(self, value: str) -> None:
-        """Set description."""
         self.description_label.setText(value)
         QApplication.processEvents()
 
@@ -66,7 +61,6 @@ class QtLabeledProgressBar(QWidget):
 
 
 def set_progress_bar(progress: Progress, progress_bar: QtLabeledProgressBar):
-    """Make progress bar."""
     progress.gui = True
     progress.leave = False
 

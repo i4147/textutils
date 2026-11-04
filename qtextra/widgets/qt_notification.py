@@ -29,8 +29,6 @@ ActionSequence = ty.Sequence[ty.Tuple[str, ty.Callable[[], None]]]
 
 
 class QtNotification(SubWindowBase):
-    """Small popup notification that can contain actions."""
-
     DISMISS_AFTER = 5000
 
     MAX_OPACITY = 0.9
@@ -90,11 +88,6 @@ class QtNotification(SubWindowBase):
         self.move_to_bottom_right() if self.is_bottom else self.move_to_top_right()
 
     def make_ui(self):
-        """Make ui.
-
-        Row 1: Icon, text, expand, close
-        Row 2: Source, Push buttons
-        """
         self.row1_widget = QWidget(self)
         self.severity_icon = QtSeverityLabel(parent=self.row1_widget)
         self.severity_icon.setMaximumWidth(20)
@@ -168,19 +161,15 @@ class QtNotification(SubWindowBase):
         self.resize(self.MIN_WIDTH, self.MIN_HEIGHT)
 
     def enterEvent(self, event):
-        """On hover, stop the self-destruct timer."""
         self.timer_stop()
 
     def leaveEvent(self, event):
-        """On hover exit, restart the self-destruct timer."""
         self.timer_start()
 
     def mouseDoubleClickEvent(self, event):
-        """Expand the notification on double click."""
         self.toggle_expansion()
 
     def mouseMoveEvent(self, event):
-        """On hover, stop the self-destruct timer."""
         self.dismiss_timer.stop()
         self.progress_timer.stop()
         self._timer_indicator.setVisible(False)
@@ -193,7 +182,6 @@ class QtNotification(SubWindowBase):
         actions: ActionSequence = None,
         source: str | None = None,
     ):
-        """Set message."""
         self.message.setText(message)
         self.message.setToolTip(message)
         self.setup_buttons(actions)
@@ -201,36 +189,29 @@ class QtNotification(SubWindowBase):
         self.expand_btn.setVisible(self.sizeHint().height() > self.height())
 
     def slide_in(self):
-        """Run animation that fades in the dialog with a slight slide up."""
         super().slide_in()
         if os.getenv("QTEXTRA_NOTIFICATION_AUTO_EXPAND") in ("1", "True"):
             self.opacity_anim.finished.connect(self.auto_expand)
 
     def timer_start(self):
-        """Start the self-destruct timer."""
         if self.DISMISS_AFTER > 0:
             self.dismiss_timer.start()
 
     def timer_stop(self):
-        """Stop the self-destruct timer."""
         self.dismiss_timer.stop()
 
     @property
     def is_expanded(self) -> bool:
-        """Checks whether text is expanded."""
         return self.property("expanded") if self.is_bottom else not self.property("expanded")
 
     def auto_expand(self):
-        """Toggle expansion."""
         self.expand()
 
     def toggle_expansion(self):
-        """Toggle the expanded state of the notification frame."""
         self.contract() if self.is_expanded else self.expand()
         self.dismiss_timer.stop()
 
     def expand(self):
-        """Expanded the notification so that the full message is visible."""
         curr = self.geometry()
         self.geom_anim.setDuration(100)
         self.geom_anim.setStartValue(curr)
@@ -252,7 +233,6 @@ class QtNotification(SubWindowBase):
         self.expand_btn.expanded = not self.is_bottom
 
     def contract(self):
-        """Contract notification to a single elided line of the message."""
         geom = self.geometry()
         self.geom_anim.setDuration(100)
         self.geom_anim.setStartValue(geom)
@@ -271,7 +251,6 @@ class QtNotification(SubWindowBase):
         self.expand_btn.expanded = bool(self.is_bottom)
 
     def show(self) -> None:
-        """Show the message with a fade and slight slide in from the bottom."""
 
         def _update_timer_indicator():
             with suppress(RuntimeError):
@@ -299,7 +278,6 @@ class QtNotification(SubWindowBase):
             self.progress_timer.start()
 
     def close(self) -> None:
-        """Fade out then close."""
         self.timer_stop()
         self.opacity_anim.stop()
         self.geom_anim.stop()
@@ -321,7 +299,6 @@ class QtNotification(SubWindowBase):
         #     pass
 
     def close_with_fade(self):
-        """Fade out then close."""
         self.dismiss_timer.stop()
         self.opacity_anim.stop()
         self.geom_anim.stop()
@@ -333,24 +310,12 @@ class QtNotification(SubWindowBase):
         self.opacity_anim.finished.connect(self.close)
 
     def deleteLater(self) -> None:
-        """Stop all animations and timers before deleting."""
         self.opacity_anim.stop()
         self.geom_anim.stop()
         self.dismiss_timer.stop()
         super().deleteLater()
 
     def setup_buttons(self, actions: ActionSequence = ()):
-        """Add buttons to the dialog.
-
-        Parameters
-        ----------
-        actions : tuple, optional
-            A sequence of 2-tuples, where each tuple is a string and a
-            callable. Each tuple will be used to create button in the dialog,
-            where the text on the button is determine by the first item in the
-            tuple, and a callback function to call when the button is pressed
-            is the second item in the tuple. by default ()
-        """
         if actions is None:
             return
 
@@ -361,7 +326,6 @@ class QtNotification(SubWindowBase):
             btn = hp.make_btn(None, text)
 
             def call_back_with_self(callback, self):
-                """We need a higher order function this to capture the reference to self."""
 
                 def _inner():
                     return callback(self)
@@ -376,20 +340,17 @@ class QtNotification(SubWindowBase):
             self.setMinimumHeight(self.row2_widget.maximumHeight() + self.minimumHeight())
 
     def sizeHint(self):
-        """Return the size required to show the entire message."""
         return QSize(
             super().sizeHint().width(),
             self.row2_widget.height() + self.message.sizeHint().height() + 30,
         )
 
     def settings(self):
-        """Show settings popup."""
         self.dismiss_timer.stop()
         SettingsPopup(self.parent() or self).show()
 
     @classmethod
     def from_notification(cls, notification: Notification) -> QtNotification:
-        """From notification."""
         actions = notification.actions
         if isinstance(notification, ErrorNotification):
             actions = (
@@ -411,7 +372,6 @@ class QtNotification(SubWindowBase):
     @classmethod
     @ensure_main_thread
     def show_notification(cls: QtNotification, notification: Notification):
-        """Show notification."""
         if notification.severity >= NotificationSeverity(os.getenv("QTEXTRA_NOTIFICATION_LEVEL", "WARNING")):
             application_instance = QApplication.instance()
             if application_instance and application_instance.thread() != QThread.currentThread():
@@ -421,14 +381,11 @@ class QtNotification(SubWindowBase):
 
 
 class SettingsPopup(QtFramelessPopup):
-    """Popup window to control extra settings."""
-
     def __init__(self, parent):
         super().__init__(parent)
         self.setMinimumWidth(300)
 
     def make_panel(self) -> QFormLayout:
-        """Make panel."""
         self.dismiss_time = hp.make_labelled_slider(
             self,
             minimum=1000,
@@ -457,14 +414,12 @@ class SettingsPopup(QtFramelessPopup):
         return main_layout
 
     def on_apply(self):
-        """Update configuration."""
         os.environ["QTEXTRA_NOTIFICATION_AUTO_EXPAND"] = str(self.auto_expand.isChecked())
         os.environ["QTEXTRA_NOTIFICATION_LEVEL"] = str(self.level.currentText())
         os.environ["QTEXTRA_NOTIFICATION_DISMISS_TIME"] = str(self.dismiss_time.value())
 
 
 def show_tb(notification: ErrorNotification, parent):
-    """Show traceback."""
     tb_dialog = QDialog(parent=parent.parent())
     tb_dialog.setModal(True)
     tb_dialog.resize(650, 270)
@@ -487,7 +442,6 @@ def show_tb(notification: ErrorNotification, parent):
 
 
 def copy_to_clipboard(notification: ErrorNotification, parent):
-    """Copy traceback to clipboard."""
     from qtextra.utils.utilities import get_system_info
     from qtextra.widgets.qt_button_clipboard import copy_text_to_clipboard
 
@@ -503,7 +457,6 @@ def copy_to_clipboard(notification: ErrorNotification, parent):
 
 
 def show_report(notification: ErrorNotification, parent):
-    """Report traceback."""
     import webbrowser
 
     from qtextra import __issue_url__

@@ -6,7 +6,6 @@ import typing as ty
 
 
 def format_exception(exc_info: ty.Union[ty.Tuple, ty.List, Exception]):
-    """Format exception."""
     if isinstance(exc_info, BaseException):
         exc_info = (type(exc_info), exc_info, exc_info.__traceback__)
 

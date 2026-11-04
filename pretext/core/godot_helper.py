@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import argparse
 import hashlib
 import platform
@@ -14,7 +12,6 @@ import os
 
 import certifi
 
-# Set up logging package:
 import logging
 
 log = logging.getLogger("ptxlogger")
@@ -28,17 +25,12 @@ def _update_version(version: str):
     global GITHUB_RELEASE_BASE
     GODOT_VERSION = version
     GODOT_VERSION_TAG = "{}-stable".format(GODOT_VERSION)
-    # Matches the "major.minor.patch.status" format Godot itself uses for the
-    # export-templates directory name (e.g. "4.6.3.stable").
     GODOT_TEMPLATE_VERSION_STRING = "{}.stable".format(GODOT_VERSION)
     CACHE_DIR = os.path.join(os.path.expanduser("~"), ".godot_versions", GODOT_VERSION)
 
     GITHUB_RELEASE_BASE = "https://github.com/godotengine/godot/releases/download/{}".format(GODOT_VERSION_TAG)
 
 
-# Built from certifi's CA bundle rather than relying on the system/Python installation's
-# own certificate store, since python.org-installed Python on macOS in particular often
-# has no certificates configured out of the box, causing CERTIFICATE_VERIFY_FAILED.
 _SSL_CONTEXT = ssl.create_default_context(cafile=certifi.where())
 
 
@@ -89,17 +81,10 @@ def _download(url: str, destination: str) -> None:
         shutil.copyfileobj(response, out_file)
 
 
-# Cache of parsed "filename -> sha512 hex digest" dicts, keyed by GODOT_VERSION_TAG,
-# so a single run doesn't re-download SHA512-SUMS.txt once per asset.
 _SUMS_CACHE: dict[str, dict[str, str]] = {}
 
 
 def _get_release_sums() -> dict[str, str]:
-    """Downloads and parses the release's SHA512-SUMS.txt (filename -> hex digest).
-
-    Godot publishes this file alongside every stable release's assets, in the
-    standard `sha512sum`-compatible format: "<hex digest>  <filename>" per line.
-    """
     if GODOT_VERSION_TAG in _SUMS_CACHE:
         return _SUMS_CACHE[GODOT_VERSION_TAG]
 
@@ -113,8 +98,6 @@ def _get_release_sums() -> dict[str, str]:
         line = line.strip()
         if not line:
             continue
-        # Format is "<digest>  <filename>" (two spaces, or one with some tools);
-        # a leading "*" before the filename indicates binary mode and is stripped.
         parts = line.split(None, 1)
         if len(parts) != 2:
             continue
@@ -128,12 +111,6 @@ def _get_release_sums() -> dict[str, str]:
 
 
 def _verify_checksum(file_path: str, asset_name: str) -> None:
-    """Verifies file_path's SHA-512 digest against the release's published sums.
-
-    Raises RuntimeError (and deletes the offending file) on a missing entry or
-    a mismatch, so a corrupted or tampered download can never silently proceed
-    to extraction/installation.
-    """
     sums = _get_release_sums()
     expected = sums.get(asset_name)
     if expected is None:
@@ -166,7 +143,6 @@ def _get_godot_version(godot_path: str) -> str | None:
         return None
     if result.returncode != 0:
         return None
-    # Godot's --version output looks like "4.6.3.stable.official.7d41c59c4"
     return result.stdout.strip()
 
 
@@ -245,9 +221,6 @@ def ensure_export_templates(version: str) -> None:
 
     log.info("Installing export templates to {} ...".format(template_dir))
     os.makedirs(template_dir, exist_ok=True)
-    # .tpz files are zip archives with a top-level "templates/" folder; Godot expects
-    # the version directory's contents to be the files *inside* that folder, not the
-    # folder itself.
     with zipfile.ZipFile(tpz_path) as zf:
         for member in zf.namelist():
             if not member.startswith("templates/") or member == "templates/":

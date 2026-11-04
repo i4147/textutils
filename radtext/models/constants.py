@@ -3,12 +3,9 @@ from pathlib import Path
 UNCERTAINTY = "possible"
 NEGATION = "absent"
 POSITIVE = "present"
-
-# HOME_DIR = Path.home()
 LOCAL_DIR = Path.home() / ".radtext"
 LOCAL_RESOURCE_DIR = LOCAL_DIR / "resources"
 RADTEXT_RESOURCES_GITHUB = "https://raw.githubusercontent.com/bionlplab/radtext-resources/main/resources"
-
 DEFAULT_OPTIONS = {
     "--repl": "X",
     "--section-titles": LOCAL_RESOURCE_DIR / "section_titles.txt",
@@ -20,7 +17,6 @@ DEFAULT_OPTIONS = {
     "--regex_patterns": LOCAL_RESOURCE_DIR / "patterns/regex_patterns.yml",
     "--ngrex_patterns": LOCAL_RESOURCE_DIR / "patterns/ngrex_patterns.yml",
 }
-
 DEFAULT_ANNOTATORS = [
     "deid:philter",
     "secsplit:regex",
@@ -30,7 +26,6 @@ DEFAULT_ANNOTATORS = [
     "tree2dep",
     "neg:negbio",
 ]
-
 ALL_ANNOTATORS = [
     "deid:philter",
     "secsplit:regex",
@@ -42,5 +37,4 @@ ALL_ANNOTATORS = [
     "tree2dep",
     "neg:negbio",
 ]
-
 BLLIP_MODEL_URL = "https://nlp.stanford.edu/~mcclosky/models/BLLIP-GENIA-PubMed.tar.bz2"

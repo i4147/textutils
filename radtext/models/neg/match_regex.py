@@ -1,8 +1,6 @@
 import re
 from typing import List
-
 import yaml
-
 from bioc import BioCPassage, BioCAnnotation
 from radtext.models.constants import UNCERTAINTY, NEGATION
 
@@ -24,12 +22,8 @@ class NegRegexPattern:
 
 
 def load_regex_yml(file) -> List[NegRegexPattern]:
-    """
-    Read a pattern file in the yaml format
-    """
     with open(file) as fp:
         objs = yaml.load(fp, yaml.FullLoader)
-
     patterns = []
     if objs:
         for obj in objs:
@@ -38,12 +32,8 @@ def load_regex_yml(file) -> List[NegRegexPattern]:
 
 
 def get_text(text: str, start: int, end: int) -> str:
-    """
-    Returns text with the annotation replaced by XXXXX
-    """
     text = text[:start] + "X" * (end - start) + text[end:]
     text = re.sub(r"\n", " ", text)
-    # text = re.sub(r'\s+', ' ', text)
     return text
 
 

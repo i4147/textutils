@@ -1,0 +1,19 @@
+glossary:
+  graph: mkrefs.ttl
+  page: glossary.md
+  template: glossary.jinja
+  queries:
+    entry: SELECT ?entry ?label WHERE { ?entry a derw:Topic . ?entry skos:prefLabel ?label }
+    entry_syn: SELECT ?entry ?synonym WHERE { ?entry a derw:Topic . ?entry skos:altLabel ?synonym }
+    entry_ref: SELECT ?entry ?closeMatch WHERE { ?entry a derw:Topic . ?entry skos:closeMatch ?closeMatch }
+    entry_cite: SELECT ?entry ?citeKey WHERE { ?entry a derw:Topic . ?entry cito:usesMethodIn ?citeKey }
+    entry_hyp: SELECT ?entry ?hypernym WHERE { ?entry a derw:Topic . ?entry skos:broader ?hypernym }
+
+biblio:
+  graph: mkrefs.ttl
+  page: biblio.md
+  template: biblio.jinja
+  queries:
+    entry: SELECT ?entry ?citeKey WHERE { VALUES ?kind { bibo:Article bibo:Slideshow } ?entry a ?kind . ?entry derw:citeKey ?citeKey }
+    entry_author: SELECT ?entry ?authorList WHERE { VALUES ?kind { bibo:Article bibo:Slideshow } ?entry a ?kind . ?entry bibo:authorList/rdf:rest*/rdf:first ?authorList }
+    entry_publisher: SELECT ?entry ?isPartOf WHERE { VALUES ?kind { bibo:Article bibo:Slideshow } ?entry a ?kind . ?entry dct:isPartOf ?isPartOf }

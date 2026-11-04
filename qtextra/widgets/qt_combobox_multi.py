@@ -29,14 +29,12 @@ class _MultiPanel(_ScrollablePanel):
         self._finalize_height()
 
     def _filter(self, text: str):
-        """Filter visible rows by search text."""
         q = text.lower()
         for row in self._rows:
             row.setVisible(q in row._label.lower())
         self._finalize_height()
 
     def set_items(self, items: list[str]):
-        """Replace all available items."""
         self._selected = set()
         self._rebuild_rows(items)
 
@@ -53,7 +51,6 @@ class _MultiPanel(_ScrollablePanel):
         self._finalize_height()
 
     def show_below(self, widget, min_width=0):
-        """Show a panel below the widget, resetting the search field."""
         self._search.clear()
         self._filter("")
         super().show_below(widget, min_width)
@@ -68,18 +65,15 @@ class _MultiPanel(_ScrollablePanel):
         self.evt_selection_changed.emit(sorted(self._selected, key=self._selected_order))
 
     def set_selected(self, items: list[str]):
-        """Replace all available items."""
         self._selected = set(items)
         for r in self._rows:
             r.set_checked(r._label in self._selected)
 
     def selected(self) -> list[str]:
-        """Get selected rows."""
         order = [r._label for r in self._rows]
         return [x for x in order if x in self._selected]
 
     def _selected_order(self, label: str) -> int:
-        """Return the display order for a selected label."""
         return [row._label for row in self._rows].index(label)
 
 
@@ -142,8 +136,6 @@ class _MultiBtn(_BaseButton):
 
 
 class QtMultiSelectComboBox(QWidget):
-    """Combobox allowing multiple selections, shown as chips in the button."""
-
     evt_selection_changed = Signal(list)
 
     def __init__(self, items: list[str] | None = None, placeholder: str = "Select items…", parent=None):
@@ -176,21 +168,17 @@ class QtMultiSelectComboBox(QWidget):
         self.evt_selection_changed.emit(items)
 
     def _close_panel(self) -> None:
-        """Reset the button state when the popup closes."""
         self._btn.set_open(False)
 
     def selected(self) -> list[str]:
-        """Return the selected items."""
         return self._panel.selected()
 
     def set_items(self, items: list[str]) -> None:
-        """Set the selected items."""
         self._panel.set_selected([])
         self._panel.set_items(items)
         self._on_change([])
 
     def set_selected(self, items: list[str]):
-        """Set the selected items."""
         self._panel.set_selected(items)
         self._on_change(items)
 

@@ -9,16 +9,12 @@ from koyo.typing import StrEnum
 
 
 class CharType(StrEnum):
-    """Character categories used by the wrapper."""
-
     SPACE = "space"
     ASIAN = "asian"
     LATIN = "latin"
 
 
 class TextWrap:
-    """Text wrap."""
-
     EAST_ASIAN_WIDTH_TABLE: ty.ClassVar[dict[str, int]] = {
         "F": 2,
         "H": 1,
@@ -31,19 +27,16 @@ class TextWrap:
     @classmethod
     @lru_cache(maxsize=128)
     def get_width(cls, char: str) -> int:
-        """Returns the width of the char."""
         return cls.EAST_ASIAN_WIDTH_TABLE.get(east_asian_width(char), 1)
 
     @classmethod
     @lru_cache(maxsize=32)
     def get_text_width(cls, text: str) -> int:
-        """Returns the width of the text."""
         return sum(cls.get_width(char) for char in text)
 
     @classmethod
     @lru_cache(maxsize=128)
     def get_char_type(cls, char: str) -> CharType:
-        """Returns the type of the char."""
         if char.isspace():
             return CharType.SPACE
 
@@ -54,18 +47,15 @@ class TextWrap:
 
     @classmethod
     def process_text_whitespace(cls, text: str) -> str:
-        """Process whitespace and leading and trailing spaces in strings."""
         return sub(pattern=r"\s+", repl=" ", string=text).strip()
 
     @classmethod
     @lru_cache(maxsize=32)
     def split_long_token(cls, token: str, width: int) -> list[str]:
-        """Split long token into smaller chunks."""
         return [token[i : i + width] for i in range(0, len(token), width)]
 
     @classmethod
     def tokenizer(cls, text: str):
-        """Tokenize line."""
         buffer = ""
         last_char_type: CharType | None = None
 
@@ -83,27 +73,6 @@ class TextWrap:
 
     @classmethod
     def wrap(cls, text: str, width: int, once: bool = True) -> tuple[str, bool]:
-        """Wrap according to string length.
-
-        Parameters
-        ----------
-        text: str
-            the text to be wrapped
-
-        width: int
-            the maximum length of a single line, the length of Chinese characters is 2
-
-        once: bool
-            whether to wrap only once
-
-        Returns
-        -------
-        wrap_text: str
-            text after auto word wrap process
-
-        is_wrapped: bool
-            whether a line break occurs in the text
-        """
         width = int(width)
         lines = text.splitlines()
         is_wrapped = False

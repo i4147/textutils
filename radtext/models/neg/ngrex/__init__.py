@@ -4,9 +4,6 @@ from . import pattern
 
 
 def compile(ngrex: str) -> NgrexPattern:
-    """
-    Compiles the given expression into a pattern
-    """
     p = parser.yacc.parse(ngrex)
     pattern.validate_names(p)
     return p

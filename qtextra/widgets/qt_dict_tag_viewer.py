@@ -19,8 +19,6 @@ VALUE_ROLE = Qt.ItemDataRole.UserRole + 1
 
 
 class QtDictTagViewer(QWidget):
-    """Read-only searchable viewer for dictionary values."""
-
     evt_items_changed = Signal(dict)
     evt_search_changed = Signal(str)
 
@@ -64,7 +62,6 @@ class QtDictTagViewer(QWidget):
         self._sort_order = Qt.SortOrder.AscendingOrder
 
     def items(self) -> dict[str, DictTagValue]:
-        """Return the current items in table order."""
         exported: dict[str, DictTagValue] = {}
         for row in range(self.table.rowCount()):
             key_item = self.table.item(row, 0)
@@ -75,11 +72,9 @@ class QtDictTagViewer(QWidget):
         return exported
 
     def export_dict(self) -> dict[str, DictTagValue]:
-        """Export the displayed dictionary."""
         return self.items()
 
     def set_items(self, items: Mapping[str, DictTagValue]) -> None:
-        """Replace all displayed items."""
         self.table.setRowCount(0)
         for key, value in items.items():
             row = self.table.rowCount()
@@ -94,16 +89,13 @@ class QtDictTagViewer(QWidget):
         self.evt_items_changed.emit(self.export_dict())
 
     def clear_items(self) -> None:
-        """Clear all rows."""
         self.table.setRowCount(0)
         self.evt_items_changed.emit({})
 
     def has_item(self, key: str) -> bool:
-        """Return whether a key is present."""
         return self._find_row(key) is not None
 
     def get_value(self, key: str) -> DictTagValue:
-        """Return the value for a key."""
         row = self._find_row(key)
         if row is None:
             raise KeyError(key)
@@ -177,7 +169,6 @@ class QtDictTagViewer(QWidget):
         self._resize_columns()
 
     def _row_sort_key(self, row_data: dict[str, DictTagValue | str | None]) -> str:
-        """Return the active sort key for a rendered row."""
         field_name = "key" if self._sort_column == 0 else "value_text"
         value = row_data[field_name]
         return "" if value is None else str(value).casefold()

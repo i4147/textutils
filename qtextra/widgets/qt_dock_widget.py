@@ -11,23 +11,6 @@ from qtextra.helpers import qt_signals_blocked
 
 
 class QtDockedWidget(QDockWidget):
-    """Wrap a QWidget in a QDockWidget and forward viewer events.
-
-    Parameters
-    ----------
-    widget : QWidget
-        `widget` that will be added as QDockWidget's main widget.
-    name : str
-        Name of dock widget.
-    area : str
-        Side of the main window to which the new dock widget will be added.
-        Must be in {'left', 'right', 'top', 'bottom'}
-    allowed_areas : list[str], optional
-        Areas, relative to main window, that the widget is allowed dock.
-        Each item in list must be in {'left', 'right', 'top', 'bottom'}
-        By default, all areas are allowed.
-    """
-
     def __init__(
         self,
         parent,
@@ -88,7 +71,6 @@ class QtDockedWidget(QDockWidget):
 
     @property
     def is_vertical(self):
-        """Checks where dock is in vertical position."""
         if not self.isFloating():
             par = self._parent
             if par and hasattr(par, "dockWidgetArea"):
@@ -109,21 +91,6 @@ class QtDockedWidget(QDockWidget):
 
 
 class QtCustomTitleBar(QLabel):
-    """A widget to be used as the titleBar in the QtViewerDockWidget.
-
-    Keeps vertical size minimal, has a hand cursor and styles (in stylesheet)
-    for hover. Close and float buttons.
-
-    Parameters
-    ----------
-    parent : QDockWidget
-        The QtViewerDockWidget to which this titlebar belongs
-    title : str
-        A string to put in the titlebar.
-    vertical : bool
-        Whether this titlebar is oriented vertically or not.
-    """
-
     def __init__(self, parent, title: str = "", vertical=False):
         super().__init__(parent)
         self.setObjectName("QtCustomTitleBar")
@@ -171,7 +138,6 @@ class QtCustomTitleBar(QLabel):
         self.setCursor(Qt.OpenHandCursor)
 
     def sizeHint(self):
-        """Set size of the title."""
         szh = super().sizeHint()
         if self.vertical:
             szh.setWidth(20)
@@ -180,13 +146,11 @@ class QtCustomTitleBar(QLabel):
         return szh
 
     def _toggle_parent_visibility(self) -> None:
-        """Toggle the parent dock widget visibility."""
         parent = self.parent()
         if parent is not None:
             parent.toggleViewAction().trigger()
 
     def _toggle_parent_floating(self) -> None:
-        """Toggle the parent dock widget floating state."""
         parent = self.parent()
         if parent is not None:
             parent.setFloating(not parent.isFloating())

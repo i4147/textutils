@@ -291,7 +291,6 @@ QTA_MAPPING: dict[str, IconType] = {
 
 
 def check_icon_mapping() -> None:
-    """Check icon mapping for icons."""
     icons: dict[str, list[str]] = {}
     for key, value in QTA_MAPPING.items():
         if isinstance(value, tuple):
@@ -305,7 +304,6 @@ def check_icon_mapping() -> None:
 
 
 def update_icon_mapping(mapping: dict[str, IconType], silent: bool = False, key: str = "") -> None:
-    """Update icon mapping."""
     global QTA_MAPPING
     for k, v_new in mapping.items():
         v_exist = QTA_MAPPING.get(k)
@@ -318,7 +316,6 @@ def update_icon_mapping(mapping: dict[str, IconType], silent: bool = False, key:
 
 
 def update_styles(mapping: dict[str, str], append: bool = True) -> None:
-    """Update icon mapping."""
     global STYLES
 
     if append:
@@ -329,7 +326,6 @@ def update_styles(mapping: dict[str, str], append: bool = True) -> None:
 
 
 def update_icons(mapping: dict[str, str], append: bool = True) -> None:
-    """Update icon mapping."""
     global ICONS
 
     if append:
@@ -340,7 +336,6 @@ def update_icons(mapping: dict[str, str], append: bool = True) -> None:
 
 
 def get_icon(name: str | tuple[str, dict]) -> tuple[str, dict]:
-    """Return icon."""
     from qtextra.config import THEMES
 
     kwargs = None
@@ -375,23 +370,6 @@ def get_icon(name: str | tuple[str, dict]) -> tuple[str, dict]:
 
 
 def get_stylesheet(theme: str | None = None, extra: ty.List[str] | None = None) -> str:
-    """Combine all qss files into single, possibly pre-themed, style string.
-
-    Parameters
-    ----------
-    theme : str, optional
-        Theme to apply to the stylesheet. If no theme is provided, the returned
-        stylesheet will still have ``{{ template_variables }}`` that need to be
-        replaced using the :func:`qtextra.template` function prior
-        to using the stylesheet.
-    extra : list of str, optional
-        Additional paths to QSS files to include in stylesheet, by default None
-
-    Returns
-    -------
-    css : str
-        The combined stylesheet.
-    """
     stylesheet = ""
     try:
         for key in sorted(set(STYLES)):

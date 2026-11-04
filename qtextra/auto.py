@@ -31,7 +31,6 @@ def set_values_from_dict(
     widgets: dict[str, Qw.QWidget],
     block: bool = True,
 ) -> None:
-    """Populate widgets from a mapping of names to values."""
     for key, value in data.items():
         try:
             widget = widgets[key]
@@ -50,7 +49,6 @@ def _append_widgets(
     label: str | None = None,
     search_widget: Qw.QWidget | None = None,
 ) -> tuple[Qw.QWidget, Qw.QFormLayout]:
-    """Append one or more widgets to a form layout, optionally after a row anchor."""
     if not widgets:
         raise ValueError("No widgets provided")
 
@@ -70,7 +68,6 @@ def _add_widget(
     tooltip: str = "Learn more...",
     extras: tuple[Qw.QWidget, ...] | None = None,
 ) -> tuple[Qw.QWidget, Qw.QFormLayout]:
-    """Attach a button plus optional extras to an existing form row."""
     if extras is None:
         extras = ()
     return _add_widgets(
@@ -89,7 +86,6 @@ def _add_widgets(
     before_widgets: tuple[Qw.QWidget, ...] | None = None,
     spacing: int = 1,
 ) -> tuple[Qw.QWidget, Qw.QFormLayout]:
-    """Attach extra widgets before or after an existing form field."""
     trailing_widgets = widgets or ()
     leading_widgets = before_widgets or ()
     if not trailing_widgets and not leading_widgets:
@@ -124,7 +120,6 @@ def _insert_before_widget(
     label_widget: Qw.QWidget | None,
     widget_widget: WidgetOrLayout,
 ) -> tuple[Qw.QWidget, Qw.QFormLayout]:
-    """Insert a row before an existing labeled row."""
     row = qp.find_row_for_label_in_form_layout(layout, label)
     if row is not None:
         if label_widget is None:
@@ -141,7 +136,6 @@ def _insert_after_widget(
     label_widget: Qw.QWidget | None,
     widget_widget: WidgetOrLayout,
 ) -> tuple[Qw.QWidget, Qw.QFormLayout]:
-    """Insert a row after an existing labeled row."""
     row = qp.find_row_for_label_in_form_layout(layout, label)
     if row is not None:
         if label_widget is None:
@@ -152,7 +146,6 @@ def _insert_after_widget(
 
 
 def _get_insertion_row(layout: Qw.QFormLayout, search_widget: Qw.QWidget | None) -> int | None:
-    """Return the row after ``search_widget``, when present."""
     if search_widget is None:
         return None
     row = qp.find_row_for_widget(layout, search_widget)
@@ -169,7 +162,6 @@ def _insert_form_row(
     label: str | None = None,
     parent: Qw.QWidget | None = None,
 ) -> None:
-    """Insert or append a row in a form layout."""
     label_widget = qp.make_label(parent, label) if label else None
     if row is None:
         if label_widget is None:
@@ -184,7 +176,6 @@ def _insert_form_row(
 
 
 def guess_widget_cls(schema: dict[str, ty.Any]) -> str:
-    """Guess an appropriate widget class from a JSON-schema-like field definition."""
     item_type = _extract_schema_type(schema)
     if item_type == "array":
         return "multi_combo_box" if _extract_schema_enum(schema) else "line_edit"
@@ -204,22 +195,18 @@ def guess_widget_cls(schema: dict[str, ty.Any]) -> str:
 
 
 def _has_hex_color_value(schema: dict[str, ty.Any]) -> bool:
-    """Return whether a schema includes a hash-prefixed string color value."""
     return any(_is_hex_color_value(schema.get(key)) for key in SCHEMA_VALUE_KEYS)
 
 
 def _is_hex_color_value(value: ty.Any) -> bool:
-    """Return whether ``value`` looks like a hex color string."""
     return isinstance(value, str) and value.startswith("#")
 
 
 def _get_schema_color_value(schema: dict[str, ty.Any], fallback: str = "#FFFFFF") -> ty.Any:
-    """Return the best initial color value from a schema."""
     return _get_schema_value(schema, fallback=fallback)
 
 
 def _get_schema_value(schema: dict[str, ty.Any], fallback: ty.Any = None) -> ty.Any:
-    """Return the best initial value from a schema."""
     for key in SCHEMA_VALUE_KEYS:
         value = schema.get(key)
         if value is not None:
@@ -228,7 +215,6 @@ def _get_schema_value(schema: dict[str, ty.Any], fallback: ty.Any = None) -> ty.
 
 
 def _extract_schema_enum(schema: dict[str, ty.Any]) -> list[ty.Any] | None:
-    """Extract enum options from a schema or an array item schema."""
     enum = schema.get("enum")
     if enum is not None:
         return enum
@@ -241,19 +227,16 @@ def _extract_schema_enum(schema: dict[str, ty.Any]) -> list[ty.Any] | None:
 
 
 def _is_multiline_schema(schema: dict[str, ty.Any]) -> bool:
-    """Return whether a string schema asks for multiline text editing."""
     schema_format = str(schema.get("format", "")).lower()
     return bool(schema.get("multiline") or schema.get("multi_line") or schema_format in MULTILINE_STRING_FORMATS)
 
 
 def _get_swatch_hex_color(widget: QtColorSwatch) -> str:
-    """Return a color swatch value as a rounded RGB hex string."""
     red, green, blue = (max(0, min(255, round(float(channel) * 255))) for channel in widget.color[:3])
     return f"#{red:02x}{green:02x}{blue:02x}"
 
 
 def _extract_schema_type(schema: dict[str, ty.Any]) -> str:
-    """Extract the schema type from ``type`` or nullable ``anyOf`` entries."""
     item_type = schema.get("type")
     if item_type:
         if isinstance(item_type, (list, tuple)):
@@ -281,7 +264,6 @@ def _extract_schema_type(schema: dict[str, ty.Any]) -> str:
 
 
 def _resolve_widget_cls(schema: dict[str, ty.Any]) -> str:
-    """Resolve ``widget_cls`` from schema, allowing tuple annotations."""
     widget_cls = schema.get("widget_cls")
     if widget_cls is None:
         return guess_widget_cls(schema)
@@ -296,7 +278,6 @@ def _make_widget(
     schema: dict[str, ty.Any],
     func: OptionalCallback = None,
 ) -> Qw.QWidget:
-    """Instantiate a widget for a schema field."""
 
     def make_line_edit() -> Qw.QWidget:
         return qp.make_line_edit(parent, func=func, func_clear=func, **schema)
@@ -441,7 +422,6 @@ def _make_widget(
 
 
 def _get_slider_schema(schema: dict[str, ty.Any]) -> dict[str, ty.Any]:
-    """Return schema kwargs adapted to labelled slider helper names."""
     kwargs = dict(schema)
     if "minimum" in kwargs and "min_value" not in kwargs:
         kwargs["min_value"] = kwargs.pop("minimum")
@@ -469,7 +449,6 @@ def _get_slider_schema(schema: dict[str, ty.Any]) -> dict[str, ty.Any]:
 
 
 def _get_sequence_value(value: ty.Any) -> list[str]:
-    """Normalize schema/widget values to a list of strings."""
     if value is None:
         return []
     if isinstance(value, str):
@@ -487,7 +466,6 @@ def _make_multi_select(
     *,
     n_max: int,
 ) -> Qw.QWidget:
-    """Build a ``QtMultiSelect`` lazily to avoid importing heavier modules eagerly."""
     from qtextra.widgets.qt_select_multi import QtMultiSelect
 
     kwargs: dict[str, ty.Any] = {"func_changed": func, "sort": True, **schema}
@@ -501,7 +479,6 @@ def _make_multi_select_combo_box(
     schema: dict[str, ty.Any],
     func: OptionalCallback = None,
 ) -> Qw.QWidget:
-    """Build a chip-style multi-select combobox."""
     from qtextra.widgets.qt_combobox_multi import QtMultiSelectComboBox
 
     options = _extract_schema_enum(schema) or schema.get("options") or schema.get("items") or []
@@ -527,7 +504,6 @@ def _make_toggle_group(
     func: OptionalCallback = None,
     **kwargs: ty.Any,
 ) -> Qw.QWidget:
-    """Build a ``QtToggleGroup`` lazily."""
     from qtextra.widgets.qt_toggle_group import QtToggleGroup
 
     return QtToggleGroup.from_schema(parent, func=func, **kwargs, **schema)
@@ -538,7 +514,6 @@ def _wrap_widget_with_metadata(
     widget: Qw.QWidget,
     schema: dict[str, ty.Any],
 ) -> Qw.QHBoxLayout | None:
-    """Wrap a widget with help, info, or warning affordances when requested."""
     layout: Qw.QHBoxLayout | None = None
 
     for key, factory in (
@@ -577,7 +552,6 @@ def get_widget_for_schema(
     | QtColorSwatch,
     QtToggleGroup | Qw.QHBoxLayout | None,
 ]:
-    """Build a widget and optional surrounding layout from a schema definition."""
     widget_cls = _resolve_widget_cls(schema)
     widget = _make_widget(parent, widget_cls, schema, func=func)
 
@@ -592,7 +566,6 @@ def get_widget_for_schema(
 
 
 def get_value_from_widget(widget: Qw.QWidget) -> ty.Any:
-    """Extract a Python value from a supported widget."""
     from superqt import QLabeledDoubleSlider, QLabeledSlider
 
     from qtextra.widgets.qt_button_color import QtColorSwatch
@@ -632,7 +605,6 @@ def get_value_from_widget(widget: Qw.QWidget) -> ty.Any:
 
 
 def set_value_to_widget(widget: Qw.QWidget, value: ty.Any) -> None:
-    """Apply a Python value to a supported widget."""
     from superqt import QLabeledDoubleSlider, QLabeledSlider
 
     from qtextra.widgets.qt_button_color import QtColorSwatch
@@ -688,7 +660,6 @@ def set_value_to_widget(widget: Qw.QWidget, value: ty.Any) -> None:
 
 
 def get_data_for_widgets(widgets: dict[str, Qw.QWidget], **kwargs: ty.Any) -> dict[str, ty.Any]:
-    """Collect values from widgets into a plain dictionary."""
     data = {}
     for key, widget in widgets.items():
         if key.startswith("_"):

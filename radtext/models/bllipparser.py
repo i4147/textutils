@@ -2,10 +2,8 @@ import logging
 import os
 import string
 from typing import Union, List
-
 from bioc import BioCSentence, BioCPassage, BioCAnnotation
 from bllipparser import RerankingParser
-
 from radtext.core import BioCProcessor
 from radtext.models.constants import DEFAULT_OPTIONS
 from radtext.utils import is_ner
@@ -37,17 +35,6 @@ class BllipParser:
         self.rrp = RerankingParser.from_unified_model_dir(self.model_dir)
 
     def parse(self, s: Union[None, str]):
-        """Parse the sentence text using Reranking parser.
-
-        Args:
-            s: one sentence
-
-        Returns:
-            ScoredParse: parse tree, ScoredParse object in RerankingParser; None if failed
-
-        Raises:
-            ValueError
-        """
         if s is None or (isinstance(s, str) and len(s.strip()) == 0):
             raise ValueError("Cannot parse empty sentence: {}".format(s))
         nbest = self.rrp.parse(str(s))
@@ -56,18 +43,11 @@ class BllipParser:
 
 class BioCParserBllip(BioCProcessor):
     def __init__(self, model_dir: str = DEFAULT_OPTIONS["--bllip-model"], only_ner: bool = True):
-        """
-        :param model_dir: Bllip parser model path
-        :param only_ner: Parse the sentences with NER annotations.
-        """
         super(BioCParserBllip, self).__init__("parse:bllip")
         self.parser = BllipParser(model_dir=model_dir)
         self.only_ner = only_ner
 
     def has_ner(self, sentence: BioCSentence, annotations: List[BioCAnnotation]) -> bool:
-        """
-        :return: True if the sentence contains named entities
-        """
         named_entities = [ann for ann in annotations if is_ner(ann)]
         sen_anns = [ann for ann in named_entities if ann.total_span in sentence.total_span]
         return len(sen_anns) > 0
@@ -82,7 +62,6 @@ class BioCParserBllip(BioCProcessor):
         sentence.infons["parse_tree"] = None
         try:
             text = sentence.text
-            # print(text)
             if not is_punct(text):
                 sentence.infons["nlp_system"] = self.nlp_system
                 sentence.infons["nlp_date_time"] = self.nlp_date_time

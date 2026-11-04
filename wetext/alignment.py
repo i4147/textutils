@@ -3,7 +3,7 @@ from typing import Dict, Tuple
 
 
 class AlignmentError(RuntimeError):
-    """Raised when a normalization path cannot be traced exactly."""
+    pass
 
 
 @dataclass(frozen=True)
@@ -42,8 +42,6 @@ class NormalizationResult:
 
 @dataclass(frozen=True)
 class NormalizationCandidate:
-    """One distinct normalized output and its WFST ranking costs."""
-
     text: str
     cost: float
     tagger_cost: float

@@ -3,11 +3,9 @@ from typing import List, Generator, Union
 import networkx as nx
 import bioc
 import yaml
-
 from radtext.utils import intersect
 from radtext.models.neg import ngrex
 from radtext.models.constants import UNCERTAINTY, NEGATION
-
 from radtext.models.neg import semgraph
 from cachetools import cached, LRUCache
 
@@ -28,13 +26,9 @@ class NegNgrexPattern:
 
 
 def load_ngrex_yml(file) -> List[NegNgrexPattern]:
-    """
-    Read a pattern file in the yaml format
-    """
     logger = logging.getLogger(__name__)
     with open(file) as fp:
         objs = yaml.load(fp, yaml.FullLoader)
-
     patterns = []
     if objs:
         for p in objs:
@@ -133,12 +127,10 @@ class NegGrexPatterns:
         sentence = find_sentence(passage, offset)
         if not sentence:
             raise ValueError("%s: cannot find sentence at %s" % (docid, offset))
-
         try:
             g = get_graph(sentence)
         except Exception as e:
             raise ValueError("%s:%s: Cannot parse graph: %s", docid, sentence.offset, e)
-
         return NegGrexAssertion(self, g, ann)
 
     def assert_graph_(self, graph: nx.DiGraph, ann: bioc.BioCAnnotation):
@@ -151,9 +143,6 @@ def get_graph(sentence):
 
 
 def find_nodes(graph: nx.DiGraph, begin: int, end: int) -> Generator:
-    """
-    Find the nodes in the graph that are within [begin, end)
-    """
     for node in graph.nodes():
         node_start = graph.nodes[node]["start"]
         node_end = graph.nodes[node]["end"]

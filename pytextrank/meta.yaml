@@ -1,0 +1,46 @@
+{% set name = "pytextrank" %}
+{% set version = "3.1.1" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/pytextrank-{{ version }}.tar.gz
+  sha256: 9bb4cd447e96bd97a72b35e6875e4b920f5df8092cc3caf70210f03e8350a160
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python >=3.7
+  run:
+    - python-graphviz >=0.13
+    - icecream >=2.1
+    - networkx >=2.0
+    - python >=3.7
+    - spacy >=3.0
+
+test:
+  imports:
+    - pytextrank
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://derwen.ai/docs/ptr/
+  summary: Python implementation of TextRank as a spaCy pipeline extension, for graph-based natural language work plus related knowledge graph practices; used for for phrase extraction and lightweight extractive summarization of text documents.
+  dev_url: http://github.com/DerwenAI/pytextrank
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - ceteri

@@ -1,9 +1,7 @@
 from pathlib import Path
 from typing import List
-
 import stanza
 import spacy
-
 from radtext.cmd.ner import load_yml
 from radtext.core import BioCProcessor, BioCPipeline
 from radtext.models.bllipparser import BioCParserBllip
@@ -28,21 +26,10 @@ class Pipeline(BioCPipeline):
         super(Pipeline, self).__init__()
         if annotators is None:
             annotators = DEFAULT_ANNOTATORS
-        # else:
-        #    annotator = annotators[0].split(':')[0]
-        #    annotators = None
-        #    for idx in range(len(DEFAULT_ANNOTATORS)):
-        #        if annotator in DEFAULT_ANNOTATORS[idx]:
-        #            annotators = [DEFAULT_ANNOTATORS[id] for id in range(len(DEFAULT_ANNOTATORS)) if id<=idx]
-        #    if annotators is None:
-        #        raise KeyError('%s: Do not support this annotator' % annotator)
-
         if argv is None:
             argv = DEFAULT_OPTIONS
-
         self.annotators = annotators
         self.argv = argv
-
         self.processors = []
         for annotator in annotators:
             if annotator == "deid:philter":

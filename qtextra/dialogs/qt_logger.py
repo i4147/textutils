@@ -16,22 +16,17 @@ from qtextra.widgets.qt_toolbar_mini import QtMiniToolbar
 
 
 class QtHandler(QObject):
-    """Qt Log Handler."""
-
     evt_signal = Signal(object)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
     def write(self, message: str):
-        """Emit message."""
         with suppress(RuntimeError):
             self.evt_signal.emit(message)
 
 
 class QtLogger(QWidget):
-    """Logger window."""
-
     THEME_COLORS: ty.ClassVar[dict[str, dict[str, str]]] = {
         "light": {
             "BACKGROUND": "white",
@@ -106,7 +101,6 @@ class QtLogger(QWidget):
         )
 
     def closeEvent(self, evt):
-        """Close."""
         with suppress(Exception):
             logger.remove(self.log_id)
         connect(self.handler.evt_signal, self.update_log, state=False)
@@ -115,19 +109,16 @@ class QtLogger(QWidget):
     @Slot(str)
     @Slot(object)
     def update_log(self, message):
-        """Update log record."""
         record = message.record
         level = record["level"].name if hasattr(record["level"], "name") else record["level"]
         color = self.COLORS.get(level, self.TEXT_COLOR)
         self.append_log_entry(color, message)
 
     def append_log_entry(self, color: str | list, message: str) -> None:
-        """Add log entry to the window."""
         self.textedit.appendHtml(f'<pre><font color="{color}">{message}</font></pre>')
         # self.textedit.appendHtml(f'<span><font color="{color}">{message}</font></span>')
 
     def on_open_log_dir(self):
-        """Open directory containing log files."""
         from koyo.path import open_directory_universal
 
         if self.log_dir is None:
@@ -136,13 +127,11 @@ class QtLogger(QWidget):
         open_directory_universal(self.log_dir)
 
     def swap_theme(self):
-        """Swap theme."""
         current_theme = self.THEME
         new_theme = "light" if current_theme == "dark" else "dark"
         self.set_theme(new_theme)
 
     def set_theme(self, theme):
-        """Update color theme of the logger."""
         if theme not in self.THEMES:
             raise ValueError(f"Theme must be one of `{self.THEMES}`")
 
@@ -154,7 +143,6 @@ class QtLogger(QWidget):
         self.recolor_old_text()
 
     def recolor_old_text(self):
-        """Iteratively go through each line of the previous log and change the color to match the current theme."""
 
         def _get_log_level():
             for _level in self.LOG_LEVELS:
@@ -173,8 +161,6 @@ class QtLogger(QWidget):
 
 
 class QtLoggerDialog(QtFramelessTool):
-    """Logger popup."""
-
     HIDE_WHEN_CLOSE = True
 
     def __init__(self, parent: QWidget | None = None, log_dir: PathLike | None = None) -> None:
@@ -185,7 +171,6 @@ class QtLoggerDialog(QtFramelessTool):
         self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
 
     def make_panel(self) -> QVBoxLayout:
-        """Make panel."""
         _, header_layout = self._make_hide_handle()
         self._title_label.setText("Logger")
 

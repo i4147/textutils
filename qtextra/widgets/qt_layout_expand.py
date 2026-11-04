@@ -4,8 +4,6 @@ from qtpy.QtWidgets import QLayout, QWidget
 
 
 class QtExpandLayout(QLayout):
-    """Expand layout."""
-
     def __init__(self, parent=None):
         super().__init__(parent)
         self.__items = []
@@ -44,7 +42,6 @@ class QtExpandLayout(QLayout):
         return True
 
     def heightForWidth(self, width):
-        """Get the minimal height according to width."""
         return self.__doLayout(QRect(0, 0, width, 0), False)
 
     def setGeometry(self, rect):
@@ -66,7 +63,6 @@ class QtExpandLayout(QLayout):
         return size
 
     def __doLayout(self, rect, move):
-        """Adjust widgets position according to the window size."""
         margin = self.contentsMargins()
         x = rect.x() + margin.left()
         y = rect.y() + margin.top()

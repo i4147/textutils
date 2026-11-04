@@ -7,8 +7,6 @@ import qtextra.helpers as hp
 
 
 class QtConfirmWithTextDialog(QDialog):
-    """Confirm action by typing requested text."""
-
     def __init__(
         self,
         parent: QWidget | None = None,
@@ -40,7 +38,6 @@ class QtConfirmWithTextDialog(QDialog):
         self.request_edit.setFocus()
 
     def validate(self) -> None:
-        """Validate the input."""
         enabled = self.request_edit.text() == self.request
         self.ok_btn.setEnabled(enabled)
         hp.update_widget_style(self.ok_btn, "success_btn" if enabled else "")

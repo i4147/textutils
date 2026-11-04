@@ -16,8 +16,6 @@ BadgeSize = ty.Literal["xs", "sm", "md", "lg", "xl"]
 
 
 class QtNotificationBadge(QtOverlay):
-    """Small badge that can be overlaid on any widget."""
-
     STATES: ty.ClassVar[tuple[BadgeState, ...]] = ("", "info", "success", "warning", "error")
     MODES: ty.ClassVar[tuple[BadgeMode, ...]] = ("dot", "count")
     SIZES: ty.ClassVar[tuple[BadgeSize, ...]] = ("xs", "sm", "md", "lg", "xl")
@@ -75,11 +73,9 @@ class QtNotificationBadge(QtOverlay):
 
     @property
     def state(self) -> BadgeState:
-        """Return current state."""
         return self._state
 
     def set_state(self, state: BadgeState) -> None:
-        """Set visual badge state."""
         if state not in self.STATES:
             raise ValueError(f"Invalid state: {state}. Must be one of {self.STATES}")
         self._state = state
@@ -87,16 +83,13 @@ class QtNotificationBadge(QtOverlay):
         self.update()
 
     def clear(self) -> None:
-        """Clear the badge state and hide it."""
         self.set_state("")
 
     @property
     def mode(self) -> BadgeMode:
-        """Return current display mode."""
         return self._mode
 
     def set_mode(self, mode: BadgeMode) -> None:
-        """Set badge display mode."""
         if mode not in self.MODES:
             raise ValueError(f"Invalid mode: {mode}. Must be one of {self.MODES}")
         self._mode = mode
@@ -107,11 +100,9 @@ class QtNotificationBadge(QtOverlay):
 
     @property
     def badge_size(self) -> BadgeSize:
-        """Return current size preset."""
         return self._size
 
     def set_badge_size(self, size: BadgeSize) -> None:
-        """Set badge size preset."""
         if size not in self.SIZES:
             raise ValueError(f"Invalid size: {size}. Must be one of {self.SIZES}")
         self._size = size
@@ -124,11 +115,9 @@ class QtNotificationBadge(QtOverlay):
 
     @property
     def count(self) -> int:
-        """Return badge count."""
         return self._count
 
     def set_count(self, count: int | None) -> None:
-        """Set badge count."""
         if count is None:
             count = 0
         if count < 0:
@@ -140,17 +129,14 @@ class QtNotificationBadge(QtOverlay):
         self.update()
 
     def set_visible_when_zero(self, visible: bool) -> None:
-        """Control whether count mode shows when count is zero."""
         self._visible_when_zero = bool(visible)
         self._sync_visibility()
 
     def set_auto_clear_on_click(self, state: bool) -> None:
-        """Clear the badge when the attached widget is clicked."""
         self._auto_clear_on_click = bool(state)
         self._update_clear_target()
 
     def attach_to(self, widget: QWidget | None) -> None:
-        """Attach the badge overlay to a target widget."""
         if widget is not None and self.parentWidget() is None:
             self.setParent(widget.window())
         self.set_widget(widget)
@@ -158,7 +144,6 @@ class QtNotificationBadge(QtOverlay):
         self._sync_visibility()
 
     def eventFilter(self, recv, event):
-        """Clear the badge when the target widget is clicked."""
         if (
             recv is self._clear_target
             and self._auto_clear_on_click
@@ -169,7 +154,6 @@ class QtNotificationBadge(QtOverlay):
         return super().eventFilter(recv, event)
 
     def sizeHint(self) -> QSize:
-        """Return badge size."""
         diameter = self._diameter
         text = self._display_text
         if self._mode == "dot" or not text:
@@ -180,11 +164,9 @@ class QtNotificationBadge(QtOverlay):
         return QSize(width, height)
 
     def minimumSizeHint(self) -> QSize:
-        """Return minimum badge size."""
         return self.sizeHint()
 
     def paintEvent(self, event: QPaintEvent) -> None:
-        """Paint badge background and optional count."""
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
 
@@ -237,7 +219,6 @@ class QtNotificationBadge(QtOverlay):
         self.setVisible(should_show)
 
     def _sync_to_anchor(self) -> None:
-        """Sync visibility using both badge state and anchor visibility."""
         self._sync_visibility()
 
     def _anchor_is_visible(self) -> bool:

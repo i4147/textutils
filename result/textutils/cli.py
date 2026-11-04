@@ -1,5 +1,3 @@
-"""Typer command-line interface."""
-
 from pathlib import Path
 from typing import Annotated
 
@@ -14,19 +12,20 @@ app = typer.Typer(no_args_is_help=True, help="Linux text processing utilities.")
 
 @app.command()
 def distance(first: str, second: str) -> None:
-    """Calculate character-level Levenshtein distance."""
     typer.echo(levenshtein_distance(first, second))
 
 
 @app.command()
 def leet(text: str) -> None:
-    """Convert text to leetspeak."""
     typer.echo(leetspeak(text))
 
 
 @app.command()
-def search(root: Annotated[Path, typer.Argument(exists=True, file_okay=False, readable=True)], needle: str, pattern: str = "*.txt") -> None:
-    """Search UTF-8 files recursively using four workers."""
+def search(
+    root: Annotated[Path, typer.Argument(exists=True, file_okay=False, readable=True)],
+    needle: str,
+    pattern: str = "*.txt",
+) -> None:
     try:
         for path, matches in search_files(root, needle, pattern):
             for line_number, line in matches:

@@ -1,0 +1,515 @@
+import signal
+import sys
+from dataclasses import dataclass
+
+import click
+from rich.align import Align
+from rich.console import Console, Group
+from rich.layout import Layout
+from rich.live import Live
+from rich.panel import Panel
+from rich.text import Text
+
+from .bookmarks import Bookmark, BookmarkManager
+from .models import Chapter
+
+
+@dataclass
+class ReaderState:
+    current_line: int
+    chapter_index: int
+    percentage: float
+    quit_requested: bool
+
+
+KEY_UP = "\x1b[A"
+KEY_DOWN = "\x1b[B"
+KEY_RIGHT = "\x1b[C"
+KEY_LEFT = "\x1b[D"
+KEY_PAGE_UP = "\x1b[5~"
+KEY_PAGE_DOWN = "\x1b[6~"
+KEY_HOME = "\x1b[H"
+KEY_END = "\x1b[F"
+KEY_ESC = "\x1b"
+
+HELP_TEXT = """
+[bold cyan]Navigation[/bold cyan]
+  [yellow]j[/yellow] / [yellow]↓[/yellow]          Scroll down one line
+  [yellow]k[/yellow] / [yellow]↑[/yellow]          Scroll up one line
+  [yellow]Space[/yellow] / [yellow]PgDn[/yellow]   Next page
+  [yellow]b[/yellow] / [yellow]PgUp[/yellow]       Previous page
+  [yellow]n[/yellow]              Next chapter
+  [yellow]p[/yellow]              Previous chapter
+  [yellow]g[/yellow] / [yellow]Home[/yellow]       Go to beginning
+  [yellow]G[/yellow] / [yellow]End[/yellow]        Go to end
+
+[bold cyan]Bookmarks[/bold cyan]
+  [yellow]m[/yellow]              Save bookmark
+  [yellow]'[/yellow]              Jump to bookmark
+
+[bold cyan]Other[/bold cyan]
+  [yellow]h[/yellow] / [yellow]?[/yellow]          Show this help
+  [yellow]q[/yellow] / [yellow]Esc[/yellow]        Quit
+
+[dim]Press any key to close this help[/dim]
+"""
+
+
+class EpubReader:
+    def __init__(
+        self,
+        content: str,
+        chapters: list[Chapter],
+        title: str,
+        epub_path: str,
+        page_size: int | None = None,
+        show_header: bool = True,
+        show_footer: bool = True,
+        start_line: int = 0,
+        start_chapter: int | None = None,
+        bookmark_manager: BookmarkManager | None = None,
+        width: int | None = None,
+    ) -> None:
+        self.title = title
+        self.epub_path = epub_path
+        self.chapters = chapters
+        self.show_header = show_header
+        self.show_footer = show_footer
+        self.bookmark_manager = bookmark_manager or BookmarkManager()
+        self._width = width
+
+        self.console = Console()
+        self._user_page_size = page_size
+        self._page_size = page_size or self._calculate_page_size()
+
+        self._process_content(content)
+
+        self.current_line = start_line
+        if start_chapter is not None and 0 <= start_chapter < len(self.chapter_offsets):
+            self.current_line = self.chapter_offsets[start_chapter]
+
+        self.current_line = self._clamp_line(self.current_line)
+
+        self._show_help = False
+        self._message: str | None = None
+        self._message_style: str = "green"
+        self._running = False
+
+        self._setup_signal_handlers()
+
+    def _setup_signal_handlers(self) -> None:
+        if sys.platform != "win32":
+            signal.signal(signal.SIGWINCH, self._handle_resize)
+
+    def _handle_resize(self, signum: int, frame: object) -> None:
+        del signum, frame
+        if self._user_page_size is None:
+            self._page_size = self._calculate_page_size()
+
+    def _calculate_page_size(self) -> int:
+        height = self.console.size.height
+        header_size = 3 if self.show_header else 0
+        footer_size = 3 if self.show_footer else 0
+        return max(5, height - header_size - footer_size - 4)
+
+    def _clamp_line(self, line: int) -> int:
+        max_line = max(0, len(self.lines) - 1)
+        return max(0, min(line, max_line))
+
+    def _process_content(self, content: str) -> None:
+        raw_lines = content.split("\n")
+
+        self.lines: list[str] = []
+        self.chapter_offsets: list[int] = []
+        self.chapter_titles: list[str] = []
+
+        i = 0
+        while i < len(raw_lines):
+            line = raw_lines[i]
+
+            if line.strip():
+                empty_before = 0
+                j = i - 1
+                while j >= 0 and not raw_lines[j].strip():
+                    empty_before += 1
+                    j -= 1
+
+                empty_after = 0
+                j = i + 1
+                while j < len(raw_lines) and not raw_lines[j].strip():
+                    empty_after += 1
+                    j += 1
+
+                is_chapter_title = False
+                if i == 0 or (empty_before >= 4 and empty_after >= 2):
+                    next_content_idx = i + 1 + empty_after
+                    if next_content_idx < len(raw_lines):
+                        is_chapter_title = True
+
+                if is_chapter_title:
+                    self.chapter_offsets.append(len(self.lines))
+                    self.chapter_titles.append(line.strip())
+                    i += 1 + empty_after
+                    continue
+
+            if line.strip():
+                self.lines.append(line)
+
+            i += 1
+
+        if not self.chapter_offsets:
+            self.chapter_offsets.append(0)
+            self.chapter_titles.append(self.title or "Content")
+
+    def _get_current_chapter(self) -> tuple[int, str]:
+        chapter_idx = 0
+        for i, offset in enumerate(self.chapter_offsets):
+            if self.current_line >= offset:
+                chapter_idx = i
+            else:
+                break
+        return chapter_idx, self.chapter_titles[chapter_idx]
+
+    def _get_progress(self) -> tuple[int, int, float]:
+        total = len(self.lines)
+        if total == 0:
+            return 0, 0, 0.0
+        percentage = (self.current_line / max(1, total - 1)) * 100
+        return self.current_line, total, percentage
+
+    def _scroll_lines(self, delta: int) -> None:
+        new_line = self.current_line + delta
+        self.current_line = self._clamp_line(new_line)
+
+    def _scroll_page(self, delta: int) -> None:
+        self._scroll_lines(delta * self._page_size)
+
+    def _goto_chapter(self, chapter_idx: int) -> None:
+        if 0 <= chapter_idx < len(self.chapter_offsets):
+            self.current_line = self.chapter_offsets[chapter_idx]
+
+    def _goto_start(self) -> None:
+        self.current_line = 0
+
+    def _goto_end(self) -> None:
+        self.current_line = self._clamp_line(len(self.lines) - 1)
+
+    def _save_bookmark(self) -> None:
+        chapter_idx, _ = self._get_current_chapter()
+        _, total, percentage = self._get_progress()
+
+        bookmark = Bookmark.create(
+            chapter_index=chapter_idx,
+            line_offset=self.current_line,
+            percentage=percentage,
+            title=self.title,
+        )
+        self.bookmark_manager.save(self.epub_path, bookmark)
+        self._message = "Bookmark saved"
+        self._message_style = "green"
+
+    def _load_bookmark(self) -> None:
+        bookmark = self.bookmark_manager.load(self.epub_path)
+        if bookmark:
+            if not self.lines:
+                self.current_line = 0
+                self._message = (
+                    "Bookmark found but content is empty; starting at beginning"
+                )
+                self._message_style = "yellow"
+                return
+
+            self.current_line = self._clamp_line(bookmark.line_offset)
+            self._message = f"Jumped to bookmark ({bookmark.percentage:.1f}%)"
+            self._message_style = "green"
+        else:
+            self._message = "No bookmark found"
+            self._message_style = "yellow"
+
+    def _read_key(self) -> str:
+        char = click.getchar()
+
+        if char == "\x1b":
+            try:
+                import select
+
+                if sys.platform != "win32":
+                    if select.select([sys.stdin], [], [], 0.05)[0]:
+                        char += click.getchar()
+                        if char[-1] == "[":
+                            if select.select([sys.stdin], [], [], 0.05)[0]:
+                                char += click.getchar()
+                                if char[-1].isdigit():
+                                    if select.select([sys.stdin], [], [], 0.05)[0]:
+                                        char += click.getchar()
+                else:
+                    char += click.getchar()
+                    if len(char) > 1 and char[-1] == "[":
+                        char += click.getchar()
+            except Exception:
+                pass
+
+        return char
+
+    def _handle_key(self, key: str) -> bool:
+        self._message = None
+
+        if self._show_help:
+            self._show_help = False
+            return True
+
+        if key in ("q", "Q", KEY_ESC):
+            return False
+
+        if key in ("h", "H", "?"):
+            self._show_help = True
+            return True
+
+        if key in ("j", KEY_DOWN):
+            self._scroll_lines(1)
+        elif key in ("k", KEY_UP):
+            self._scroll_lines(-1)
+
+        elif key in (" ", KEY_PAGE_DOWN):
+            self._scroll_page(1)
+        elif key in ("b", KEY_PAGE_UP):
+            self._scroll_page(-1)
+
+        elif key == "n":
+            chapter_idx, _ = self._get_current_chapter()
+            self._goto_chapter(chapter_idx + 1)
+        elif key == "p":
+            chapter_idx, _ = self._get_current_chapter()
+            self._goto_chapter(max(0, chapter_idx - 1))
+
+        elif key in ("g", KEY_HOME):
+            self._goto_start()
+        elif key in ("G", KEY_END):
+            self._goto_end()
+
+        elif key == "m":
+            self._save_bookmark()
+        elif key == "'":
+            self._load_bookmark()
+
+        return True
+
+    def _get_effective_width(self) -> int | None:
+        if self._width is None:
+            return None
+        terminal_width = self.console.size.width
+        return min(self._width, terminal_width - 4)
+
+    def _get_content_width(self) -> int:
+        effective = self._get_effective_width()
+        if effective is not None:
+            return max(10, effective - 2)
+        return max(10, self.console.size.width - 4)
+
+    def _count_visual_lines(self, text: str) -> int:
+        if not text:
+            return 1
+        content_width = self._get_content_width()
+        return max(1, (len(text) + content_width - 1) // content_width)
+
+    def _render_header(self) -> Panel:
+        chapter_idx, chapter_title = self._get_current_chapter()
+        total_chapters = len(self.chapter_offsets)
+
+        header_text = Text()
+        header_text.append(f"  {chapter_title}", style="bold white")
+        header_text.append(
+            f"  [Chapter {chapter_idx + 1}/{total_chapters}]", style="dim cyan"
+        )
+
+        return Panel(
+            header_text,
+            style="cyan",
+            height=3,
+            width=self._get_effective_width(),
+        )
+
+    def _render_footer(self) -> Panel:
+        current, total, percentage = self._get_progress()
+
+        footer_parts = []
+
+        target_visual_before = self._page_size // 2
+        visual_before = 0
+        start = current
+
+        while start > 0 and visual_before < target_visual_before:
+            start -= 1
+            visual_before += self._count_visual_lines(self.lines[start])
+
+        visual_total = 0
+        end = start
+        while end < total and visual_total < self._page_size:
+            visual_total += self._count_visual_lines(self.lines[end])
+            end += 1
+
+        while start > 0 and visual_total < self._page_size:
+            start -= 1
+            visual_total += self._count_visual_lines(self.lines[start])
+
+        footer_parts.append(f"Lines {start + 1}-{end}/{total}")
+
+        footer_parts.append(f"{percentage:.1f}%")
+
+        if self._message:
+            footer_parts.append(f"[{self._message_style}]{self._message}[/]")
+        else:
+            footer_parts.append("[dim][q]uit [h]elp[/dim]")
+
+        footer_text = "  |  ".join(footer_parts)
+
+        return Panel(
+            Text.from_markup(f"  {footer_text}"),
+            style="cyan",
+            height=3,
+            width=self._get_effective_width(),
+        )
+
+    def _render_content(self) -> Panel:
+
+        target_visual_before = self._page_size // 2
+        visual_before = 0
+        start = self.current_line
+
+        while start > 0 and visual_before < target_visual_before:
+            start -= 1
+            visual_before += self._count_visual_lines(self.lines[start])
+            if start in self.chapter_offsets:
+                visual_before += 1
+
+        visual_total = 0
+        end = start
+
+        while end < len(self.lines) and visual_total < self._page_size:
+            if end in self.chapter_offsets:
+                visual_total += 1
+            visual_total += self._count_visual_lines(self.lines[end])
+            end += 1
+
+        while start > 0 and visual_total < self._page_size:
+            start -= 1
+            visual_total += self._count_visual_lines(self.lines[start])
+            if start in self.chapter_offsets:
+                visual_total += 1
+
+        display_lines = self.lines[start:end]
+
+        content_width = self._get_content_width()
+        chapter_sep = "\u2500" * min(content_width, 40)
+
+        content_text = Text()
+        for i, line in enumerate(display_lines):
+            line_num = start + i
+
+            if line_num in self.chapter_offsets:
+                content_text.append(f"{chapter_sep}\n", style="dim cyan")
+
+            if line_num == self.current_line:
+                content_text.append(f"{line}\n", style="bold")
+            else:
+                content_text.append(f"{line}\n")
+
+        return Panel(
+            content_text,
+            border_style="dim",
+            width=self._get_effective_width(),
+        )
+
+    def _render_help_overlay(self) -> Panel:
+        return Panel(
+            Align.center(Text.from_markup(HELP_TEXT)),
+            title="[bold]Help[/bold]",
+            border_style="yellow",
+            width=50,
+        )
+
+    def _render_page(self) -> Layout:
+        layout = Layout()
+
+        header = (
+            Align.center(self._render_header())
+            if self._width
+            else self._render_header()
+        )
+        footer = (
+            Align.center(self._render_footer())
+            if self._width
+            else self._render_footer()
+        )
+        content = self._render_content()
+        content_centered = Align.center(content) if self._width else content
+
+        if self.show_header and self.show_footer:
+            layout.split_column(
+                Layout(name="header", size=3),
+                Layout(name="body"),
+                Layout(name="footer", size=3),
+            )
+            layout["header"].update(header)
+            layout["footer"].update(footer)
+        elif self.show_header:
+            layout.split_column(
+                Layout(name="header", size=3),
+                Layout(name="body"),
+            )
+            layout["header"].update(header)
+        elif self.show_footer:
+            layout.split_column(
+                Layout(name="body"),
+                Layout(name="footer", size=3),
+            )
+            layout["footer"].update(footer)
+        else:
+            layout.split_column(Layout(name="body"))
+
+        if self._show_help:
+            help_panel = self._render_help_overlay()
+            layout["body"].update(
+                Group(
+                    content_centered,
+                    Align.center(help_panel, vertical="middle"),
+                )
+            )
+        else:
+            layout["body"].update(content_centered)
+
+        return layout
+
+    def run(self) -> ReaderState:
+        self._running = True
+
+        try:
+            with Live(
+                self._render_page(),
+                console=self.console,
+                screen=True,
+                auto_refresh=False,
+            ) as live:
+                while self._running:
+                    live.update(self._render_page())
+                    live.refresh()
+
+                    key = self._read_key()
+                    if not self._handle_key(key):
+                        break
+
+                    if self._user_page_size is None:
+                        self._page_size = self._calculate_page_size()
+
+        except KeyboardInterrupt:
+            pass
+
+        chapter_idx, _ = self._get_current_chapter()
+        _, _, percentage = self._get_progress()
+
+        return ReaderState(
+            current_line=self.current_line,
+            chapter_index=chapter_idx,
+            percentage=percentage,
+            quit_requested=True,
+        )

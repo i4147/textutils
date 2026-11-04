@@ -4,16 +4,16 @@ from qtpy.QtWidgets import QLabel
 
 
 class QtLargeLabel(QLabel):
-    """Large label."""
+    pass
 
 
 class QtWelcomeLabel(QLabel):
-    """Labels used for main message in welcome page."""
+    pass
 
 
 class QtShortcut(QLabel):
-    """Labels used for displaying shortcut information in welcome page."""
+    pass
 
 
 class QtShortcutLabel(QLabel):
-    """Labels used for displaying shortcut information in welcome page."""
+    pass

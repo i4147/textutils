@@ -23,7 +23,6 @@ capture_exception = sentry_sdk.capture_exception
 
 
 def __getattr__(name: str):
-    """Lazily expose optional Sentry dialog helpers."""
     if name == "FeedbackDialog":
         from qtextra.dialogs.sentry.feedback import FeedbackDialog
 
@@ -40,30 +39,11 @@ def __getattr__(name: str):
 
 
 class Settings(ty.Protocol):
-    """Settings protocol."""
-
     telemetry_enabled: bool
     telemetry_with_locals: bool
 
 
 def ask_opt_in(settings: Settings, force: bool = False, parent: QWidget | None = None) -> Settings:
-    """Show the dialog asking the user to opt in.
-
-    Parameters
-    ----------
-    settings
-        Settings object.
-    force : bool, optional
-        If True, will show opt_in even if user has already opted in/out,
-        by default False.
-    parent : QWidget, optional
-        Parent widget, by default None.
-
-    Returns
-    -------
-    SettingsDict
-        [description].
-    """
     assert settings is not None, "Settings must be provided."
 
     enabled_attr = "enabled" if hasattr(settings, "enabled") else "telemetry_enabled"
@@ -91,7 +71,6 @@ def ask_opt_in(settings: Settings, force: bool = False, parent: QWidget | None =
 
 
 def install_error_monitor(settings: Settings, **extra_kws: ty.Any) -> None:
-    """Initialize the error monitor with sentry.io."""
     global INSTALLED
     if INSTALLED:
         return
@@ -116,13 +95,11 @@ def install_error_monitor(settings: Settings, **extra_kws: ty.Any) -> None:
 
 
 def set_extra_tags(**kwargs: ty.Any) -> None:
-    """Set extra tags."""
     for k, v in kwargs.items():
         sentry_sdk.set_tag(k, v)
 
 
 def report_memory_usage() -> str:
-    """Report memory usage for current process."""
     import tempfile
 
     import psutil

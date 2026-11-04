@@ -11,11 +11,6 @@ from qtextra.config import THEMES
 
 
 class QtCheckCollapsible(QCollapsible):
-    """A collapsible widget to hide and unhide child widgets.
-
-    Based on https://stackoverflow.com/a/68141638
-    """
-
     def __init__(
         self,
         title: str = "",
@@ -58,20 +53,16 @@ class QtCheckCollapsible(QCollapsible):
         self.setCollapsedIcon(hp.make_qta_icon("chevron_up"))
 
     def set_checkbox_visible(self, state: bool) -> None:
-        """Show or hide the checkbox."""
         self.checkbox.setVisible(state)
 
     def set_icon_visible(self, state: bool) -> None:
-        """Show or hide the checkbox."""
         self.action_btn.setVisible(state)
 
     def set_warning_visible(self, state: bool) -> None:
-        """Show or hide the checkbox."""
         self.warning_label.setVisible(state)
 
     @property
     def is_checked(self) -> bool:
-        """Determine whether widget is checked."""
         return self.checkbox.isChecked()
 
     def _toggle(self):
@@ -82,7 +73,6 @@ class QtCheckCollapsible(QCollapsible):
         self._toggle_btn.setChecked(self.checkbox.isChecked())
 
     def addLayout(self, layout: QLayout):
-        """Add layout to the central content widget's layout."""
         content_layout = self._content.layout()
         if hasattr(content_layout, "addLayout"):
             content_layout.addLayout(layout)
@@ -92,7 +82,6 @@ class QtCheckCollapsible(QCollapsible):
             raise ValueError("Layout does not support adding child layouts.")
 
     def addRow(self, label: str | QWidget | QLayout, widget: QWidget | None = None):
-        """Add layout to the central content widget's layout."""
         if not hasattr(self._content.layout(), "addRow"):
             raise ValueError("Layout does not have `addRow` method.")
         if widget:

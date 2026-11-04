@@ -19,7 +19,6 @@ except ImportError:
 
 
 def make_html_viewer(parent: QWidget) -> ty.Any:
-    """Make viewier."""
     if QWebEngineView is not None:
         panel_help = QWebEngineView(parent)
     elif QWebView is not None:

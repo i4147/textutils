@@ -41,22 +41,6 @@ from qtextra.config import QtStyler
 
 
 class ShowcasePage(BaseModel):
-    """Content displayed on one page of :class:`QtShowcaseWidget`.
-
-    Parameters
-    ----------
-    title : str
-        Page heading shown in the translucent overlay.
-    description : str
-        Short explanatory text shown below the heading.
-    image_path : str | None
-        Optional local image path used as the page background.
-    link_text : str
-        Text displayed for the optional link.
-    link_url : str
-        URL emitted when the link is activated.
-    """
-
     title: str
     description: str = ""
     image_path: str | None = None
@@ -65,8 +49,6 @@ class ShowcasePage(BaseModel):
 
 
 class _ShowcaseImage(QWidget):
-    """Responsive showcase image fitted inside a rounded frame."""
-
     _CORNER_RADIUS = 10.0
 
     def __init__(self, parent: QWidget | None = None) -> None:
@@ -75,12 +57,10 @@ class _ShowcaseImage(QWidget):
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
     def set_image(self, path: str | None) -> None:
-        """Load an image path, or show the themed fallback background."""
         self._pixmap = QPixmap(path) if path and Path(path).is_file() else QPixmap()
         self.update()
 
     def _scaled_image_rect(self) -> QRect:
-        """Return a centred rectangle that fits the full image in the view."""
         if self._pixmap.isNull():
             return self.rect()
         size = self._pixmap.size()
@@ -90,7 +70,6 @@ class _ShowcaseImage(QWidget):
         return rect
 
     def paintEvent(self, event: QPaintEvent) -> None:
-        """Paint the current image while preserving its aspect ratio."""
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
@@ -109,8 +88,6 @@ class _ShowcaseImage(QWidget):
 
 
 class _ShowcaseDots(QWidget):
-    """Clickable page-count indicator for the showcase carousel."""
-
     evt_clicked = Signal(int)
 
     _DOT_RADIUS = 4
@@ -126,16 +103,13 @@ class _ShowcaseDots(QWidget):
 
     @property
     def count(self) -> int:
-        """Return the number of represented pages."""
         return self._count
 
     @property
     def current_index(self) -> int:
-        """Return the highlighted page index."""
         return self._current_index
 
     def set_count(self, count: int) -> None:
-        """Set the number of page dots."""
         self._count = max(0, count)
         self._current_index = min(self._current_index, max(0, self._count - 1))
         self.setMinimumWidth(max(24, self._indicator_width()))
@@ -143,7 +117,6 @@ class _ShowcaseDots(QWidget):
         self.update()
 
     def set_current_index(self, index: int) -> None:
-        """Highlight one page dot."""
         if self._count:
             self._current_index = max(0, min(index, self._count - 1))
         else:
@@ -151,21 +124,17 @@ class _ShowcaseDots(QWidget):
         self.update()
 
     def sizeHint(self) -> QSize:
-        """Return a compact size suitable for a horizontal indicator."""
         return QSize(max(24, self._indicator_width()), 18)
 
     def _indicator_width(self) -> int:
-        """Return the total width occupied by all dots."""
         if not self._count:
             return 0
         return (self._count - 1) * self._SPACING + self._ACTIVE_RADIUS * 2
 
     def _first_center_x(self) -> int:
-        """Return the horizontal centre of the first dot."""
         return (self.width() - self._indicator_width()) // 2 + self._ACTIVE_RADIUS
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
-        """Select the page represented by the clicked dot."""
         if event.button() == Qt.MouseButton.LeftButton:
             first_x = self._first_center_x()
             for index in range(self._count):
@@ -176,7 +145,6 @@ class _ShowcaseDots(QWidget):
         super().mouseReleaseEvent(event)
 
     def paintEvent(self, event: QPaintEvent) -> None:
-        """Paint inactive dots and the larger highlighted current dot."""
         if not self._count:
             return
         painter = QPainter(self)
@@ -196,8 +164,6 @@ class _ShowcaseDots(QWidget):
 
 
 class _ShowcaseOverlay(QFrame):
-    """Translucent text overlay for a showcase page."""
-
     evt_link_activated = Signal(str)
 
     def __init__(self, parent: QWidget | None = None) -> None:
@@ -225,7 +191,6 @@ class _ShowcaseOverlay(QFrame):
         self._link_url = ""
 
     def set_page(self, page: ShowcasePage) -> None:
-        """Update the overlay from a showcase page."""
         self.title_label.setText(page.title)
         self.description_label.setText(page.description)
         self.description_label.setVisible(bool(page.description))
@@ -234,24 +199,11 @@ class _ShowcaseOverlay(QFrame):
         self.link_btn.setVisible(bool(page.link_text and page.link_url))
 
     def _on_link(self) -> None:
-        """Emit the current link URL."""
         if self._link_url:
             self.evt_link_activated.emit(self._link_url)
 
 
 class QtShowcaseWidget(QWidget):
-    """Display linked image pages with manual and timed carousel navigation.
-
-    Parameters
-    ----------
-    pages : sequence of ShowcasePage or mapping, optional
-        Initial carousel content.
-    interval_ms : int
-        Automatic page-advance interval in milliseconds.
-    parent : QWidget, optional
-        Parent widget.
-    """
-
     evt_current_changed = Signal(int)
     evt_link_activated = Signal(str)
 
@@ -314,21 +266,17 @@ class QtShowcaseWidget(QWidget):
 
     @property
     def pages(self) -> tuple[ShowcasePage, ...]:
-        """Return the current showcase pages."""
         return tuple(self._pages)
 
     @property
     def current_index(self) -> int:
-        """Return the selected page index, or ``-1`` when empty."""
         return self._current_index
 
     @property
     def interval_ms(self) -> int:
-        """Return the automatic page-advance interval in milliseconds."""
         return self._timer.interval()
 
     def set_pages(self, pages: ty.Sequence[ShowcasePage | dict[str, ty.Any]]) -> None:
-        """Replace all pages and select the first page."""
         self._pages = [page if isinstance(page, ShowcasePage) else ShowcasePage.model_validate(page) for page in pages]
         self._current_index = 0 if self._pages else -1
         self._update_navigation()
@@ -336,7 +284,6 @@ class QtShowcaseWidget(QWidget):
         self._restart_timer()
 
     def set_current_index(self, index: int, *, animate: bool = True) -> None:
-        """Select a page by index, ignoring values outside the available range."""
         if not 0 <= index < len(self._pages) or index == self._current_index:
             return
         self._current_index = index
@@ -344,32 +291,26 @@ class QtShowcaseWidget(QWidget):
         self.evt_current_changed.emit(index)
 
     def next_page(self) -> None:
-        """Advance to the next page, wrapping at the end."""
         if len(self._pages) > 1:
             self.set_current_index((self._current_index + 1) % len(self._pages))
 
     def previous_page(self) -> None:
-        """Move to the previous page, wrapping at the beginning."""
         if len(self._pages) > 1:
             self.set_current_index((self._current_index - 1) % len(self._pages))
 
     def _on_next(self) -> None:
-        """Advance manually and restart the automatic timer."""
         self.next_page()
         self._restart_timer()
 
     def _on_previous(self) -> None:
-        """Go back manually and restart the automatic timer."""
         self.previous_page()
         self._restart_timer()
 
     def _on_dot_clicked(self, index: int) -> None:
-        """Select a page from its indicator dot and restart the timer."""
         self.set_current_index(index)
         self._restart_timer()
 
     def _render_current(self, *, animate: bool) -> None:
-        """Render the selected page or an empty fallback."""
         page = (
             self._pages[self._current_index]
             if self._current_index >= 0
@@ -391,7 +332,6 @@ class QtShowcaseWidget(QWidget):
             animation.start()
 
     def _update_navigation(self) -> None:
-        """Show carousel controls only when navigation is possible."""
         visible = len(self._pages) > 1
         self._previous_btn.setVisible(visible)
         self._next_btn.setVisible(visible)
@@ -399,17 +339,14 @@ class QtShowcaseWidget(QWidget):
         self._dots.setVisible(visible)
 
     def _restart_timer(self) -> None:
-        """Start or stop automatic navigation for the current state."""
         self._timer.stop()
         if self.isVisible() and len(self._pages) > 1:
             self._timer.start()
 
     def showEvent(self, event: QShowEvent) -> None:
-        """Start automatic navigation when shown."""
         super().showEvent(event)
         self._restart_timer()
 
     def hideEvent(self, event: QEvent) -> None:
-        """Stop automatic navigation while hidden."""
         self._timer.stop()
         super().hideEvent(event)

@@ -18,11 +18,10 @@ from qtextra.widgets.qt_dialog import QtFramelessTool
 
 
 def _noop_push(_variables: ty.Any) -> None:
-    """Fallback push callable when an embedded console is unavailable."""
+    pass
 
 
 def str_to_rgb(arg):
-    """Convert an rgb string 'rgb(x,y,z)' to a list of ints [x,y,z]."""
     return list(map(int, re.match(r"rgb\((\d+),\s*(\d+),\s*(\d+)\)", arg).groups()))
 
 
@@ -39,23 +38,6 @@ if sys.platform.startswith("win"):
 
 
 class QtConsole(RichJupyterWidget):
-    """Qt view for the console, an integrated iPython terminal in napari.
-
-    Parameters
-    ----------
-    variables : dict, optional
-        Dictionary of variables to add to the console namespace.
-
-    Attributes
-    ----------
-    kernel_client : qtconsole.inprocess.QtInProcessKernelClient,
-                    qtconsole.client.QtKernelClient, or None
-        Client for the kernel if it exists, None otherwise.
-    shell : ipykernel.inprocess.ipkernel.InProcessInteractiveShell,
-            ipykernel.zmqshell.ZMQInteractiveShell, or None.
-        Shell for the kernel if it exists, None otherwise.
-    """
-
     def __init__(self, variables: dict[str, ty.Any] | None = None):
         super().__init__()
         if variables is None:
@@ -102,7 +84,6 @@ class QtConsole(RichJupyterWidget):
         # self.execute_on_complete_input = True
 
     def _update_theme(self, event: ty.Any = None) -> None:
-        """Update the napari GUI theme."""
         from qtextra.config.theme import THEMES
 
         self.style_sheet = THEMES.get_theme_stylesheet()
@@ -114,7 +95,6 @@ class QtConsole(RichJupyterWidget):
         self._bracket_matcher.format.setBackground(bracket_color)
 
     def closeEvent(self, event):
-        """Clean up the integrated console in napari."""
         if self.kernel_client is not None:
             self.kernel_client.stop_channels()
         if self.kernel_manager is not None and self.kernel_manager.has_kernel:
@@ -127,8 +107,6 @@ class QtConsole(RichJupyterWidget):
 
 
 class QtConsoleDialog(QtFramelessTool):
-    """Console popup."""
-
     HIDE_WHEN_CLOSE = True
 
     def __init__(self, parent: QWidget | None) -> None:
@@ -138,7 +116,6 @@ class QtConsoleDialog(QtFramelessTool):
         self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
 
     def make_panel(self) -> QFormLayout:
-        """Make panel."""
         _, header_layout = self._make_hide_handle()
         self._title_label.setText("IPython Console")
 
@@ -152,5 +129,4 @@ class QtConsoleDialog(QtFramelessTool):
         return layout
 
     def push_variables(self, variables: dict[str, ty.Any]) -> None:
-        """Push variables to console."""
         self._console.push(variables)

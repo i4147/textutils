@@ -1,0 +1,18 @@
+schema_version = 3
+
+[project]
+uuid = "f7c37f77-6d31-4ddc-9544-f5f055ecd180"
+name = "epub2text"
+
+[ledgers.taskledger.mounts.data]
+storage = "external"
+root = "../ledger"
+
+[ledgers.taskledger.mounts.indexes]
+storage = "cache"
+
+[ledgers.releaseledger.mounts.data]
+storage = "project"
+
+[ledgers.releaseledger.mounts.indexes]
+storage = "cache"

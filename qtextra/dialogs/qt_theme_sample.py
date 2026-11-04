@@ -59,8 +59,6 @@ It is intentionally dense enough to expose weak theme choices quickly.
 
 
 class TabDemo(QTabWidget):
-    """Demo tab."""
-
     def __init__(self, parent=None, emphasized=False):
         super().__init__(parent)
         self.setProperty("emphasized", emphasized)
@@ -90,8 +88,6 @@ class TabDemo(QTabWidget):
 
 
 class QtSampleWidget(QWidget):
-    """Widget that showcases many types of Qt widgets."""
-
     def __init__(self, emphasized: bool = False):
         super().__init__()
         self.setProperty("emphasized", emphasized)
@@ -108,7 +104,6 @@ class QtSampleWidget(QWidget):
         main_layout.addWidget(qtextra_group)
 
     def _make_qt_sample_layout(self, emphasized: bool) -> QVBoxLayout:
-        """Build the standard Qt preview section."""
         lay = QVBoxLayout()
         lay.addWidget(QPushButton("push button"))
         box = QComboBox()
@@ -189,7 +184,6 @@ class QtSampleWidget(QWidget):
         return lay
 
     def _make_qtextra_sample_layout(self) -> QVBoxLayout:
-        """Build the qtextra preview section."""
         layout = QVBoxLayout()
 
         layout.addWidget(QtToggleGroup(self, ["Overview", "Details", "History"], value="Details"))

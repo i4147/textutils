@@ -6,8 +6,6 @@ from qtextra.widgets.qt_separator import QtHorzLine
 
 
 class QReadMoreLessLabel(QWidget):
-    """Read more/less label."""
-
     def __init__(self, parent, text: str):
         QWidget.__init__(self, parent)
 

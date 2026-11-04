@@ -14,7 +14,6 @@ from ..model.utils import load_userdict, load_stopwords, preprocess_line, get_op
 
 
 def process_line(line, lang, stopwords):
-    """处理单行文本的函数"""
     return preprocess_line(line, lang=lang, stopwords=stopwords)
 
 
@@ -33,19 +32,6 @@ def ELMo(
     chunksize=10000,
     **kwargs,
 ):
-    """
-    ELMo模型接口，支持预训练和自定义训练
-
-    Args:
-        pre_trained (bool): 是否使用预训练模型，默认True
-        vector_size (int): 词向量维度(自定义训练时使用)
-        window_size (int): 窗口大小(自定义训练时使用)
-        min_count (int): 最小词频(自定义训练时使用)
-        max_iter (int): 最大迭代次数(自定义训练时使用)
-        batch_size (int): 批处理大小
-        cuda_device (int): GPU设备号，-1表示CPU
-        chunksize (int): 预处理时的分块大小
-    """
     start_time = time.time()
 
     output_dir = Path("output")
@@ -75,7 +61,6 @@ def ELMo(
 
 
 def _preprocess_corpus(corpus_file, cache_file, lang, stopwords, chunksize):
-    """预处理语料，确保内存安全"""
     print(f"Preprocessing corpus to {cache_file}")
     memory_threshold = get_optimal_threshold()
     max_workers = int(cpu_count() * 0.8)
@@ -105,7 +90,6 @@ def _preprocess_corpus(corpus_file, cache_file, lang, stopwords, chunksize):
 
 
 def _load_pretrained_elmo(cuda_device, **kwargs):
-    """加载预训练ELMo模型"""
     options_file = "https://allennlp.s3.amazonaws.com/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_options.json"
     weight_file = "https://allennlp.s3.amazonaws.com/models/elmo/2x4096_512_2048cnn_2xhighway/elmo_2x4096_512_2048cnn_2xhighway_weights.hdf5"
 
@@ -118,7 +102,6 @@ def _load_pretrained_elmo(cuda_device, **kwargs):
 def _train_custom_elmo(
     cache_file, output_dir, corpus_name, vector_size, window_size, min_count, max_iter, cuda_device, **kwargs
 ):
-    """自定义ELMo训练"""
     vocab_file = output_dir / f"{corpus_name}_elmo_vocab.bin"
     model_file = output_dir / f"{corpus_name}_elmo_model.bin"
 
@@ -139,7 +122,6 @@ def _train_custom_elmo(
 
 
 def _process_with_elmo(model, cache_file, batch_size, cuda_device):
-    """使用ELMo处理语料"""
     sentences = []
     with smart_open.open(cache_file, "r", encoding="utf-8") as f:
         for line in f:

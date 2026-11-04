@@ -8,15 +8,12 @@ from qtextra.config import THEMES
 
 
 class QPixmapLabel(QLabel):
-    """Image label."""
-
     def __init__(self, parent=None):
         super().__init__(parent=parent)
         self.pixmap_width: int = 1
         self.pixmap_height: int = 1
 
     def setImage(self, image: str | QPixmap | QImage | None = None):
-        """Set the image of label."""
         self.image = image or QImage()
 
         if isinstance(image, str):
@@ -32,14 +29,12 @@ class QPixmapLabel(QLabel):
         self.update()
 
     def setPixmap(self, pm) -> None:
-        """Set Pixmap."""
         self.pixmap_width = pm.width()
         self.pixmap_height = pm.height()
         self.update_margins()
         super().setPixmap(pm)
 
     def resizeEvent(self, a0) -> None:
-        """Resize event."""
         self.update_margins()
         super().resizeEvent(a0)
 
@@ -63,8 +58,6 @@ class QPixmapLabel(QLabel):
 
 
 class ImageViewer(QGraphicsView):
-    """Simple image viewer widget."""
-
     def __init__(self, image_path=None, parent=None):
         super().__init__(parent)
 
@@ -87,7 +80,6 @@ class ImageViewer(QGraphicsView):
             self.set_image(image_path)
 
     def set_image(self, image_path: str):
-        """Set or change the image displayed in the viewer."""
         pixmap = QPixmap(str(image_path))
         if pixmap.isNull():
             print(f"Error: Could not load image from {image_path}")
@@ -99,7 +91,6 @@ class ImageViewer(QGraphicsView):
         self.fitInView(self.pixmap_item, Qt.AspectRatioMode.KeepAspectRatio)
 
     def wheelEvent(self, event: QWheelEvent):
-        """Handle zoom in/out with mouse wheel."""
         mouse_scene_pos = self.mapToScene(event.position().toPoint())
 
         zoom_in = event.angleDelta().y() > 0
@@ -110,12 +101,10 @@ class ImageViewer(QGraphicsView):
             self.zoom(-1, mouse_scene_pos)
 
     def mouseDoubleClickEvent(self, event):
-        """Reset zoom level on double-click."""
         self.zoom_level = 0
         self.fitInView(self.pixmap_item, Qt.AspectRatioMode.KeepAspectRatio)
 
     def zoom(self, direction, center_point):
-        """Adjust zoom level and apply scaling centered around a point."""
         if direction > 0:
             factor = self.base_zoom_factor
             self.zoom_level += 1
@@ -135,15 +124,12 @@ class ImageViewer(QGraphicsView):
         self.centerOn(self.mapToScene(self.viewport().rect().center()) + offset)
 
     def reset_zoom(self):
-        """Reset the zoom to its original state and fit the image to the view."""
         self.resetTransform()
         self.zoom_level = 0
         self.fitInView(self.pixmap_item, Qt.AspectRatioMode.KeepAspectRatio)
 
 
 class PixmapLabel(QLabel):
-    """Label for displaying images."""
-
     _path = None
     _pixmap = None
 
@@ -151,23 +137,19 @@ class PixmapLabel(QLabel):
         super().__init__()
 
     def set_image(self, path: str) -> None:
-        """Set image from path."""
         if self._path == str(path):
             return
         self._path = str(path)
         self.set_pixmap(QPixmap(str(path)))
 
     def set_pixmap(self, pm: QPixmap) -> None:
-        """Set Pixmap."""
         self._pixmap = pm
         self.setPixmap(pm)
 
     def setPixmap(self, pm: QPixmap) -> None:
-        """Set Pixmap."""
         super().setPixmap(self._resize_pixmap())
 
     def resizeEvent(self, a0: QResizeEvent) -> None:
-        """Resize event."""
         pixmap = self._resize_pixmap()
         if pixmap:
             self.setPixmap(pixmap)
@@ -183,8 +165,6 @@ class PixmapLabel(QLabel):
 
 
 class QImageLabel(QLabel):
-    """Image label."""
-
     evt_clicked = Signal()
 
     def __init__(self, parent: QWidget = None):
@@ -201,7 +181,6 @@ class QImageLabel(QLabel):
         self.update()
 
     def setBorderRadius(self, topLeft: int, topRight: int, bottomLeft: int, bottomRight: int):
-        """Set the border radius of image."""
         self._topLeftRadius = topLeft
         self._topRightRadius = topRight
         self._bottomLeftRadius = bottomLeft
@@ -209,7 +188,6 @@ class QImageLabel(QLabel):
         self.update()
 
     def setImage(self, image: str | QPixmap | QImage | None = None):
-        """Set the image of label."""
         self.image = image or QImage()
 
         if isinstance(image, str):
@@ -235,7 +213,6 @@ class QImageLabel(QLabel):
             self.movie().setScaledSize(QSize(width, h))
 
     def scaledToHeight(self, height: int):
-        """Scale the image to a specific height."""
         if self.isNull():
             return
 
@@ -348,8 +325,6 @@ class QImageLabel(QLabel):
 
 
 class AvatarWidget(QImageLabel):
-    """Avatar widget."""
-
     def _postInit(self):
         self.setRadius(48)
         self.lightBackgroundColor = QColor(0, 0, 0, 50)

@@ -1,12 +1,10 @@
 import collections
 import logging
 from typing import Dict, Set
-
 import bioc
 import pandas as pd
 import tqdm
 import yaml
-
 from radtext.models.constants import UNCERTAINTY, NEGATION
 
 POSITIVE = "p"
@@ -68,7 +66,6 @@ def aggregate(doc: bioc.BioCDocument, start_with_finding: bool = False) -> Dict[
         i = find_findings(doc)
         if i == -1:
             i = 0
-
     label_dict = collections.defaultdict(set)
     no_finding = True
     for p in doc.passages[i:]:
@@ -76,52 +73,36 @@ def aggregate(doc: bioc.BioCDocument, start_with_finding: bool = False) -> Dict[
             category = ann.infons["source_concept"]
             if category == "No Finding":
                 continue
-
             if NEGATION in ann.infons and ann.infons[NEGATION]:
                 label = NEGATIVE
             elif UNCERTAINTY in ann.infons and ann.infons[UNCERTAINTY]:
                 label = UNCERTAIN
             else:
                 label = POSITIVE
-
             if category != "Support Devices" and label in [UNCERTAIN, POSITIVE]:
                 no_finding = False
-
             if label in [UNCERTAIN, POSITIVE] and is_cardiomegaly(ann):
                 label_dict["Cardiomegaly"].add(UNCERTAIN)
-
             label_dict[category].add(label)
-
     if no_finding:
         label_dict["No Finding"] = {POSITIVE}
-
     return label_dict
 
 
 def create_prediction(source, dest, phrases_file, start_with_findings: bool):
-    """
-
-    Args:
-        source: source bioc file
-        dest: output file name
-        phrases_file: phrase pathname
-    """
     logger = logging.getLogger(__name__)
     with open(phrases_file) as fp:
         phrases = yaml.load(fp, yaml.FullLoader)
-
     rows = []
     cnt = collections.Counter()
     with open(source, encoding="utf8") as fp:
         collection = bioc.load(fp)
-
     for doc in tqdm.tqdm(collection.documents):
         label_dict = aggregate(doc, start_with_findings)
         label_dict = merge_labels(label_dict)
         findings = {k: v for k, v in label_dict.items() if k in phrases.keys()}
         findings["docid"] = str(doc.concept_id)
         rows.append(findings)
-
     columns = ["docid"] + sorted(phrases.keys())
     row_df = pd.DataFrame(sorted(rows, key=lambda x: x["docid"]), columns=columns)
     row_df = row_df.fillna(NOT_MENTIONED)

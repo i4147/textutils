@@ -1,0 +1,418 @@
+# -*- coding: utf-8 -*-
+
+import os
+import pickle
+from dataclasses import dataclass
+from typing import List, Optional, Dict, Sequence
+
+import datasets
+from datasets import Dataset as HFDataset
+from datasets import load_dataset
+from loguru import logger
+from torch.utils.data import Dataset
+from transformers.trainer_pt_utils import LabelSmoother
+
+IGNORE_INDEX = LabelSmoother.ignore_index
+
+
+@dataclass
+class Conversation:
+    name: str
+    system_prompt: str
+    messages: Optional[List[Sequence[str]]]
+    roles: Optional[Sequence[str]]
+    prompt: str
+    sep: str
+    stop_str: Optional[str] = "</s>"
+
+    def get_prompt(self, messages: Optional[List[Sequence[str]]] = None, system_prompt: Optional[str] = "") -> str:
+        return "".join(self._format_example(messages, system_prompt))
+
+    def get_dialog(
+        self, messages: Optional[List[Sequence[str]]] = None, system_prompt: Optional[str] = ""
+    ) -> List[str]:
+        return self._format_example(messages, system_prompt)
+
+    def _format_example(
+        self, messages: Optional[List[Sequence[str]]] = None, system_prompt: Optional[str] = ""
+    ) -> List[str]:
+        system_prompt = system_prompt or self.system_prompt
+        system_prompt = system_prompt + self.sep if system_prompt else ""
+        messages = messages or self.messages
+        convs = []
+        for turn_idx, [user_query, bot_resp] in enumerate(messages):
+            if turn_idx == 0:
+                convs.append(system_prompt + self.prompt.format(query=user_query))
+                convs.append(bot_resp)
+            else:
+                convs.append(self.sep + self.prompt.format(query=user_query))
+                convs.append(bot_resp)
+        return convs
+
+    def append_message(self, query: str, answer: str):
+        self.messages.append([query, answer])
+
+
+conv_templates: Dict[str, Conversation] = {}
+
+
+def register_conv_template(template: Conversation):
+    conv_templates[template.name] = template
+
+
+"""Vicuna v1.1 template
+Supports: https://huggingface.co/lmsys/vicuna-7b-delta-v1.1
+          https://huggingface.co/lmsys/vicuna-13b-delta-v1.1
+"""
+register_conv_template(
+    Conversation(
+        name="vicuna",
+        system_prompt="A chat between a curious user and an artificial intelligence assistant. "
+        "The assistant gives helpful, detailed, and polite answers to the user's questions.",
+        messages=[],
+        roles=("USER", "ASSISTANT"),
+        prompt="USER: {query} ASSISTANT: ",
+        sep="</s>",
+    )
+)
+
+"""Alpaca template"""
+register_conv_template(
+    Conversation(
+        name="alpaca",
+        system_prompt="Below is an instruction that describes a task. "
+        "Write a response that appropriately completes the request.",
+        messages=[],
+        roles=("### Instruction", "### Response"),
+        prompt="### Instruction:\n{query}\n\n### Response:\n",
+        sep="\n\n",
+    )
+)
+
+"""Baichuan-13B-Chat template
+source: https://huggingface.co/baichuan-inc/Baichuan-13B-Chat/blob/f5f47be2adbbdceb784f334d6fa1ca2c73e65097/modeling_baichuan.py#L507
+Support: https://huggingface.co/baichuan-inc/Baichuan-13B-Chat
+"""
+register_conv_template(
+    Conversation(
+        name="baichuan-chat",
+        system_prompt="",
+        messages=[],
+        roles=("<reserved_102>", "<reserved_103>"),
+        prompt=" <reserved_102> {query} <reserved_103> ",
+        sep="</s>",
+    )
+)
+
+"""ziya template"""
+register_conv_template(
+    Conversation(
+        name="ziya",
+        system_prompt="",
+        messages=[],
+        roles=("<human>", "<bot>"),
+        prompt="<human>:{query}\n<bot>:",
+        sep="\n",
+    )
+)
+
+"""Linly template"""
+register_conv_template(
+    Conversation(
+        name="linly",
+        system_prompt="",
+        messages=[],
+        roles=("User", "Bot"),
+        prompt="User: {query}\nBot: ",
+        sep="\n",
+    )
+)
+
+"""ChatGLM1 template
+source: https://huggingface.co/THUDM/chatglm-6b/blob/main/modeling_chatglm.py#L1307
+"""
+register_conv_template(
+    Conversation(
+        name="chatglm",
+        system_prompt="",
+        messages=[],
+        roles=("问", "答"),
+        prompt="问：{query}\n答：",
+        sep="\n",
+    )
+)
+
+"""ChatGLM2 template
+source: https://huggingface.co/THUDM/chatglm2-6b/blob/main/modeling_chatglm.py#L1007
+"""
+register_conv_template(
+    Conversation(
+        name="chatglm2",
+        system_prompt="",
+        messages=[],
+        roles=("问", "答"),
+        prompt="问：{query}\n\n答：",
+        sep="\n\n",
+    )
+)
+
+"""Phoenix template"""
+register_conv_template(
+    Conversation(
+        name="phoenix",
+        system_prompt="A chat between a curious human and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the human's questions.\n\n",
+        messages=[],
+        roles=("Human", "Assistant"),
+        prompt="Human: <s>{query}</s>Assistant: ",
+        sep="</s>",
+    )
+)
+
+"""belle template
+Supports: https://huggingface.co/BelleGroup/BELLE-LLaMA-EXT-13B
+"""
+register_conv_template(
+    Conversation(
+        name="belle",
+        system_prompt="",
+        messages=[],
+        roles=("Human", "Belle"),
+        prompt="Human: {query}\n\nBelle: ",
+        sep="\n\n",
+    )
+)
+
+"""aquila template
+Supports: https://huggingface.co/qhduan/aquilachat-7b
+"""
+register_conv_template(
+    Conversation(
+        name="aquila",
+        system_prompt="A chat between a curious human and an artificial intelligence assistant. "
+        "The assistant gives helpful, detailed, and polite answers to the human's questions.",
+        messages=[],
+        roles=("Human", "Assistant"),
+        prompt="Human: {query}###Assistant: ",
+        sep="###",
+    )
+)
+
+"""intern template
+Supports: https://huggingface.co/internlm/internlm-chat-7b
+"""
+register_conv_template(
+    Conversation(
+        name="intern",
+        system_prompt="",
+        messages=[],
+        roles=("<|User|>", "<|Bot|>"),
+        prompt="<|User|>:{query}<eoh>\n<|Bot|>:",
+        sep="<eoa>\n",
+        stop_str="<eoa>",
+    )
+)
+
+"""StarChat template"""
+register_conv_template(
+    Conversation(
+        name="starchat",
+        system_prompt="<system>\n",
+        messages=[],
+        roles=("<|user|>", "<|assistant|>"),
+        prompt="<|user|>\n{query}<|end|>\n<|assistant|>\n",
+        sep="<|end|>\n",
+        stop_str="<|end|>",
+    )
+)
+
+"""llama2 template
+reference: https://github.com/facebookresearch/llama/blob/cfc3fc8c1968d390eb830e65c63865e980873a06/llama/generation.py#L212
+"""
+register_conv_template(
+    Conversation(
+        name="llama2",
+        system_prompt="<<SYS>>\nYou are a helpful, respectful and honest assistant. "
+        "Always answer as helpfully as possible, while being safe. "
+        "Your answers should not include any harmful, unethical, racist, sexist, "
+        "toxic, dangerous, or illegal content. "
+        "Please ensure that your responses are socially unbiased and positive in nature.\n\n"
+        "If a question does not make any sense, or is not factually coherent, "
+        "explain why instead of answering something not correct. "
+        "If you don't know the answer to a question, please don't share false information.\n<</SYS>>\n\n",
+        messages=[],
+        roles=("[INST]", "[/INST]"),
+        prompt=" [INST] {query} [/INST] ",
+        sep="</s>",
+    )
+)
+
+"""llama2-zh template
+Sources: https://github.com/ymcui/Chinese-LLaMA-Alpaca-2
+Supports: https://huggingface.co/ziqingyang/chinese-alpaca-2-7b
+"""
+register_conv_template(
+    Conversation(
+        name="llama2-zh",
+        system_prompt="<<SYS>>\nYou are a helpful assistant. 你是一个乐于助人的助手。\n<</SYS>>\n\n",
+        messages=[],
+        roles=("[INST]", "[/INST]"),
+        prompt=" [INST] {query} [/INST] ",
+        sep="</s>",
+    )
+)
+"""XVERSE template
+Supports: https://huggingface.co/xverse/XVERSE-13B-Chat
+"""
+register_conv_template(
+    Conversation(
+        name="xverse",
+        system_prompt="",
+        messages=[],
+        roles=("Human", "Assistant"),
+        prompt="Human: {query}\n\nAssistant: ",
+        sep="</s>",
+    )
+)
+
+"""Qwen template
+Supports: https://huggingface.co/Qwen/Qwen-7B-Chat
+chatml: https://xbot123.com/645a461b922f176d7cfdbc2d/
+"""
+register_conv_template(
+    Conversation(
+        name="chatml",
+        system_prompt="You are a helpful assistant.",
+        messages=[],
+        roles=("user", "assistant"),
+        prompt="<|im_start|>user\n{query}<|im_end|>\n<|im_start|>assistant\n",
+        sep="<|im_end|>\n",
+        stop_str="<|im_end|>",
+    )
+)
+
+
+def get_conv_template(name: str) -> Conversation:
+    return conv_templates[name]
+
+
+def preprocess_function(examples, tokenizer, args):
+    input_ids_list = []
+    targets_list = []
+    roles = ["human", "gpt"]
+    prompt_template = get_conv_template(args.prompt_template_name)
+    max_source_length = args.max_seq_length
+    max_target_length = args.max_length
+    max_full_length = max_source_length + max_target_length
+
+    def get_dialog(examples):
+        for i, source in enumerate(examples["conversations"]):
+            if len(source) < 2:
+                continue
+            data_role = source[0].get("from", "")
+            if data_role not in roles or data_role != roles[0]:
+                break
+            messages = []
+            for j, sentence in enumerate(source):
+                data_role = sentence.get("from", "")
+                if data_role not in roles:
+                    logger.warning(f"unknown role: {data_role}, {i}. (ignored)")
+                    break
+                if data_role == roles[j % 2]:
+                    messages.append(sentence["value"])
+            if len(messages) % 2 != 0:
+                continue
+            history_messages = [[messages[k], messages[k + 1]] for k in range(0, len(messages), 2)]
+            yield prompt_template.get_dialog(history_messages)
+
+    for dialog in get_dialog(examples):
+        input_ids, labels = [], []
+
+        for i in range(len(dialog) // 2):
+            source_ids = tokenizer.encode(text=dialog[2 * i], add_special_tokens=(i == 0))
+            target_ids = tokenizer.encode(text=dialog[2 * i + 1], add_special_tokens=False)
+
+            if len(source_ids) > max_source_length:
+                source_ids = source_ids[:max_source_length]
+            if len(target_ids) > max_target_length - 1:
+                target_ids = target_ids[: max_target_length - 1]
+            if len(source_ids) > 0 and source_ids[0] == tokenizer.eos_token_id:
+                source_ids = source_ids[1:]
+            if len(target_ids) > 0 and target_ids[-1] == tokenizer.eos_token_id:
+                target_ids = target_ids[:-1]
+            if len(input_ids) + len(source_ids) + len(target_ids) + 1 > max_full_length:
+                break
+
+            input_ids += source_ids + target_ids + [tokenizer.eos_token_id]
+            labels += [IGNORE_INDEX] * len(source_ids) + target_ids + [tokenizer.eos_token_id]
+
+        input_ids_list.append(input_ids)
+        targets_list.append(labels)
+
+    return dict(
+        input_ids=input_ids_list,
+        labels=targets_list,
+    )
+
+
+def filter_empty_labels(example):
+    return not all(label == IGNORE_INDEX for label in example["labels"])
+
+
+def load_supervised_dataset(tokenizer, args, data, mode):
+    if isinstance(data, str):
+        if data.endswith(".json") or data.endswith(".jsonl"):
+            dataset = load_dataset("json", data_files=data)
+        elif os.path.isdir(data):
+            dataset = datasets.load_from_disk(data)
+        else:
+            dataset = load_dataset(
+                data,
+                download_mode="force_redownload" if args.reprocess_input_data else "reuse_dataset_if_exists",
+            )
+        dataset = dataset["train"]
+        if mode == "dev" and args.max_eval_samples is not None:
+            max_eval_samples = min(len(dataset), args.max_eval_samples)
+            dataset = dataset.select(range(max_eval_samples))
+    else:
+        dataset = HFDataset.from_pandas(data)
+
+    dataset = dataset.shuffle().map(
+        lambda x: preprocess_function(x, tokenizer=tokenizer, args=args),
+        batched=True,
+        num_proc=args.preprocessing_num_workers,
+        remove_columns=dataset.column_names,
+        desc="Running tokenizer on dataset",
+    )
+    dataset = dataset.filter(filter_empty_labels, num_proc=args.preprocessing_num_workers)
+
+    return dataset
+
+
+class GptSupervisedDataset(Dataset):
+    def __init__(self, tokenizer, args, data, mode):
+        cached_features_file = os.path.join(
+            args.cache_dir,
+            args.model_name.replace("/", "_") + "_cached_" + str(args.max_seq_length) + str(len(data)),
+        )
+
+        if os.path.exists(cached_features_file) and (
+            (not args.reprocess_input_data and not args.no_cache)
+            or (mode == "dev" and args.use_cached_eval_features and not args.no_cache)
+        ):
+            logger.info(" Loading features from cached file %s" % cached_features_file)
+            with open(cached_features_file, "rb") as handle:
+                self.examples = pickle.load(handle)
+        else:
+            logger.debug(" Creating features from dataset file at %s" % args.cache_dir)
+
+            self.examples = load_supervised_dataset(tokenizer, args, data, mode)
+            if not args.no_cache:
+                logger.info(" Saving features into cached file %s" % cached_features_file)
+                with open(cached_features_file, "wb") as handle:
+                    pickle.dump(self.examples, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    def __len__(self):
+        return len(self.examples)
+
+    def __getitem__(self, index):
+        return self.examples[index]

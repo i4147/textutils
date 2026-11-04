@@ -12,8 +12,6 @@ DEFAULT_N_LOOPS = 5
 
 
 class QtIndicator(QWidget):
-    """Small indicator widget that flashes occasionally."""
-
     START_OPACITY = DEFAULT_START_OPACITY
     END_OPACITY = DEFAULT_END_OPACITY
     PULSE_RATE = DEFAULT_PULSE_RATE
@@ -38,7 +36,6 @@ class QtIndicator(QWidget):
 
     @property
     def state(self):
-        """Get state."""
         return self.property("state")
 
     @state.setter
@@ -47,7 +44,6 @@ class QtIndicator(QWidget):
 
     @property
     def active(self):
-        """Get active state."""
         return self.property("active")
 
     @active.setter
@@ -57,7 +53,6 @@ class QtIndicator(QWidget):
 
     @Slot(int)
     def _loop_update(self, loop: int | None = None):
-        """Reverse pulse direction for nicer visual effect."""
         if loop is None:
             loop = self.opacity_anim.currentLoop()
         start, end = (self.START_OPACITY, self.END_OPACITY) if loop % 2 == 0 else (self.END_OPACITY, self.START_OPACITY)
@@ -65,7 +60,6 @@ class QtIndicator(QWidget):
         self.opacity_anim.setEndValue(end)
 
     def paintEvent(self, *args):
-        """Paint event."""
         super().paintEvent(*args)
         width = self.rect().width()
         height = self.rect().height()
@@ -77,7 +71,6 @@ class QtIndicator(QWidget):
         paint.drawEllipse(pos, int(width / 4), int(height / 4))
 
     def start_pulse(self):
-        """Start pulsating."""
         self.opacity_anim.setEasingCurve(QEasingCurve.Type.Linear)
         self.opacity_anim.setDuration(self.PULSE_RATE)
         self.opacity_anim.setStartValue(self.START_OPACITY)
@@ -86,12 +79,10 @@ class QtIndicator(QWidget):
         self.opacity_anim.start()
 
     def stop_pulse(self):
-        """Stop pulsating."""
         self.opacity_anim.stop()
         self.opacity.setOpacity(1.0)
 
     def temporary_pulse(self, duration: int = 1000, pulse: int = DEFAULT_PULSE_RATE):
-        """Pulse for a short duration."""
         if self.opacity_anim.state() == QPropertyAnimation.State.Running:
             self.opacity_anim.stop()
         self.opacity_anim.setEasingCurve(QEasingCurve.Type.Linear)

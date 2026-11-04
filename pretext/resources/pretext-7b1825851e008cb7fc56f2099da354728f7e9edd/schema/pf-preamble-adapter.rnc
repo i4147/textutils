@@ -1,8 +1,0 @@
-
-                default namespace = "https://prefigure.org"
-                grammar {
-                    include "pf_schema.rnc" {
-                        start =
-                            ( GraphicalElements* & GroupElements* )
-                    }
-                }

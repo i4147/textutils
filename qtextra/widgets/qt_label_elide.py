@@ -3,8 +3,6 @@ from superqt import QElidingLabel
 
 
 class QtElidingLabel(QElidingLabel):
-    """A single-line eliding QLabel."""
-
     def __init__(
         self,
         text="",
@@ -21,7 +19,6 @@ class QtElidingLabel(QElidingLabel):
         self.setFont(font)
 
     def full_text(self) -> str:
-        """Get full text."""
         return self._text
 
 

@@ -1,9 +1,7 @@
 import logging
 from typing import Tuple, Generator
-
 import yaml
 from spacy.matcher import PhraseMatcher
-
 from radtext.models.ner.ner_spacy import NerSpacyPhraseMatchers
 
 
@@ -22,7 +20,6 @@ class YmlVocab:
     def iterrows(self) -> Tuple[int, Generator[YmlItem, None, None]]:
         with open(self.filename) as fp:
             phrases = yaml.load(fp, yaml.FullLoader)
-
         for i, e in enumerate(phrases):
             item = YmlItem()
             item.concept_id = e["concept_id"]
@@ -40,10 +37,8 @@ class YmlVocab:
         matchers.include_lemma_matcher = PhraseMatcher(nlp.vocab, attr="LEMMA")
         matchers.exclude_text_matcher = PhraseMatcher(nlp.vocab, attr="LOWER")
         matchers.exclude_lemma_matcher = PhraseMatcher(nlp.vocab, attr="LEMMA")
-
         for i, item in self.iterrows():
             matchers.id2concept[item.concept_id] = item.preferred_name
-
             docs = []
             for phrase in item.includes_synonyms:
                 if min_char_size <= len(phrase) <= max_char_size:
@@ -56,7 +51,6 @@ class YmlVocab:
                             docs.append(doc)
             matchers.include_text_matcher.add(item.concept_id, docs)
             matchers.include_lemma_matcher.add(item.concept_id, docs)
-
             docs = []
             for phrase in item.excludes_synonyms:
                 if min_char_size <= len(phrase) <= max_char_size:
@@ -69,5 +63,4 @@ class YmlVocab:
                             docs.append(doc)
             matchers.exclude_text_matcher.add(item.concept_id, docs)
             matchers.exclude_lemma_matcher.add(item.concept_id, docs)
-
         return matchers

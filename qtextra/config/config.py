@@ -14,8 +14,6 @@ from qtextra.utils.appdirs import USER_CONFIG_DIR
 
 
 class ConfigBase(QObject):
-    """Configuration file base."""
-
     CONFIG_DIR = USER_CONFIG_DIR
     DEFAULT_CONFIG_NAME: str = "config.json"
     DEFAULT_CONFIG_GROUPS: tuple[str, ...] = ()
@@ -26,12 +24,10 @@ class ConfigBase(QObject):
 
     @property
     def output_path(self) -> Path:
-        """Get default output path."""
         return self.CONFIG_DIR / self.DEFAULT_CONFIG_NAME
 
     @property
     def saved(self) -> bool:
-        """Returns indication whether dataset has been recently saved."""
         return self._is_saved
 
     @saved.setter
@@ -39,7 +35,6 @@ class ConfigBase(QObject):
         self._is_saved = value
 
     def save_config(self, path: str | None = None):
-        """Export configuration file to JSON file."""
         if path is None:
             path = self.output_path
         config = {}
@@ -51,11 +46,9 @@ class ConfigBase(QObject):
 
     @staticmethod
     def _get_config_parameters(config: dict[ty.Any, ty.Any]) -> dict[ty.Any, ty.Any]:
-        """Get configuration parameters."""
         return config
 
     def load_config(self, path: str | None = None, check_type: bool = True):
-        """Load configuration from JSON file."""
         from json.decoder import JSONDecodeError
 
         def _set_values(_group_config):
@@ -107,10 +100,9 @@ class ConfigBase(QObject):
         self.evt_config_loaded.emit()
 
     def _set_config_parameters(self, config: dict[ty.Any, ty.Any]):
-        """Set configuration parameters."""
+        pass
 
     def _check_type(self, name, current_value, new_value):
-        """Check whether type of the value matches that of the currently set value."""
         current_type = type(current_value)
         new_type = type(new_value)
 
@@ -141,7 +133,6 @@ def _get_previous_configs(
     base_dir: str | None = None,
     filename: str = "qtextra-config.json",
 ) -> dict[str, str]:
-    """Return dictionary of version : path of previous configuration files."""
     if base_dir is None:
         base_dir = USER_CONFIG_DIR
     i = 2

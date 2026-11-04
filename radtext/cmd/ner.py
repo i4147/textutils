@@ -7,12 +7,9 @@ import docopt
 import spacy
 import tqdm
 import yaml
-
 from radtext.cmd.cmd_utils import process_options, process_file
 from radtext.models.ner.ner_regex import NerRegExExtractor, BioCNerRegex, NerRegexPattern
 from radtext.models.ner.ner_spacy import NerSpacyExtractor, BioCNerSpacy
-
-
 from radtext.models.ner.radlex import RadLex4
 
 
@@ -23,21 +20,17 @@ def load_yml(pathname):
 
     with open(pathname) as fp:
         phrases = yaml.load(fp, yaml.FullLoader)
-
     patterns = []
     for concept_id, (concept, v) in enumerate(phrases.items()):
         npattern = NerRegexPattern()
         npattern.concept_id = str(concept_id)
         npattern.concept = concept
-
         if "include" in v:
             npattern.include_patterns += [ner_compile(p) for p in v["include"]]
         else:
             raise ValueError("%s: No patterns" % concept)
-
         if "exclude" in v:
             npattern.exclude_patterns += [ner_compile(p) for p in v["exclude"]]
-
         patterns.append(npattern)
     logging.debug("%s: Loading %s phrases.", pathname, len(patterns))
     return patterns
@@ -46,7 +39,6 @@ def load_yml(pathname):
 def main():
     argv = docopt.docopt(__doc__)
     process_options(argv)
-
     try:
         if argv["spacy"]:
             nlp = spacy.load(argv["--spacy-model"], exclude=["ner", "parser", "senter"])
@@ -62,7 +54,6 @@ def main():
             raise KeyError
     except KeyError as e:
         raise e
-
     process_file(argv["-i"], argv["-o"], processor, bioc.PASSAGE)
 
 

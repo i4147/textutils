@@ -22,12 +22,6 @@ class LoadJson(LoadDataset):
         text="text",
         label="label",
     ):
-        """
-        适用于如下类型的数据格式：
-        {'train':{'text':[],  'label':[] },...}
-           或
-        {'text':[],  'label':[] } 以split为比例随机划分训练集和验证集
-        """
         js = read_json(path)
 
         if not cls().has_split(js):
@@ -60,12 +54,6 @@ class LoadJson2(LoadDataset):
         text="text",
         label="label",
     ):
-        """
-        适用于如下类型的数据格式：
-        {'train':{'label_1':[],  'label_2':[], ... },...}
-           或
-        {'label_1':[],  'label_2':[], ... } 以split为比例随机划分训练集和验证集
-        """
         js = read_json(path)
 
         if not cls().has_split(js):
@@ -96,18 +84,6 @@ class LoadJsonL(LoadDataset):
         text="text",
         label="label",
     ):
-        """
-        适用于如下类型的json line数据格式：
-        {'text': text_1,  'label':label_1, 'dataset':'train'}
-        {'text': text_2,  'label':label_2, 'dataset':'train'}
-        {'text': text_3,  'label':label_3, 'dataset':'valid'}
-        {'text': text_4,  'label':label_4, 'dataset':'valid'}
-        或
-        {'text': text_1,  'label':label_1}
-        {'text': text_2,  'label':label_2}
-        {'text': text_3,  'label':label_3}
-        以split为比例随机划分训练集和验证集
-        """
         flag = {"dataset": None}
         for idx, line in enumerate(read_jsonL(path)):
             if idx == 0:
@@ -147,24 +123,6 @@ class LoadText(LoadDataset):
         text="text",
         label="label",
     ):
-        """
-        适用于如下类型的数据格式：
-        train:
-        text_1 label_1
-        text_2 label_2
-        valid:
-        text_1 label_1
-        text_2 label_2
-        或者：
-        text_1 label_1 train
-        text_2 label_2 train
-        text_3 label_3 valid
-        text_4 label_4 valid
-        或者：
-        text_1 label_1
-        text_2 label_2
-        三类数据格式
-        """
         js = {"train": defaultdict(list), "valid": defaultdict(list), "test": defaultdict(list)}
         flag = {"format": 0, "dataset": None}
         for idx, line in enumerate(txt_generator(path)):
@@ -218,27 +176,6 @@ class LoadText2(LoadDataset):
         text="text",
         label="label",
     ):
-        """
-        适用于如下类型的数据格式：
-           train
-           text_1
-           label_1
-           text_2
-           label_2
-           valid
-           text_1
-           label_1
-           text_2
-           label_2
-           ...
-           或
-           text_1
-           label_1
-           text_2
-           label_2
-            ... 以split为比例随机划分训练集和验证集
-           两类数据格式
-        """
         js = {"train": defaultdict(list), "valid": defaultdict(list), "test": defaultdict(list)}
         datasets = {"train": defaultdict(list), "valid": defaultdict(list), "test": defaultdict(list)}
         flag = {"format": 0, "dataset": None, "is_text": False, "text": ""}
@@ -290,23 +227,6 @@ class LoadExcel(LoadDataset):
         text="text",
         label="label",
     ):
-        """
-        适用于如下类型的数据格式：
-        | text | label  | dataset|
-        |text_1| label_1|  train |
-        |text_2| label_2|  train |
-        |text_3| label_3|  valid |
-        |text_4|      |  valid |
-        ...
-        或者：
-        | text | label  |
-        |text_1| label_1|
-        |text_2| label_2|
-        |text_3|      |
-        |text_4| label_4|
-        ...
-        两类数据格式
-        """
         if isinstance(path, str):
             suffix = path.split(".")[-1]
             if suffix in ["xlsx", "xls"]:

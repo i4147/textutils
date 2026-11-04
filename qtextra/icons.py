@@ -8,7 +8,6 @@ from pathlib import Path
 
 
 def get_icon_path(name: str) -> str:
-    """Return path to an SVG in the theme icons."""
     from qtextra.assets import ICONS
 
     if name not in ICONS:
@@ -27,19 +26,11 @@ rect {{fill: {0}; opacity: {1};}}
 
 @lru_cache
 def get_raw_svg(path: str) -> str:
-    """Get and cache SVG XML."""
     return Path(path).read_text()
 
 
 @lru_cache
 def get_colorized_svg(path_or_xml: str | Path, color: str | None = None, opacity=1) -> str:
-    """Return a colorized version of the SVG XML at ``path``.
-
-    Raises
-    ------
-    ValueError
-        If the path exists but does not contain valid SVG data.
-    """
     path_or_xml = str(path_or_xml)
     xml = path_or_xml if "</svg>" in path_or_xml else get_raw_svg(path_or_xml)
     if not color:
@@ -56,42 +47,6 @@ def generate_colorized_svgs(
     opacities: ty.Iterable[float] = (1.0,),
     theme_override: dict[str, str] | None = None,
 ) -> ty.Iterator[tuple[str, str]]:
-    """Helper function to generate colorized SVGs.
-
-    This is a generator that yields tuples of ``(alias, icon_xml)`` for every
-    combination (Cartesian product) of `svg_path`, `color`, and `opacity`
-    provided. It can be used as input to :func:`_temporary_qrc_file`.
-
-    Parameters
-    ----------
-    svg_paths : Iterable[Union[str, Path]]
-        An iterable of paths to svg files
-    colors : Iterable[Union[str, Tuple[str, str]]]
-        An iterable of colors.  Every icon will be generated in every color. If
-        a `color` item is a string, it should be valid svg color style. Items
-        may also be a 2-tuple of strings, in which case the first item should
-        be an available theme name
-        (:func:`~napari.utils.theme.available_themes`), and the second item
-        should be a key in the theme (:func:`~napari.utils.theme.get_theme`),
-    opacities : Iterable[float], optional
-        An iterable of opacities to generate, by default (1.0,) Opacities less
-        than one can be accessed in qss with the opacity as a percentage
-        suffix, e.g.: ``my_svg_50.svg`` for opacity 0.5.
-    theme_override : Optional[Dict[str, str]], optional
-        When one of the `colors` is a theme ``(name, key)`` tuple,
-        `theme_override` may be used to override the `key` for a specific icon
-        name in `svg_paths`.  For example ``{'exclamation': 'warning'}``, would
-        use the theme "warning" color for any icon named "exclamation.svg" by
-        default `None`
-
-    Yields
-    ------
-    (alias, xml) : Iterator[Tuple[str, str]]
-        `alias` is the name that will used to access the icon in the Qt
-        Resource system (such as QSS), and `xml` is the *raw* colorzied SVG
-        text (as read from a file, perhaps pre-colored using one of the below
-        functions).
-    """
     from qtextra.config.theme import THEMES
 
     theme_override = theme_override or {}
@@ -118,7 +73,6 @@ def write_colorized_svgs(
     opacities: ty.Iterable[float] = (1.0,),
     theme_override: dict[str, str] | None = None,
 ) -> None:
-    """Write colorized SVGs to a directory."""
     dest = Path(dest)
     dest.mkdir(parents=True, exist_ok=True)
     svgs = generate_colorized_svgs(
@@ -133,7 +87,6 @@ def write_colorized_svgs(
 
 
 def build_theme_svgs(theme_name: str) -> str:
-    """Build SVGs for a theme."""
     from qtextra.assets import ICONS
     from qtextra.config.theme import THEMES
 

@@ -1,10 +1,6 @@
-# pylint: disable=W,C,R
 _tabversion = "3.10"
-
 _lr_method = "LALR"
-
 _lr_signature = "IDENTIFIER REGEX RELATION\n    SubNode : ModNode\n            | ModNode RelationDisj\n            | '(' SubNode ')' \n            | '(' SubNode ')' RelationDisj\n    \n    RelationDisj : RelationConj\n                 | RelationConj '|' RelationDisj\n    \n    RelationConj : ModRelation\n                 | ModRelation RelationConj\n                 | ModRelation '&' RelationConj\n    \n    ModRelation : RelChild\n    \n    RelChild : Relation\n    \n    Relation : RELATION '{' Attributes '}' Relation_Next\n    \n    Relation_Next : ModNode\n                  | '(' SubNode ')'\n    \n    ModNode : Child\n    \n    Child : Description\n    \n    Description : '{' Attributes '}'\n                | '{' Attributes '}' '=' IDENTIFIER\n    \n    Attributes : IDENTIFIER ':' REGEX\n               | IDENTIFIER ':' REGEX ',' Attributes\n               | empty\n    empty :"
-
 _lr_action_items = {
     "(": (
         [
@@ -287,7 +283,6 @@ _lr_action_items = {
         ],
     ),
 }
-
 _lr_action = {}
 for _k, _v in _lr_action_items.items():
     for _x, _y in zip(_v[0], _v[1]):
@@ -295,7 +290,6 @@ for _k, _v in _lr_action_items.items():
             _lr_action[_x] = {}
         _lr_action[_x][_k] = _y
 del _lr_action_items
-
 _lr_goto_items = {
     "SubNode": (
         [
@@ -460,7 +454,6 @@ _lr_goto_items = {
         ],
     ),
 }
-
 _lr_goto = {}
 for _k, _v in _lr_goto_items.items():
     for _x, _y in zip(_v[0], _v[1]):

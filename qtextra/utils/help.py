@@ -12,7 +12,6 @@ COLORS = {
 
 
 def _error_sort_key(error: str) -> tuple[bool, bool, bool]:
-    """Return the priority tuple used to order help messages."""
     return 'class="hint"' in error, 'class="error"' in error, 'class="warning"' in error
 
 
@@ -25,7 +24,6 @@ def _make_message(
     add_icon: bool = False,
     add_dash: bool = True,
 ) -> str:
-    """Returns HTML formatted message."""
     color = COLORS[kind]
     if add_icon:
         icon = {"error": "🔴", "warning": "🟠", "success": "🟢", "normal": "🟡", "hint": "🔵"}[kind]
@@ -42,13 +40,11 @@ def _make_message(
 
 
 def sort_errors(errors: list[str]) -> list[str]:
-    """Sort errors with the order: 'hints', 'errors', 'warnings'."""
     errors = errors or []
     return sorted(errors, key=_error_sort_key, reverse=True)
 
 
 def get_icon_state(errors: list[str]) -> tuple[str, str]:
-    """Return icon state based on the error messages."""
     state = "check"
     for error in errors:
         if 'class="error"' in error:

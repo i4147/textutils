@@ -1,0 +1,22 @@
+{
+    "lang": "fr",
+
+    "after": [
+        { "sequences": ["\n\n", "\n"],                          "probability": 1    },
+        { "sequences": ["\\.\\s", "!\\s", "\\?\\s"],            "probability": 0.7  },
+        { "sequences": [";\\s"],                                "probability": 0.65 },
+        { "sequences": [",\\s", ":\\s"],                        "probability": 0.6  },
+        { "sequences": ["\\)", "\\]", "\\}", "»", "\\.\\.\\."], "probability": 0.4  },
+        { "sequences": ["-"],                                   "probability": 0.2  },
+        { "sequences": ["\\s"],                                 "probability": 0.1  },
+        { "sequences": ["\\(", "\\[", "\\{", "«"],              "probability": 0,   "override": true }
+    ],
+
+    "before": [
+        { "sequences": ["\\(", "\\[", "\\{", "«"],              "probability": 0.4  },
+        { "sequences": ["\\s?!", "\\s?\\?", "\\s?:", "\\s?;"],  "probability": 0,   "override": true },
+        { "sequences": ["\\s?»"],                               "probability": 0,   "override": true }
+    ],
+
+    "default": 0.01
+}

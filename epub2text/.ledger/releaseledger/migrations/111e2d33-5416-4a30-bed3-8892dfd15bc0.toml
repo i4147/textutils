@@ -1,0 +1,12 @@
+schema_version = 1
+migration_id = "111e2d33-5416-4a30-bed3-8892dfd15bc0"
+project_uuid = "f7c37f77-6d31-4ddc-9544-f5f055ecd180"
+plan_hash = "sha256:d4555087ed39c0848c923ec93afec074b6d82d7da1d126004a30393ed471821a"
+source_root = "/data/data/com.termux/files/home/src/epub2text/.releaseledger"
+source_fingerprint = "sha256:caea17142ce12e3486a012eead651752293052ec7b6f470902c99b85dae3ff0f"
+target_data_root = "/data/data/com.termux/files/home/src/epub2text/.ledger/releaseledger/data"
+target_fingerprint = "sha256:84e314255bf2bc9bfdc7b7c2eb0a57d2da02d794fce078a120cae5b2a560d0e0"
+config_before_sha256 = ""
+config_after_sha256 = ""
+completed = true
+legacy_cleanup_permitted = true

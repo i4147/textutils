@@ -8,8 +8,6 @@ from qtextra.widgets.qt_overlay import QtOverlay, _apply_elevated_card_effect
 
 
 class _QtFloatingProgressBarBody(QFrame):
-    """Internal content widget for the floating progress overlay."""
-
     def __init__(self, parent: QWidget | None = None, text: str = "") -> None:
         super().__init__(parent)
         self.setObjectName("floatingProgressCard")
@@ -37,12 +35,6 @@ class _QtFloatingProgressBarBody(QFrame):
 
 
 class QtFloatingProgressBar(QtOverlay):
-    """Floating text-and-progress overlay anchored to another widget.
-
-    The overlay remains in the host widget's coordinate space, so it moves and
-    resizes naturally with the host window, dialog, or child widget.
-    """
-
     Y_OFFSET: int = 12
 
     def __init__(
@@ -79,24 +71,20 @@ class QtFloatingProgressBar(QtOverlay):
         self._relayout()
 
     def attach_to(self, widget: QWidget | None) -> None:
-        """Attach the overlay to a target widget."""
         if widget is not None and self.parentWidget() is None:
             self.setParent(widget.window())
         super().attach_to(widget)
         self._sync_completion_visibility()
 
     def text(self) -> str:
-        """Return the current status text."""
         return self._body.text_label.text()
 
     def set_text(self, text: str) -> None:
-        """Update the status text shown above the progress bar."""
         self._body.text_label.setText(text)
         self.updateGeometry()
         self._relayout()
 
     def set_range(self, minimum: int, maximum: int) -> None:
-        """Set the determinate range for the progress bar."""
         self._determinate_minimum = int(minimum)
         self._determinate_maximum = int(maximum)
         if self._determinate_value < self._determinate_minimum:
@@ -108,18 +96,15 @@ class QtFloatingProgressBar(QtOverlay):
         self._sync_completion_visibility()
 
     def set_value(self, value: int) -> None:
-        """Set the current determinate progress value."""
         self._determinate_value = int(value)
         if not self._busy:
             self._body.progress_bar.setValue(self._determinate_value)
         self._sync_completion_visibility()
 
     def value(self) -> int:
-        """Return the last determinate progress value."""
         return self._determinate_value
 
     def set_busy(self, is_busy: bool) -> None:
-        """Switch between busy and determinate progress modes."""
         self._busy = bool(is_busy)
         if self._busy:
             self._body.progress_bar.setRange(0, 0)
@@ -128,22 +113,18 @@ class QtFloatingProgressBar(QtOverlay):
         self._sync_completion_visibility()
 
     def is_busy(self) -> bool:
-        """Return whether the overlay is in indeterminate busy mode."""
         return self._busy
 
     def reset(self) -> None:
-        """Reset determinate progress to the current minimum and exit busy mode."""
         self._determinate_value = self._determinate_minimum
         self.set_busy(False)
 
     @property
     def progress_bar(self) -> QProgressBar:
-        """Expose the underlying progress bar widget."""
         return self._body.progress_bar
 
     @property
     def text_label(self) -> QLabel:
-        """Expose the underlying text label widget."""
         return self._body.text_label
 
     def _apply_determinate_state(self) -> None:

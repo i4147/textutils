@@ -1,0 +1,23 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[dev-packages]
+pbr = "*"
+pytest = "*"
+pytest-cov = "*"
+redislite = "*"
+"flake8" = "*"
+tox = "*"
+mock = "*"
+pipenv-to-requirements = "*"
+
+[packages]
+redis = "*"
+python-redis-lock = "*"
+decorator = "*"
+rstvalidator = "*"
+
+[requires]
+python_version = "2.7"

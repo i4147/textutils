@@ -17,8 +17,6 @@ TICK_INTERVAL_MS = 150
 
 
 class SnakeDirection(Enum):
-    """Cardinal movement direction for the snake."""
-
     UP = (0, -1)
     DOWN = (0, 1)
     LEFT = (-1, 0)
@@ -26,27 +24,21 @@ class SnakeDirection(Enum):
 
     @property
     def delta(self) -> tuple[int, int]:
-        """Return the per-step position delta."""
         return self.value
 
 
 @dataclass(frozen=True, slots=True)
 class GridPoint:
-    """A single board coordinate."""
-
     x: int
     y: int
 
     def moved(self, direction: SnakeDirection) -> GridPoint:
-        """Return a new point moved by one cell."""
         dx, dy = direction.delta
         return GridPoint(self.x + dx, self.y + dy)
 
 
 @dataclass(frozen=True, slots=True)
 class SnakeGameState:
-    """Immutable Snake game state."""
-
     width: int
     height: int
     snake: tuple[GridPoint, ...]
@@ -59,14 +51,12 @@ class SnakeGameState:
 
 
 def is_opposite_direction(current: SnakeDirection, candidate: SnakeDirection) -> bool:
-    """Return whether two directions are opposites."""
     dx_current, dy_current = current.delta
     dx_candidate, dy_candidate = candidate.delta
     return dx_current == -dx_candidate and dy_current == -dy_candidate
 
 
 def spawn_food(width: int, height: int, snake: tuple[GridPoint, ...], rng: random.Random) -> GridPoint | None:
-    """Spawn food on a free cell, or return ``None`` if the board is full."""
     occupied = set(snake)
     free_cells = [GridPoint(x, y) for y in range(height) for x in range(width) if GridPoint(x, y) not in occupied]
     if not free_cells:
@@ -77,7 +67,6 @@ def spawn_food(width: int, height: int, snake: tuple[GridPoint, ...], rng: rando
 def create_initial_state(
     width: int = BOARD_SIZE, height: int = BOARD_SIZE, rng: random.Random | None = None
 ) -> SnakeGameState:
-    """Create a fresh game state."""
     if width < 4 or height < 4:
         msg = "Snake board must be at least 4x4."
         raise ValueError(msg)
@@ -105,7 +94,6 @@ def create_initial_state(
 
 
 def change_direction(state: SnakeGameState, direction: SnakeDirection) -> SnakeGameState:
-    """Return a state with an updated direction when the move is valid."""
     if state.is_game_over:
         return state
     reference = state.last_direction if state.has_started else state.direction
@@ -115,7 +103,6 @@ def change_direction(state: SnakeGameState, direction: SnakeDirection) -> SnakeG
 
 
 def advance_state(state: SnakeGameState, rng: random.Random) -> SnakeGameState:
-    """Advance the snake by one tick."""
     if state.is_game_over:
         return state
 
@@ -154,21 +141,16 @@ def advance_state(state: SnakeGameState, rng: random.Random) -> SnakeGameState:
 
 
 class SnakeBoardWidget(GameBoardWidget):
-    """Paint the Snake game board."""
-
     _state: SnakeGameState | None
 
     def __init__(self, parent: QWidget | None = None) -> None:
-        """Initialize the board widget."""
         super().__init__(parent)
         self.setMinimumSize(320, 320)
 
     def sizeHint(self) -> QSize:
-        """Return the preferred board size."""
         return QSize(360, 360)
 
     def paintEvent(self, event: QPaintEvent) -> None:
-        """Paint the current board state."""
         super().paintEvent(event)
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, False)
@@ -216,8 +198,6 @@ class SnakeBoardWidget(GameBoardWidget):
 
 
 class SnakeDialog(GameDialogMixin, QtDialog):
-    """Standalone dialog that hosts a minimal Snake game."""
-
     def __init__(
         self,
         parent: QWidget | None,
@@ -227,7 +207,6 @@ class SnakeDialog(GameDialogMixin, QtDialog):
         tick_interval_ms: int = TICK_INTERVAL_MS,
         rng: random.Random | None = None,
     ) -> None:
-        """Initialize the Snake dialog."""
         self._board_width = width
         self._board_height = height
         self._tick_interval_ms = tick_interval_ms
@@ -241,23 +220,18 @@ class SnakeDialog(GameDialogMixin, QtDialog):
         self.restart_game()
 
     def _create_board_widget(self) -> SnakeBoardWidget:
-        """Return the snake board widget."""
         return SnakeBoardWidget(self)
 
     def _instructions_text(self) -> str:
-        """Return keyboard instructions."""
         return "Arrow keys or WASD to move. Space pauses. R restarts."
 
     def _do_restart(self) -> None:
-        """Reset game state for a new round."""
         self._state = create_initial_state(width=self._board_width, height=self._board_height, rng=self._rng)
 
     def _do_advance_state(self) -> None:
-        """Advance the snake by one tick."""
         self._state = advance_state(self._state, self._rng)
 
     def keyPressEvent(self, event: QKeyEvent | None) -> None:
-        """Handle keyboard controls for the game."""
         if event is None:
             return
 

@@ -1,6 +1,5 @@
 import bioc
 import docopt
-
 from radtext.cmd.cmd_utils import process_options
 from radtext.models.section_split.section_split_regex import BioCSectionSplitterRegex, combine_patterns
 
@@ -8,7 +7,6 @@ from radtext.models.section_split.section_split_regex import BioCSectionSplitter
 def main():
     argv = docopt.docopt(__doc__)
     process_options(argv)
-
     try:
         if argv["regex"]:
             with open(argv["--section-titles"]) as fp:
@@ -25,12 +23,9 @@ def main():
             raise KeyError
     except KeyError as e:
         raise e
-
     with open(argv["-i"]) as fp:
         collection = bioc.load(fp)
-
     processor.process_collection(collection)
-
     with open(argv["-o"], "w") as fp:
         bioc.dump(collection, fp)
 

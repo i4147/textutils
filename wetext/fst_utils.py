@@ -157,12 +157,6 @@ def _text_boundaries(text):
 
 
 def _snap_byte_span(character_to_byte, start, end):
-    """Expands byte offsets to whole UTF-8 code points.
-
-    kaldifst composes UTF-8 byte arcs independently, so an insertion may be
-    scheduled across adjacent epsilon arcs even though it represents one
-    Unicode character.
-    """
 
     snapped_start = character_to_byte[bisect.bisect_right(character_to_byte, start) - 1]
     snapped_end = character_to_byte[bisect.bisect_left(character_to_byte, end)]

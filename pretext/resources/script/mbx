@@ -1,0 +1,44 @@
+
+
+import os.path, sys, subprocess
+
+msg = """*********************************************************************
+*********************************************************************
+The  script/mbx  script has been retired and has
+been replaced by the  pretext/pretext  script.  You may need
+to give this new script permission to execute.  Furthermore,
+the stock configuration file, script/mbx.cfg, has moved to
+pretext/pretext.cfg, requiring no changes on your part.
+But if you have a custom configuration file, user/mbx.cfg,
+then you will need to rename it to user/pretext.cfg.
+
+PRESS A KEY TO ACKNOWLEDGE THIS MESSAGE, and then we will
+attempt to run the new script for you with either a new custom
+configuration file, or if unavailable, your old one.
+
+Please do not rely on this fallback behavior, and please make the
+necessary changes soon.  We apologize for the inconvenience.
+Thank-you.
+
+2020-05-21
+*********************************************************************
+*********************************************************************"""
+
+print(msg)
+input()
+
+mbx_file = os.path.abspath(sys.argv[0])
+script_dir, _ = os.path.split(mbx_file)
+distribution_dir, _ = os.path.split(script_dir)
+new_exec = os.path.join(distribution_dir, 'pretext', 'pretext')
+
+cmd = sys.argv
+cmd[0] = new_exec
+
+print("ATTEMPTING new pretext/pretext script with command line:")
+print(' '.join(cmd))
+print("2020-05-21:  Please start using the new  pretext/pretext  script!")
+print("Press any key.  Again.")
+input()
+
+subprocess.call(cmd)

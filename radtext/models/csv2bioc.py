@@ -4,9 +4,6 @@ import tqdm
 
 
 def csv2bioc(df: pd.DataFrame, id_col: str, text_col: str) -> bioc.BioCCollection:
-    """
-    Convert df to the BioC collection
-    """
     collection = bioc.BioCCollection()
     for i, row in tqdm.tqdm(df.iterrows(), total=len(df)):
         docid = row[id_col]

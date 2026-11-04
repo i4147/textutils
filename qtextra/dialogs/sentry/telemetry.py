@@ -15,8 +15,6 @@ from qtextra.widgets.qt_dialog import QtDialog
 
 
 class TelemetryOptInDialog(QtDialog):
-    """Opt-in widget."""
-
     def __init__(self, parent=None, with_locals=False) -> None:
         parent = get_parent(parent)
         super().__init__(parent=parent, title=f"{PACKAGE} Error Reporting")
@@ -29,7 +27,6 @@ class TelemetryOptInDialog(QtDialog):
         self.resize(760, 900)
 
     def make_panel(self) -> QVBoxLayout:
-        """Create the telemetry/error-reporting opt-in dialog panel and return its layout."""
         btn_box = QDialogButtonBox()
         btn_box.addButton("Enable error reporting", QDialogButtonBox.ButtonRole.AcceptRole)
         no = btn_box.addButton("Not now", QDialogButtonBox.ButtonRole.RejectRole)
@@ -121,7 +118,6 @@ class TelemetryOptInDialog(QtDialog):
         self._no = True
 
     def _update_example(self) -> None:
-        """Update example event."""
         self._send_locals = self.send_locals.isChecked()
         event = get_sample_event(include_local_variables=self._send_locals)
 

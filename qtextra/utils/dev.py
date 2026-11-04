@@ -19,7 +19,6 @@ if is_installed("qtextraplot"):
 
 
 def _make_style_reapply_handler(widget: QWidget) -> ty.Callable[[], None]:
-    """Create a stylesheet refresh callback for ``widget``."""
 
     def _reapply_style() -> None:
         _apply_style_on_widget(widget)
@@ -28,7 +27,6 @@ def _make_style_reapply_handler(widget: QWidget) -> ty.Callable[[], None]:
 
 
 def exec_(app: QApplication) -> None:
-    """Run the Qt application with interrupt support."""
     from napari._qt.utils import _maybe_allow_interrupt
 
     with _maybe_allow_interrupt(app):
@@ -36,7 +34,6 @@ def exec_(app: QApplication) -> None:
 
 
 def disable_warnings() -> None:
-    """Disable warnings."""
     import warnings
 
     warnings.filterwarnings("ignore", category=DeprecationWarning, module="vispy")
@@ -53,7 +50,6 @@ def qdev(
     modules: ty.Iterable[str] = DEFAULT_MODULES,
     log_func: ty.Callable[[str], None] | None = None,
 ) -> QtReloadWidget:
-    """Create reload widget."""
     from qtreload.qt_reload import QtReloadWidget
 
     from qtextra.config.theme import THEMES
@@ -64,7 +60,6 @@ def qdev(
 
 
 def enable_dev_border(app_or_widget) -> None:
-    """Enable dev border on widget."""
     try:
         if hasattr(app_or_widget, "DEV_WIDGET"):
             widget = app_or_widget.DEV_WIDGET
@@ -78,7 +73,6 @@ def qdev_dock(
     modules: ty.Iterable[str] = DEFAULT_MODULES,
     log_func: ty.Callable[[str], None] | None = None,
 ) -> ty.Tuple[QtReloadWidget, QDockWidget]:
-    """Create reload widget in dock."""
     widget = qdev(parent, modules, log_func=log_func)
     dock = QDockWidget("Reload", widget)
     return widget, dock
@@ -89,7 +83,6 @@ def qdev_popup(
     modules: ty.Iterable[str] = DEFAULT_MODULES,
     log_func: ty.Callable[[str], None] | None = None,
 ) -> ty.Tuple[QtReloadWidget, QWidget]:
-    """Create reload widget in popup."""
     widget = qdev(parent, modules, log_func=log_func)
     popup = QDialog()
     popup.qdev = widget
@@ -98,10 +91,6 @@ def qdev_popup(
 
 
 def qapplication(test_time: int = 3, init_func: ty.Callable[[], QApplication] | None = None):
-    """Return QApplication instance.
-
-    Creates it if it doesn't already exist.
-    """
     import faulthandler
 
     disable_warnings()
@@ -146,7 +135,6 @@ def qframe(
     dev: bool = True,
     toggle: bool = True,
 ) -> tuple[QApplication, QWidget, QLayout]:
-    """Create frame widget."""
     from qtpy import QtWidgets
 
     app = qapplication()
@@ -173,7 +161,6 @@ def qframe(
 
 
 def _apply_style_on_widget(widget: QWidget) -> None:
-    """Apply stylesheet(s) on the widget."""
     from qtextra.config.theme import THEMES
 
     THEMES.set_theme_stylesheet(widget)
@@ -181,7 +168,6 @@ def _apply_style_on_widget(widget: QWidget) -> None:
 
 
 def apply_style(widget: QWidget, show_widget_borders: bool = False, theme_name: str | None = None) -> None:
-    """Apply stylesheet(s) on the widget."""
     from qtextra.config.theme import THEMES
 
     if theme_name:
@@ -196,7 +182,6 @@ def apply_style(widget: QWidget, show_widget_borders: bool = False, theme_name: 
 
 
 def qmain(horz: bool = True, set_style: bool = True):
-    """Create main widget."""
     from qtpy import QtWidgets
 
     app = qapplication()
@@ -210,7 +195,6 @@ def qmain(horz: bool = True, set_style: bool = True):
 
 
 def theme_toggle_btn(parent: QWidget):
-    """Toggle button."""
     from random import choice
 
     from qtextra.config import THEMES
@@ -230,7 +214,6 @@ def theme_toggle_btn(parent: QWidget):
 
 
 def get_parent(parent):
-    """Get top level parent."""
     if parent is None:
         app = QApplication.instance()
         if app:
@@ -242,8 +225,6 @@ def get_parent(parent):
 
 
 class MacApplication(QApplication):
-    """Subclass to be able to open external files with our Mac app."""
-
     sig_open_external_file = Signal(str)
 
     def __init__(self, *args):
@@ -254,7 +235,6 @@ class MacApplication(QApplication):
         self._original_handlers = {}
 
     def event(self, event):
-        """Override event handler to catch file open events."""
         if event.type() == QEvent.Type.FileOpen:
             fname = str(event.file())
             if sys.argv and sys.argv[0] == fname:

@@ -7,17 +7,6 @@ from qtpy.QtCore import QObject, QTimer, Signal, Slot
 
 
 class LoopMode(StringEnum):
-    """Looping mode for animating an axis.
-
-    LoopMode.ONCE
-        Animation will stop once movie reaches the max frame (if fps > 0) or the first frame (if fps < 0).
-    LoopMode.LOOP
-        Movie will return to the first frame after reaching the last frame, looping continuously until stopped.
-    LoopMode.BACK_AND_FORTH
-        Movie will loop continuously until stopped, reversing direction when the maximum or minimum frame has been
-         reached.
-    """
-
     ONCE = auto()
     LOOP = auto()
     BACK_AND_FORTH = auto()
@@ -32,39 +21,6 @@ LOOP_MODE_TRANSLATIONS = {LoopMode.ONCE: "Once", LoopMode.LOOP: "Loop", LoopMode
 
 
 class QtAnimationBase(QObject):
-    """Animation base.
-
-    This class is responsible for animating/progressing through set of frames. This can include different ion images,
-    mass spectra, m/z vs dt heatmaps or different ion mobility bins. The class should not be used directly, but rather
-    subclassed and the `setup` and `update` methods must be implemented.
-
-    Attributes
-    ----------
-    timer : QTimer
-        Instance of the timer that takes care of updates.
-    is_running : bool
-        Flag to indicate whether the animator is running.
-    interval : int
-        Interval between each update (in ms)
-    step : int
-        Step size - this determines whether an update should occur on subsequent frames or some  frames should be
-        skipped.
-    current : int
-        Current frame.
-    min_point : int
-        Minimum value to start animation from.
-    max_point : int
-        Maximum value where the animation should stop or reset.
-    loop_mode : LoopMode
-        Enum that determines what should happen when animation reaches its final frame. See `LoopMode` for available
-        modes.
-
-    Private Attributes
-    ------------------
-    _stop : bool
-        Flag to indicate that animation was or should be stopped.
-    """
-
     evt_lock = Signal(bool)
     evt_started = Signal()
     evt_finished = Signal()
@@ -97,7 +53,6 @@ class QtAnimationBase(QObject):
         self._writer_max_step: int = 0
 
     def reset(self):
-        """Reset."""
         self.is_running: bool = False
         self.interval: int = 0
         self.step: int = 1
@@ -114,24 +69,20 @@ class QtAnimationBase(QObject):
         self._writer_max_step: int = 0
 
     def setup(self, *args, **kwargs):
-        """Setup."""
         raise NotImplementedError("Must implement method")
 
     def update(self, *args, **kwargs):
-        """Update."""
         raise NotImplementedError("Must implement method")
 
     def _animate(self, current: int):
-        """Yield animation data."""
+        pass
 
     @property
     def writer(self):
-        """Get handle to the writer."""
         return self._writer
 
     @property
     def writer_max_iter(self) -> int:
-        """Get maximum number of iterations the loop should go on for."""
         return self._writer_max_iter
 
     @writer_max_iter.setter
@@ -151,26 +102,6 @@ class QtAnimationBase(QObject):
         quality: int = 5,
         **kwargs,
     ):
-        """Set writer where canvas data can be written to.
-
-        Parameters
-        ----------
-        filename : str
-            Path to the filename where the writer can write to
-        fps : int
-            Frames per second to be written to the file
-        loop : int
-            Flag to indicate how many loops should be written to the file. Value of 0 means that gif will
-            loop forever.
-        duration : float
-            Time (in seconds) between each frame.
-        n_loops : int
-            The number of iterations that should be written to the file
-        quality : int
-            Number from 1 (lowest quality) to 9. Only applies to non-gif extensions.
-        **kwargs
-            Additional keyword arguments
-        """
         import imageio
 
         if n_loops < 1:
@@ -192,10 +123,9 @@ class QtAnimationBase(QObject):
         self.evt_writer_setup.emit()
 
     def set_writer_extras(self, **kwargs):
-        """Set any extra parameters that the writer might require."""
+        pass
 
     def close_writer(self):
-        """Close writer."""
         if self._writer:
             self._writer.close()
             self._writer = None
@@ -203,13 +133,6 @@ class QtAnimationBase(QObject):
 
     @Slot(float)
     def set_fps(self, fps: float):
-        """Set the frames per second value for the animation.
-
-        Parameters
-        ----------
-        fps : float
-            Frames per second for the animation.
-        """
         if fps == 0:
             return self.finish()
         self.step = 1 if fps > 0 else -1
@@ -218,35 +141,15 @@ class QtAnimationBase(QObject):
 
     @Slot(str)
     def set_loop_mode(self, mode: str):
-        """Set the loop mode for the animation.
-
-        Parameters
-        ----------
-        mode : str
-            Loop mode for animation.
-            Available options for the loop mode string enumeration are:
-            - LoopMode.ONCE
-                Animation will stop once movie reaches the max frame
-                (if fps > 0) or the first frame (if fps < 0).
-            - LoopMode.LOOP
-                Movie will return to the first frame after reaching
-                the last frame, looping continuously until stopped.
-            - LoopMode.BACK_AND_FORTH
-                Movie will loop continuously until stopped,
-                reversing direction when the maximum or minimum frame
-                has been reached.
-        """
         self.loop_mode = LoopMode(mode)
 
     def start(self):
-        """Start animation."""
         self._stop, self.is_running = False, True
         self.evt_active.emit(True)
         self.timer.singleShot(int(self.interval), self.advance)
 
     @contextmanager
     def pause(self):
-        """Pause timer and then restart it."""
         if not self.is_running:
             raise ValueError("Cannot pause timer that is not running")
         self.timer.stop()
@@ -254,12 +157,10 @@ class QtAnimationBase(QObject):
         self.timer.singleShot(int(self.interval), self.advance)
 
     def restart(self):
-        """Restart animation."""
         self.finish()
         self.start()
 
     def finish(self):
-        """Emit the finished event signal."""
         self._stop, self.is_running = True, False
         self.timer.stop()
         self.evt_active.emit(False)
@@ -270,11 +171,6 @@ class QtAnimationBase(QObject):
             self.evt_writer_finished.emit()
 
     def advance(self):
-        """Advance the current frame in the animation.
-
-        Takes dims scale into account and restricts the animation to the
-        requested frame_range, if entered.
-        """
         if self._stop:
             return None
 

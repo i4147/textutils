@@ -11,7 +11,6 @@ def tolist(x):
 
 
 def _torch_collate_batch(examples, tokenizer, pad_to_multiple_of):
-    """Collate `examples` into a batch, using the information in `tokenizer` for padding if necessary."""
     import numpy as np
     import torch
 

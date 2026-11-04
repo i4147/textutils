@@ -1,0 +1,80 @@
+schema_version = 3
+migration_id = "eeeb540d63e347a29eef83c7aff6f5d3"
+project_uuid = "f7c37f77-6d31-4ddc-9544-f5f055ecd180"
+phase = "complete"
+mode = "copy"
+verify = "sha256"
+project_root = "/data/data/com.termux/files/home/src/epub2text"
+requires_staged_validation = false
+requires_activated_validation = false
+requires_finalization = false
+quiescence_completed = true
+staged_validated = []
+activated_validated = []
+finalized = false
+plan_digest = "73069bf3272a35eb78bc200ef9de3a8b68209ffa45b43fa1060d966cdf58d4e5"
+created_at = "2026-08-01T21:36:58Z"
+updated_at = "2026-08-01T21:36:58Z"
+
+[lock_identity]
+migration_id = "eeeb540d63e347a29eef83c7aff6f5d3"
+owner = "ledgercore"
+pid = 26514
+
+[items.0]
+item_index = 0
+component = "mount"
+tool_name = "taskledger"
+mount_name = "data"
+source = "/data/data/com.termux/files/home/src/ledger/task/epub2text"
+destination = "/data/data/com.termux/files/home/src/ledger/taskledger/f7c37f77-6d31-4ddc-9544-f5f055ecd180/data"
+strategy = "copy"
+destination_policy = "create-only"
+state = "complete"
+expected_before_state = "absent"
+stage_path = "/data/data/com.termux/files/home/src/ledger/taskledger/f7c37f77-6d31-4ddc-9544-f5f055ecd180/.data.migrating-eeeb540d63e347a29eef83c7aff6f5d3-0"
+backup_path = "/data/data/com.termux/files/home/src/ledger/taskledger/f7c37f77-6d31-4ddc-9544-f5f055ecd180/.data.backup-eeeb540d63e347a29eef83c7aff6f5d3-0"
+
+[items.0.source_binding]
+schema_version = 1
+layout_version = 3
+project_uuid = "f7c37f77-6d31-4ddc-9544-f5f055ecd180"
+tool = "taskledger"
+mount = "data"
+storage = "project"
+
+[items.0.destination_binding]
+schema_version = 1
+layout_version = 3
+project_uuid = "f7c37f77-6d31-4ddc-9544-f5f055ecd180"
+tool = "taskledger"
+mount = "data"
+storage = "external"
+
+[items.0.staged_fingerprint]
+algorithm = "sha256-tree-v1"
+digest = "6ac82a264f8fa38b8259af24ee26782fe1d898311ada716e98aa32a17536c4f4"
+file_count = 220
+total_bytes = 623611
+
+[items.0.activated_fingerprint]
+algorithm = "sha256-tree-v1"
+digest = "6ac82a264f8fa38b8259af24ee26782fe1d898311ada716e98aa32a17536c4f4"
+file_count = 220
+total_bytes = 623611
+
+[config_switches.0]
+kind = "manifest"
+destination = "/data/data/com.termux/files/home/src/epub2text/.ledger/ledger.toml"
+state = "activated"
+backup_path = "/data/data/com.termux/files/home/src/epub2text/.ledger/.ledger.toml.backup-eeeb540d63e347a29eef83c7aff6f5d3"
+intent_written = true
+applied = true
+verified = true
+target_content = "schema_version = 3\n\n[project]\nuuid = \"f7c37f77-6d31-4ddc-9544-f5f055ecd180\"\nname = \"epub2text\"\n\n[ledgers.taskledger.mounts.data]\nstorage = \"external\"\nroot = \"../ledger\"\n\n[ledgers.taskledger.mounts.indexes]\nstorage = \"cache\"\n"
+
+[config_switches.0.target_fingerprint]
+algorithm = "sha256-file-v1"
+digest = "29ef4382500c6b5f114d9b5b37b88de5cd84372d1739d64264b82edef307d41d"
+file_count = 1
+total_bytes = 224

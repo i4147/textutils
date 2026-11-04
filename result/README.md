@@ -13,9 +13,9 @@ textutils search ./documents needle --pattern '*.txt'
 from pathlib import Path
 from textutils import TextFile, levenshtein_distance, search_files
 
-print(levenshtein_distance('kitten', 'sitting'))
-print(TextFile(Path('notes.txt')).search('hello'))
-for path, matches in search_files(Path('documents'), 'hello'):
+print(levenshtein_distance("kitten", "sitting"))
+print(TextFile(Path("notes.txt")).search("hello"))
+for path, matches in search_files(Path("documents"), "hello"):
     print(path, matches)
 ```
 

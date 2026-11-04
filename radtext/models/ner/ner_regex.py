@@ -1,8 +1,6 @@
 from typing import Pattern, List, Generator, Iterable
-
 import bioc
 from bioc import BioCPassage, BioCSentence
-
 from radtext.core import BioCProcessor
 from radtext.models.ner.utils import NERMatch, remove_duplicates, longest_matching, remove_excludes
 
@@ -71,7 +69,6 @@ class BioCNerRegex(BioCProcessor):
                 if text[end] in self.punctuation:
                     break
                 end += 1
-
             ann = bioc.BioCAnnotation()
             ann.id = "a{}".format(start)
             ann.infons["ner_pattern_str"] = match.pattern

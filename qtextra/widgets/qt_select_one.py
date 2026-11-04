@@ -13,8 +13,6 @@ Orientation = ty.Literal["horizontal", "vertical"]
 
 
 class QtPickOptionBase(QDialog):
-    """Select between options."""
-
     option: str | None = None
     orientation: str | Orientation = "horizontal"
 
@@ -28,7 +26,6 @@ class QtPickOptionBase(QDialog):
         self._setup_ui()
 
     def _get_layout_widget(self) -> tuple[QWidget | None, QWidget | None]:
-        """Get layout widget."""
         raise NotImplementedError("Must implement method")
 
     def _setup_ui(self) -> None:
@@ -66,27 +63,20 @@ class QtPickOptionBase(QDialog):
             layout.addLayout(btn_layout, stretch=True)
 
     def on_accept(self, option: str) -> None:
-        """Set accepted."""
         self.option = option
         return self.accept()
 
     def reject(self) -> None:
-        """Set rejected."""
         self.option = None
         return super().reject()
 
 
 class QtPickOption(QtPickOptionBase):
-    """Select between options."""
-
     def _get_layout_widget(self) -> tuple[QWidget | None, QWidget | None]:
-        """Get layout widget."""
         return None, None
 
 
 class QtScrollablePickOption(QtPickOptionBase):
-    """Select between options."""
-
     def __init__(
         self,
         parent: QWidget,
@@ -103,14 +93,11 @@ class QtScrollablePickOption(QtPickOptionBase):
         self.setMinimumSize(size)
 
     def _get_layout_widget(self) -> tuple[QWidget | None, QWidget | None]:
-        """Get layout widget."""
         scroll_area, scroll_widget = hp.make_scroll_area(self)
         return scroll_area, scroll_widget
 
 
 class QtChoosePopup(QtFramelessTool):
-    """Choose from one of available options."""
-
     evt_option = Signal(str, int)
     choice: tuple[str, int] = (None, None)
 
@@ -126,7 +113,6 @@ class QtChoosePopup(QtFramelessTool):
         self.setMaximumWidth(400)
 
     def make_panel(self) -> QFormLayout:
-        """Make panel."""
         layout = hp.make_form_layout()
 
         self.title_label = hp.make_label(self, "", bold=True, wrap=True, font_size=14)
@@ -141,7 +127,6 @@ class QtChoosePopup(QtFramelessTool):
         return layout
 
     def on_choose(self, title: str, index: int):
-        """Chosen message."""
         self.evt_option.emit(title, index)
         self.choice = title, index
         self.accept()

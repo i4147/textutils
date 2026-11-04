@@ -6,20 +6,15 @@ from qtpy.QtCore import Qt, Signal
 
 
 class QtClickLabel(QtW.QLabel):
-    """Clickable label without highlight."""
-
     evt_clicked = Signal()
 
     def mouseReleaseEvent(self, ev: QtGui.QMouseEvent) -> None:
-        """Emit the clicked signal when the left mouse button is released."""
         if ev.button() == Qt.MouseButton.LeftButton:
             self.evt_clicked.emit()
         return super().mouseReleaseEvent(ev)
 
 
 class QtVerticalLabel(QtW.QLabel):
-    """Rotated label."""
-
     def __init__(self, *args):
         QtW.QLabel.__init__(self, *args)
 
@@ -44,8 +39,6 @@ class QtVerticalLabel(QtW.QLabel):
 
 
 class QtClickableLabel(QtW.QLabel):
-    """A label widget that behaves like a button."""
-
     evt_clicked = Signal()
 
     def __init__(self, text: str, parent=None):
@@ -59,22 +52,18 @@ class QtClickableLabel(QtW.QLabel):
         self.setText(text)
 
     def elideMode(self) -> Qt.TextElideMode:
-        """The current Qt.TextElideMode."""
         return self._elide_mode
 
     def setElideMode(self, mode: Qt.TextElideMode) -> None:
-        """Set the elide mode to a Qt.TextElideMode."""
         self._elide_mode = Qt.TextElideMode(mode)
         super().setText(self._elidedText())
 
     def mouseReleaseEvent(self, ev: QtGui.QMouseEvent) -> None:
-        """Emit the clicked signal when the left mouse button is released."""
         if ev.button() == Qt.MouseButton.LeftButton:
             self.evt_clicked.emit()
         return super().mouseReleaseEvent(ev)
 
     def enterEvent(self, a0: QtCore.QEvent) -> None:
-        """Add an underline to the text and change the cursor to a hand."""
         font = self.font()
         font.setUnderline(True)
         self.setFont(font)
@@ -83,7 +72,6 @@ class QtClickableLabel(QtW.QLabel):
         return super().enterEvent(a0)
 
     def leaveEvent(self, a0: QtCore.QEvent) -> None:
-        """Reset the text and cursor to their original state."""
         font = self.font()
         font.setUnderline(False)
         self.setFont(font)
@@ -91,28 +79,17 @@ class QtClickableLabel(QtW.QLabel):
         return super().leaveEvent(a0)
 
     def text(self) -> str:
-        """Return the label's text.
-
-        If no text has been set this will return an empty string.
-        """
         return self._text
 
     def setText(self, text: str):
-        """Set the label's text.
-
-        Setting the text clears any previous content.
-        NOTE: we set the QLabel private text to the elided version
-        """
         self._text = text
         super().setText(self._elidedText())
 
     def resizeEvent(self, ev: QtGui.QResizeEvent) -> None:
-        """Resize event."""
         ev.accept()
         super().setText(self._elidedText())
 
     def _elidedText(self) -> str:
-        """Return `self._text` elided to `width`."""
         fm = QtGui.QFontMetrics(self.font())
         width = self.width() - 2
         if not self.wordWrap():

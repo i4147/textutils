@@ -22,7 +22,28 @@ except ImportError:
 WORKERS = 8
 
 
-def adjust_text(texts, x=None, y=None, objects=None, avoid_self=True, force_text: tuple[float, float]=(0.1, 0.2), force_static: tuple[float, float]=(0.1, 0.2), force_pull: tuple[float, float]=(0.01, 0.01), force_explode: tuple[float, float]=(0.01, 0.02), expand: tuple[float, float]=(1.05, 1.1), explode_radius='auto', ensure_inside_axes=True, expand_axes=False, only_move={'text': 'xy', 'static': 'xy', 'explode': 'xy', 'pull': 'xy'}, ax=None, min_arrow_len=5, time_lim: float | None=None, iter_lim: int | None=None, *args, **kwargs):
+def adjust_text(
+    texts,
+    x=None,
+    y=None,
+    objects=None,
+    avoid_self=True,
+    force_text: tuple[float, float] = (0.1, 0.2),
+    force_static: tuple[float, float] = (0.1, 0.2),
+    force_pull: tuple[float, float] = (0.01, 0.01),
+    force_explode: tuple[float, float] = (0.01, 0.02),
+    expand: tuple[float, float] = (1.05, 1.1),
+    explode_radius="auto",
+    ensure_inside_axes=True,
+    expand_axes=False,
+    only_move={"text": "xy", "static": "xy", "explode": "xy", "pull": "xy"},
+    ax=None,
+    min_arrow_len=5,
+    time_lim: float | None = None,
+    iter_lim: int | None = None,
+    *args,
+    **kwargs,
+):
     if not texts:
         return
     if ax is None:
@@ -30,41 +51,46 @@ def adjust_text(texts, x=None, y=None, objects=None, avoid_self=True, force_text
     try:
         ax.figure.draw_without_rendering()
     except AttributeError:
-        logging.warn('Looks like you are using an old matplotlib version.\n               In some cases adjust_text might fail, if possible update\n               matplotlib to version >=3.5.0')
+        logging.warn(
+            "Looks like you are using an old matplotlib version.\n               In some cases adjust_text might fail, if possible update\n               matplotlib to version >=3.5.0"
+        )
         ax.figure.canvas.draw()
     try:
         transform = texts[0].get_transform()
     except IndexError:
-        logging.warn('Something wrong with the texts. Did you pass a list of matplotlib text objects?')
+        logging.warn("Something wrong with the texts. Did you pass a list of matplotlib text objects?")
         return
     if time_lim is None and iter_lim is None:
         time_lim = 0.5
     elif time_lim is not None and iter_lim is not None:
-        logging.warn('Both time_lim and iter_lim are set, faster will be used')
+        logging.warn("Both time_lim and iter_lim are set, faster will be used")
     start_time = timer()
     orig_xy = [text.get_unitless_position() for text in texts]
     orig_xy_disp_coord = transform.transform(orig_xy)
     coords = get_2d_coordinates(texts)
     if isinstance(only_move, str):
-        only_move = {'text': only_move, 'static': only_move, 'explode': only_move, 'pull': only_move}
+        only_move = {"text": only_move, "static": only_move, "explode": only_move, "pull": only_move}
     if x is not None and y is not None:
         point_coords = transform.transform(np.vstack([x, y]).T)
     else:
         point_coords = np.empty((0, 2))
     if avoid_self:
-        point_coords = np.vstack([point_coords, np.hstack([np.mean(coords[:, :2], axis=1)[:, np.newaxis], np.mean(coords[:, 2:], axis=1)[:, np.newaxis]])])
+        point_coords = np.vstack([
+            point_coords,
+            np.hstack([np.mean(coords[:, :2], axis=1)[:, np.newaxis], np.mean(coords[:, 2:], axis=1)[:, np.newaxis]]),
+        ])
     if objects is None:
         obj_coords = np.empty((0, 4))
     else:
         obj_coords = get_2d_coordinates(objects)
     static_coords = np.vstack([point_coords[:, [0, 0, 1, 1]], obj_coords])
-    if explode_radius == 'auto':
+    if explode_radius == "auto":
         explode_radius = max((coords[:, 1] - coords[:, 0]).max(), (coords[:, 3] - coords[:, 2]).max())
     if explode_radius > 0 and np.all(np.asarray(force_explode) > 0):
         explode_x, explode_y = explode(coords, static_coords, explode_radius)
-        if 'x' not in only_move['explode']:
+        if "x" not in only_move["explode"]:
             explode_x = np.zeros_like(explode_x)
-        if 'y' not in only_move['explode']:
+        if "y" not in only_move["explode"]:
             explode_y = np.zeros_like(explode_y)
         coords = apply_shifts(coords, -explode_x * force_explode[0], -explode_y * force_explode[1])
     error = np.Inf
@@ -77,7 +103,17 @@ def adjust_text(texts, x=None, y=None, objects=None, avoid_self=True, force_text
         ax_bbox = False
     i = 0
     while error > 0:
-        coords, error = iterate(coords, orig_xy_disp_coord, static_coords, force_text=force_text, force_static=force_static, force_pull=force_pull, expand=expand, bbox_to_contain=ax_bbox, only_move=only_move)
+        coords, error = iterate(
+            coords,
+            orig_xy_disp_coord,
+            static_coords,
+            force_text=force_text,
+            force_static=force_static,
+            force_pull=force_pull,
+            expand=expand,
+            bbox_to_contain=ax_bbox,
+            only_move=only_move,
+        )
         i += 1
         if time_lim is not None and timer() - start_time > time_lim:
             break
@@ -86,19 +122,23 @@ def adjust_text(texts, x=None, y=None, objects=None, avoid_self=True, force_text
     xdists = np.min(np.abs(np.subtract(coords[:, :2], orig_xy_disp_coord[:, 0][:, np.newaxis])), axis=1)
     ydists = np.min(np.abs(np.subtract(coords[:, 2:], orig_xy_disp_coord[:, 1][:, np.newaxis])), axis=1)
     display_dists = np.max(np.vstack([xdists, ydists]), axis=0)
-    connections = np.hstack([np.mean(coords[:, :2], axis=1)[:, np.newaxis], np.mean(coords[:, 2:], axis=1)[:, np.newaxis], orig_xy_disp_coord])
+    connections = np.hstack([
+        np.mean(coords[:, :2], axis=1)[:, np.newaxis],
+        np.mean(coords[:, 2:], axis=1)[:, np.newaxis],
+        orig_xy_disp_coord,
+    ])
     transformed_connections = np.empty_like(connections)
     transformed_connections[:, :2] = transform.inverted().transform(connections[:, :2])
     transformed_connections[:, 2:] = transform.inverted().transform(connections[:, 2:])
-    if 'arrowprops' in kwargs:
-        ap = kwargs.pop('arrowprops')
+    if "arrowprops" in kwargs:
+        ap = kwargs.pop("arrowprops")
     else:
         ap = {}
     for i, text in enumerate(texts):
         text_mid = transformed_connections[i, :2]
         target = transformed_connections[i, 2:]
-        text.set_verticalalignment('center')
-        text.set_horizontalalignment('center')
+        text.set_verticalalignment("center")
+        text.set_horizontalalignment("center")
         text.set_position(text_mid)
         if ap and display_dists[i] >= min_arrow_len:
             arrowpatch = FancyArrowPatch(*args, posA=text_mid, posB=target, patchA=text, **kwargs, **ap)
@@ -113,7 +153,7 @@ def apply_shifts(coords, shifts_x, shifts_y):
 
 def arange_multi(starts, stops=None, lengths=None):
     if (stops is None) == (lengths is None):
-        raise ValueError('Either stops or lengths must be provided!')
+        raise ValueError("Either stops or lengths must be provided!")
     if lengths is None:
         lengths = stops - starts
     if np.isscalar(starts):
@@ -156,7 +196,7 @@ def explode(coords, static_coords, r=None):
         static_centers = np.vstack([static_x, static_y]).T
         points = np.vstack([points, static_centers])
     tree = scipy.spatial.KDTree(points)
-    pairs = tree.query_pairs(r, output_type='ndarray')
+    pairs = tree.query_pairs(r, output_type="ndarray")
     pairs = pairs[pairs[:, 0] < N]
     pairs = pairs[pairs[:, 0] != pairs[:, 1]]
     diff = points[pairs[:, 0]] - points[pairs[:, 1]]
@@ -201,7 +241,7 @@ def get_bboxes(objs, r=None, expand=(1, 1), ax=None, transform=None):
             if all([isinstance(obj, matplotlib.transforms.BboxBase) for obj in objs]):
                 return objs
             else:
-                raise ValueError('Something is wrong')
+                raise ValueError("Something is wrong")
         except TypeError:
             return get_bboxes_pathcollection(objs, ax)
 
@@ -233,9 +273,9 @@ def get_bboxes_pathcollection(sc, ax):
 
 
 def get_renderer(fig):
-    if hasattr(fig.canvas, 'get_renderer'):
+    if hasattr(fig.canvas, "get_renderer"):
         return fig.canvas.get_renderer()
-    if hasattr(fig.canvas, 'renderer'):
+    if hasattr(fig.canvas, "renderer"):
         return fig.canvas.renderer
     if matplot_get_renderer:
         return matplot_get_renderer(fig)
@@ -243,7 +283,7 @@ def get_renderer(fig):
     try:
         return fig._cachedRenderer
     except AttributeError:
-        raise ValueError('Unable to determine renderer') from None
+        raise ValueError("Unable to determine renderer") from None
 
 
 def get_shifts_extra(coords, extra_coords):
@@ -278,7 +318,17 @@ def get_shifts_texts(coords):
     return (xshifts, yshifts)
 
 
-def iterate(coords, orig_coords, static_coords=None, force_text: tuple[float, float]=(0.1, 0.2), force_static: tuple[float, float]=(0.05, 0.1), force_pull: tuple[float, float]=(0.05, 0.1), expand: tuple[float, float]=(1.05, 1.1), bbox_to_contain=False, only_move={'text': 'xy', 'static': 'xy', 'explode': 'xy', 'pull': 'xy'}):
+def iterate(
+    coords,
+    orig_coords,
+    static_coords=None,
+    force_text: tuple[float, float] = (0.1, 0.2),
+    force_static: tuple[float, float] = (0.05, 0.1),
+    force_pull: tuple[float, float] = (0.05, 0.1),
+    expand: tuple[float, float] = (1.05, 1.1),
+    bbox_to_contain=False,
+    only_move={"text": "xy", "static": "xy", "explode": "xy", "pull": "xy"},
+):
     text_shifts_x, text_shifts_y = get_shifts_texts(expand_coords(coords, expand[0], expand[1]))
     if static_coords.shape[0] > 0:
         static_shifts_x, static_shifts_y = get_shifts_extra(expand_coords(coords, expand[0], expand[1]), static_coords)
@@ -295,41 +345,41 @@ def iterate(coords, orig_coords, static_coords=None, force_text: tuple[float, fl
     pull_x *= -force_pull[0]
     pull_y *= -force_pull[1]
     if only_move:
-        if 'x' not in only_move['text']:
+        if "x" not in only_move["text"]:
             text_shifts_x = np.zeros_like(text_shifts_x)
-        elif 'x+' in only_move['text']:
+        elif "x+" in only_move["text"]:
             text_shifts_x[text_shifts_x > 0] = 0
-        elif 'x-' in only_move['text']:
+        elif "x-" in only_move["text"]:
             text_shifts_x[text_shifts_x < 0] = 0
-        if 'y' not in only_move['text']:
+        if "y" not in only_move["text"]:
             text_shifts_y = np.zeros_like(text_shifts_y)
-        elif 'y+' in only_move['text']:
+        elif "y+" in only_move["text"]:
             text_shifts_y[text_shifts_y > 0] = 0
-        elif 'y-' in only_move['text']:
+        elif "y-" in only_move["text"]:
             text_shifts_y[text_shifts_y < 0] = 0
-        if 'x' not in only_move['static']:
+        if "x" not in only_move["static"]:
             static_shifts_x = np.zeros_like(static_shifts_x)
-        elif 'x+' in only_move['static']:
+        elif "x+" in only_move["static"]:
             static_shifts_x[static_shifts_x > 0] = 0
-        elif 'x-' in only_move['static']:
+        elif "x-" in only_move["static"]:
             static_shifts_x[static_shifts_x < 0] = 0
-        if 'y' not in only_move['static']:
+        if "y" not in only_move["static"]:
             static_shifts_y = np.zeros_like(static_shifts_y)
-        elif 'y+' in only_move['static']:
+        elif "y+" in only_move["static"]:
             static_shifts_y[static_shifts_y > 0] = 0
-        elif 'y-' in only_move['static']:
+        elif "y-" in only_move["static"]:
             static_shifts_y[static_shifts_y < 0] = 0
-        if 'x' not in only_move['pull']:
+        if "x" not in only_move["pull"]:
             pull_x = np.zeros_like(pull_x)
-        elif 'x+' in only_move['pull']:
+        elif "x+" in only_move["pull"]:
             pull_x[pull_x > 0] = 0
-        elif 'x-' in only_move['pull']:
+        elif "x-" in only_move["pull"]:
             pull_x[pull_x < 0] = 0
-        if 'y' not in only_move['pull']:
+        if "y" not in only_move["pull"]:
             pull_y = np.zeros_like(pull_y)
-        elif 'y+' in only_move['pull']:
+        elif "y+" in only_move["pull"]:
             pull_y[pull_y > 0] = 0
-        elif 'y-' in only_move['pull']:
+        elif "y-" in only_move["pull"]:
             pull_y[pull_y < 0] = 0
     shifts_x = text_shifts_x + static_shifts_x + pull_x
     shifts_y = text_shifts_y + static_shifts_y + pull_y
@@ -342,7 +392,9 @@ def iterate(coords, orig_coords, static_coords=None, force_text: tuple[float, fl
 def overlap_intervals(starts1, ends1, starts2, ends2, closed=False, sort=False):
     for vec in [starts1, ends1, starts2, ends2]:
         if isinstance(vec, pd.Series):
-            warnings.warn('One of the inputs is provided as pandas.Series and its index will be ignored.', SyntaxWarning)
+            warnings.warn(
+                "One of the inputs is provided as pandas.Series and its index will be ignored.", SyntaxWarning
+            )
     starts1 = np.asarray(starts1)
     ends1 = np.asarray(ends1)
     starts2 = np.asarray(starts2)
@@ -355,15 +407,24 @@ def overlap_intervals(starts1, ends1, starts2, ends2, closed=False, sort=False):
     order2 = np.lexsort([ends2, starts2])
     starts1, ends1, ids1 = (starts1[order1], ends1[order1], ids1[order1])
     starts2, ends2, ids2 = (starts2[order2], ends2[order2], ids2[order2])
-    match_2in1_starts = np.searchsorted(starts2, starts1, 'left')
-    match_2in1_ends = np.searchsorted(starts2, ends1, 'right' if closed else 'left')
-    match_1in2_starts = np.searchsorted(starts1, starts2, 'right')
-    match_1in2_ends = np.searchsorted(starts1, ends2, 'right' if closed else 'left')
+    match_2in1_starts = np.searchsorted(starts2, starts1, "left")
+    match_2in1_ends = np.searchsorted(starts2, ends1, "right" if closed else "left")
+    match_1in2_starts = np.searchsorted(starts1, starts2, "right")
+    match_1in2_ends = np.searchsorted(starts1, ends2, "right" if closed else "left")
     match_2in1_mask = match_2in1_ends > match_2in1_starts
     match_1in2_mask = match_1in2_ends > match_1in2_starts
     match_2in1_starts, match_2in1_ends = (match_2in1_starts[match_2in1_mask], match_2in1_ends[match_2in1_mask])
     match_1in2_starts, match_1in2_ends = (match_1in2_starts[match_1in2_mask], match_1in2_ends[match_1in2_mask])
-    overlap_ids = np.block([[np.repeat(ids1[match_2in1_mask], match_2in1_ends - match_2in1_starts)[:, None], ids2[arange_multi(match_2in1_starts, match_2in1_ends)][:, None]], [ids1[arange_multi(match_1in2_starts, match_1in2_ends)][:, None], np.repeat(ids2[match_1in2_mask], match_1in2_ends - match_1in2_starts)[:, None]]])
+    overlap_ids = np.block([
+        [
+            np.repeat(ids1[match_2in1_mask], match_2in1_ends - match_2in1_starts)[:, None],
+            ids2[arange_multi(match_2in1_starts, match_2in1_ends)][:, None],
+        ],
+        [
+            ids1[arange_multi(match_1in2_starts, match_1in2_ends)][:, None],
+            np.repeat(ids2[match_1in2_mask], match_1in2_ends - match_1in2_starts)[:, None],
+        ],
+    ])
     if sort:
         overlap_ids = overlap_ids[np.lexsort([overlap_ids[:, 1], overlap_ids[:, 0]])]
     return overlap_ids

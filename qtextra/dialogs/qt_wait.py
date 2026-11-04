@@ -10,14 +10,11 @@ from qtextra.widgets.qt_dialog import QtFramelessTool
 
 
 class QtWaitPopup(QtFramelessTool):
-    """Dialog to indicate to user that they need to wait."""
-
     def __init__(self, parent, msg: str = "Please wait..."):
         self.msg = msg
         super().__init__(parent)
 
     def make_panel(self) -> QVBoxLayout:
-        """Make panel."""
         label = hp.make_label(self, self.msg)
         spinner, _ = hp.make_loading_gif(self, size=(64, 64))
 

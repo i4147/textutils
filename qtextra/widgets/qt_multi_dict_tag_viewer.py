@@ -21,8 +21,6 @@ PRESENT_ROLE = Qt.ItemDataRole.UserRole + 2
 
 
 class QtMultiDictTagViewer(QWidget):
-    """Read-only searchable viewer for multiple dictionaries."""
-
     evt_items_changed = Signal(dict)
     evt_search_changed = Signal(str)
 
@@ -74,11 +72,9 @@ class QtMultiDictTagViewer(QWidget):
         self._resize_columns()
 
     def sample_names(self) -> list[str]:
-        """Return the configured sample names."""
         return list(self._samples)
 
     def items(self) -> dict[str, dict[str, DictTagValue]]:
-        """Return the current sample dictionaries."""
         exported = {sample: {} for sample in self._samples}
         for row in range(self.table.rowCount()):
             key_item = self.key_table.item(row, 0)
@@ -93,17 +89,14 @@ class QtMultiDictTagViewer(QWidget):
         return exported
 
     def export_dicts(self) -> dict[str, dict[str, DictTagValue]]:
-        """Export the displayed nested dictionaries."""
         return self.items()
 
     def set_samples(self, samples: list[str]) -> None:
-        """Set the active sample names."""
         self._samples = [sample.strip() for sample in samples if sample.strip()]
         self._rebuild_table_headers()
         self._resize_columns()
 
     def set_items(self, items: Mapping[str, Mapping[str, DictTagValue]]) -> None:
-        """Replace all displayed sample dictionaries."""
         self.set_samples(list(items))
         self.key_table.setRowCount(0)
         self.table.setRowCount(0)
@@ -134,13 +127,11 @@ class QtMultiDictTagViewer(QWidget):
         self.evt_items_changed.emit(self.export_dicts())
 
     def clear_items(self) -> None:
-        """Clear all rows."""
         self.key_table.setRowCount(0)
         self.table.setRowCount(0)
         self.evt_items_changed.emit({sample: {} for sample in self._samples})
 
     def get_value(self, key: str, sample: str) -> DictTagValue:
-        """Return the value for a key in a sample."""
         row = self._find_row(key)
         if row is None:
             raise KeyError(key)

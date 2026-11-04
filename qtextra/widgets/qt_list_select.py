@@ -22,8 +22,6 @@ from qtextra.widgets.qt_toolbar_mini import QtMiniToolbar
 
 
 class HTMLDelegate(QStyledItemDelegate):
-    """Rich text delegate."""
-
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.doc = QTextDocument(self)
@@ -56,16 +54,10 @@ class HTMLDelegate(QStyledItemDelegate):
         painter.restore()
 
     def sizeHint(self, option, index):
-        """Size hint."""
         return QSize(self.doc.idealWidth(), self.doc.size().height())
 
 
 class QtSelectionList(QWidget):
-    """Widget which allows to select items from a list.
-
-    It also provides an easy to use interface to add items to the list, select all, deselect all and invert selection.
-    """
-
     evt_selection_changed = Signal()
 
     _layout: QFormLayout
@@ -96,7 +88,6 @@ class QtSelectionList(QWidget):
         self.init_ui()
 
     def init_ui(self) -> None:
-        """Initialize the user interface."""
         self._layout = hp.make_form_layout(parent=self)
         self.filter_by = hp.make_line_edit(
             self,
@@ -155,18 +146,15 @@ class QtSelectionList(QWidget):
         self._layout.addRow(self.list_widget)
 
     def on_click(self, index: int) -> None:
-        """Select an item by index."""
         item = self.list_widget.item(index)
         if item:
             self.list_widget.setCurrentItem(item)
 
     def _toggle_item_check_state(self, item: QListWidgetItem) -> None:
-        """Toggle the checked state for a list item."""
         is_checked = item.checkState() == Qt.CheckState.Checked
         item.setCheckState(Qt.CheckState.Unchecked if is_checked else Qt.CheckState.Checked)
 
     def on_selection_changed(self) -> None:
-        """Update selection changed information."""
         self.evt_selection_changed.emit()
         if self.allow_toolbar:
             selected = self.get_checked()
@@ -174,7 +162,6 @@ class QtSelectionList(QWidget):
             self.info_label.setText(f"{len(selected)}/{count}")
 
     def add_item(self, item_text: str, check: bool = False) -> None:
-        """Add an item to the list in alphabetical order."""
         items = [self.list_widget.item(i).text() for i in range(self.list_widget.count())]
         items.append(item_text)
         checked = [
@@ -194,41 +181,35 @@ class QtSelectionList(QWidget):
         self.on_selection_changed()
 
     def add_items(self, items: list[str], *, check: bool = False, clear: bool = False) -> None:
-        """Add multiple items to the list."""
         if clear:
             self.list_widget.clear()
         for item in items:
             self.add_item(item, check=check)
 
     def remove_item(self, item_text: str) -> None:
-        """Remove an item from the list."""
         for i in range(self.list_widget.count()):
             if self.list_widget.item(i).text() == item_text:
                 self.list_widget.takeItem(i)
                 break
 
     def on_filter(self) -> None:
-        """Filter the list of items in the table."""
         text = self.filter_by.text().lower()
         for index in range(self.list_widget.count()):
             item = self.list_widget.item(index)
             item.setHidden(text not in item.text().lower())
 
     def on_hide_deselected(self) -> None:
-        """Hide deselected items."""
         for i in range(self.list_widget.count()):
             item = self.list_widget.item(i)
             if item.checkState() == Qt.CheckState.Unchecked:
                 item.setHidden(True)
 
     def on_show_all(self) -> None:
-        """Show all items."""
         self.filter_by.setText("")
         for i in range(self.list_widget.count()):
             self.list_widget.item(i).setHidden(False)
 
     def on_select_all(self) -> None:
-        """Select all items in the list."""
         for i in range(self.list_widget.count()):
             item = self.list_widget.item(i)
             if item.isHidden():
@@ -236,7 +217,6 @@ class QtSelectionList(QWidget):
             item.setCheckState(Qt.CheckState.Checked)
 
     def on_deselect_all(self) -> None:
-        """Deselect all items in the list."""
         for i in range(self.list_widget.count()):
             item = self.list_widget.item(i)
             if item.isHidden():
@@ -244,7 +224,6 @@ class QtSelectionList(QWidget):
             item.setCheckState(Qt.CheckState.Unchecked)
 
     def on_invert_selection(self) -> None:
-        """Invert the selection of all items."""
         for i in range(self.list_widget.count()):
             item = self.list_widget.item(i)
             if item.isHidden():
@@ -254,7 +233,6 @@ class QtSelectionList(QWidget):
             )
 
     def get_checked(self) -> list[str]:
-        """Get checked items."""
         return [
             self.list_widget.item(i).text()
             for i in range(self.list_widget.count())
@@ -262,7 +240,6 @@ class QtSelectionList(QWidget):
         ]
 
     def get_unchecked(self) -> list[str]:
-        """Get unchecked items."""
         return [
             self.list_widget.item(i).text()
             for i in range(self.list_widget.count())
@@ -270,7 +247,6 @@ class QtSelectionList(QWidget):
         ]
 
     def set_checked(self, checked: list[str]) -> None:
-        """Set checked items."""
         for i in range(self.list_widget.count()):
             item = self.list_widget.item(i)
             current_state = item.checkState()
@@ -278,8 +254,6 @@ class QtSelectionList(QWidget):
 
 
 class QtListSelectPopup(QtFramelessPopup):
-    """Popup window."""
-
     def __init__(
         self,
         parent: QWidget | None = None,
@@ -304,7 +278,6 @@ class QtListSelectPopup(QtFramelessPopup):
         super().__init__(parent)
 
     def make_panel(self) -> QFormLayout:
-        """Make panel."""
         self.selection_list = QtSelectionList(
             parent=self,
             allow_toolbar=self.allow_toolbar,

@@ -10,14 +10,11 @@ from qtextra.widgets.qt_dialog import QtFramelessTool
 
 
 class QueuePopup(QtFramelessTool):
-    """Popup queue."""
-
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent=parent)
         self.setMinimumSize(700, 600)
 
     def make_panel(self) -> QFormLayout:
-        """Make panel."""
         self.queue_list = QueueList(self)
         self.queue_list.AUTO_EXPAND = True
 
@@ -42,7 +39,6 @@ class QueuePopup(QtFramelessTool):
 
 
 def create_queue_filter(parent: QWidget, subset: tuple[str, ...] = (), add_filter: bool = True) -> QtTagManager:
-    """Create queue filter widget."""
     state_filter = QtTagManager(parent, flow=True)
     state_filter.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Minimum)
     states = [state.name.capitalize().replace("_", "-") for state in TaskState]

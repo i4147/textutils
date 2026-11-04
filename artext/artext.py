@@ -7,6 +7,8 @@ from artext.config import Config
 from artext.utils import log
 from artext.inflect import Inflect
 from artext.word_level import WordNoiser
+
+
 class Artext:
     def __init__(self, config=Config()):
         self.config = config
@@ -26,15 +28,17 @@ class Artext:
         self.word_noiser = WordNoiser()
         self.inflect = Inflect()
         self.detok = TreebankWordDetokenizer().detokenize
-        self.nlp = spacy.load('en_core_web_sm')
+        self.nlp = spacy.load("en_core_web_sm")
         self.protected_tokens = set()
         self.load_protected_tokens_from_path(self.config.path_protected_tokens)
+
     def load_protected_tokens_from_path(self, path):
         if path is None:
             return
-        with open(path, 'r') as fin:
+        with open(path, "r") as fin:
             ptoks = fin.readlines()
             self.add_protected_tokens(ptoks)
+
     def add_protected_tokens(self, ptoks):
         if ptoks is None or not len(ptoks):
             return
@@ -42,6 +46,7 @@ class Artext:
         self.protected_tokens = self.protected_tokens.union(new_pts)
         for pt in new_pts:
             self.nlp.tokenizer.add_special_case(pt, [{ORTH: pt}])
+
     def noise_document(self, doc, detok=True):
         parsed_doc = self.nlp(doc.strip())
         doc_noises = list()
@@ -50,7 +55,7 @@ class Artext:
             cln = []
             rand = random.random()
             if samples > 1 and rand < 0.10:
-                cln_samples = random.randint(0, int(samples/2))
+                cln_samples = random.randint(0, int(samples / 2))
                 cln = [sent.text] * cln_samples
                 samples -= cln_samples
             noises = set()
@@ -59,19 +64,20 @@ class Artext:
             noises = list(noises) + cln
             random.shuffle(noises)
             doc_noises.append(noises)
-        return tuple(' '.join(ns) for ns in zip(*doc_noises))
+        return tuple(" ".join(ns) for ns in zip(*doc_noises))
+
     def noise_sentence(self, sent, detok=True):
         parsed_sent = self.nlp(sent.strip())
         noises = set()
         while len(noises) < self.samples:
             noises.add(self._inject_noise(parsed_sent, detok))
         return tuple(noises)
+
     def _inject_noise(self, parsed_sent, detok=True):
         noised_sent = []
         for tok in parsed_sent:
             rand1 = random.random()
-            if rand1 > self.error_rate or \
-                    tok.text.lower() in self.protected_tokens:
+            if rand1 > self.error_rate or tok.text.lower() in self.protected_tokens:
                 noised_sent.append(tok.text)
                 continue
             if random.random() <= self.error_typo and len(tok.text) > 4:
@@ -87,11 +93,11 @@ class Artext:
             if tok.tag_ == self.pos_det:
                 if tok.text.lower() in self.determiner_list:
                     if rand2 <= 0.15:
-                        noised_sent.append('a')
+                        noised_sent.append("a")
                     elif rand2 <= 0.30:
-                        noised_sent.append('an')
+                        noised_sent.append("an")
                     elif rand2 <= 0.45:
-                        noised_sent.append('the')
+                        noised_sent.append("the")
                     elif rand2 <= 0.80 or len(noised_sent) == 0:
                         noised_sent.append(tok.text)
                     elif len(noised_sent) > 0:
@@ -103,16 +109,15 @@ class Artext:
                         noised_sent.append(tok.text)
                     elif len(noised_sent) > 0:
                         pass
-            elif tok.tag_ == self.pos_prep and \
-                    tok.text.lower() in self.prep_list:
+            elif tok.tag_ == self.pos_prep and tok.text.lower() in self.prep_list:
                 if rand2 <= 0.10:
-                    noised_sent.append('in')
+                    noised_sent.append("in")
                 elif rand2 <= 0.20:
-                    noised_sent.append('on')
+                    noised_sent.append("on")
                 elif rand2 <= 0.30:
-                    noised_sent.append('to')
+                    noised_sent.append("to")
                 elif rand2 <= 0.40:
-                    noised_sent.append('for')
+                    noised_sent.append("for")
                 elif rand2 <= 0.80:
                     noised_sent.append(random.sample(self.prep_list, 1)[0])
                 else:
@@ -171,8 +176,8 @@ class Artext:
                 else:
                     pass
             else:
-                log.debug('UNK POS [{}]'.format(tok.tag_))
-                if (rand2/2) <= self.error_typo and len(tok.text) > 3:
+                log.debug("UNK POS [{}]".format(tok.tag_))
+                if (rand2 / 2) <= self.error_typo and len(tok.text) > 3:
                     typo = self.word_noiser.noise_word(tok.text)
                     noised_sent.append(typo)
                 else:
@@ -183,45 +188,51 @@ class Artext:
         if detok:
             return self.detok([t for t in noised_sent if t])
         else:
-            return ' '.join([t for t in noised_sent if t])
+            return " ".join([t for t in noised_sent if t])
+
     def singularize_noun(self, word):
         try:
             uw = self.inflect.singular_noun(word)
             return uw if uw else word
         except Exception as e:
-            log.debug(getattr(e, 'message', str(e)))
+            log.debug(getattr(e, "message", str(e)))
             return word
+
     def pluralize(self, word):
         try:
             uw = self.inflect.plural(word)
             return uw if uw else word
         except Exception as e:
-            log.debug(getattr(e, 'message', str(e)))
+            log.debug(getattr(e, "message", str(e)))
             return word
+
     def pluralize_verb(self, word):
         try:
             uw = self.inflect.plural_verb(word)
             return uw if uw else word
         except Exception as e:
-            log.debug(getattr(e, 'message', str(e)))
+            log.debug(getattr(e, "message", str(e)))
             return word
+
     def pluralize_adj(self, word):
         try:
             uw = self.inflect.plural_adj(word)
             return uw if uw else word
         except Exception as e:
-            log.debug(getattr(e, 'message', str(e)))
+            log.debug(getattr(e, "message", str(e)))
             return word
+
     def present_participle(self, word):
         try:
             uw = self.inflect.present_participle(word)
             return uw if uw else word
         except Exception as e:
-            log.debug(getattr(e, 'message', str(e)))
+            log.debug(getattr(e, "message", str(e)))
             return word
+
     def get_sysnonyms(self, word, pos):
-        assert word, 'No word!'
-        assert pos, 'No POS!'
+        assert word, "No word!"
+        assert pos, "No POS!"
         synsets = wn.synsets(word, pos)
         synonyms = set()
         for synset in synsets:
@@ -230,11 +241,15 @@ class Artext:
                 if synonym.isalpha() and word != synonym:
                     synonyms.add(synonym)
         return list(synonyms)
+
     def synonyms_noun(self, word):
         return self.get_sysnonyms(word, wn.NOUN)
+
     def synonyms_verb(self, word):
         return self.get_sysnonyms(word, wn.VERB)
+
     def synonyms_adv(self, word):
         return self.get_sysnonyms(word, wn.ADV)
+
     def synonyms_adj(self, word):
         return self.get_sysnonyms(word, wn.ADJ)

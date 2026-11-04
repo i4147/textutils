@@ -9,7 +9,6 @@ import qtextra.helpers as hp
 
 
 def _format_remaining(seconds: float) -> str:
-    """Return a human-readable string for the remaining time."""
     seconds = max(0, int(seconds))
     if seconds == 0:
         return "now"
@@ -31,19 +30,6 @@ def _format_remaining(seconds: float) -> str:
 
 
 class QtCountdownWidget(QWidget):
-    """Widget that displays remaining time until an upcoming event.
-
-    Shows a label with a human-readable countdown and a thin progress bar
-    that fills as the deadline approaches.
-
-    Signals
-    -------
-    evt_expired : Signal
-        Emitted when the countdown reaches zero.
-    evt_tick : Signal(float)
-        Emitted on each timer tick with the remaining seconds.
-    """
-
     evt_expired: Signal = Signal()
     evt_tick: Signal = Signal(float)
 
@@ -93,15 +79,12 @@ class QtCountdownWidget(QWidget):
         layout.addWidget(self._progress)
 
     def start(self) -> None:
-        """Start the countdown."""
         self._timer.start()
 
     def stop(self) -> None:
-        """Stop the countdown without resetting."""
         self._timer.stop()
 
     def reset(self, duration_seconds: float | None = None) -> None:
-        """Reset the countdown, optionally with a new duration."""
         self._timer.stop()
         if duration_seconds is not None:
             self._total_seconds = float(duration_seconds)
@@ -110,7 +93,6 @@ class QtCountdownWidget(QWidget):
 
     @property
     def message(self) -> str:
-        """Prefix message shown before the remaining time."""
         return self._message
 
     @message.setter
@@ -120,11 +102,6 @@ class QtCountdownWidget(QWidget):
 
     @property
     def label_visible(self) -> bool:
-        """Whether the text label is visible.
-
-        Uses ``not isHidden()`` so it reflects the explicit show/hide state
-        regardless of whether the parent widget has been shown yet.
-        """
         return not self._label.isHidden()
 
     @label_visible.setter
@@ -133,7 +110,6 @@ class QtCountdownWidget(QWidget):
 
     @property
     def remaining_seconds(self) -> float:
-        """Remaining time in seconds."""
         return self._remaining_seconds
 
     def _on_tick(self) -> None:

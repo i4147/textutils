@@ -24,7 +24,6 @@ from qtextra.widgets.qt_label_icon import QtIconLabel
 
 
 def _apply_elevated_card_effect(widget: QWidget) -> None:
-    """Apply a soft elevated-card shadow to an overlay body widget."""
     shadow = QGraphicsDropShadowEffect(widget)
     shadow.setBlurRadius(28)
     shadow.setOffset(0, 8)
@@ -35,8 +34,6 @@ def _apply_elevated_card_effect(widget: QWidget) -> None:
 
 
 class QtOverlay(QWidget):
-    """A widget positioned on top of another widget."""
-
     Y_OFFSET: int = 10
 
     def __init__(
@@ -56,7 +53,6 @@ class QtOverlay(QWidget):
             self.set_widget(widget)
 
     def set_widget(self, widget: QWidget | None) -> None:
-        """Attach the overlay to a widget and track its geometry."""
         if widget is self._widget:
             if widget is not None:
                 self._relayout()
@@ -81,26 +77,21 @@ class QtOverlay(QWidget):
         self._relayout()
 
     def attach_to(self, widget: QWidget | None) -> None:
-        """Attach the overlay to a widget."""
         self.set_widget(widget)
 
     def widget(self) -> QWidget | None:
-        """Return the widget the overlay is attached to."""
         return self._widget
 
     def setAlignment(self, alignment: Qt.AlignmentFlag) -> None:
-        """Set overlay alignment."""
         if self._alignment == alignment:
             return
         self._alignment = alignment
         self._relayout()
 
     def alignment(self) -> Qt.AlignmentFlag:
-        """Return the overlay alignment."""
         return self._alignment
 
     def eventFilter(self, recv, event):
-        """Track anchor movement and visibility."""
         if recv is self._widget or recv in self._tracked_ancestors:
             event_type = event.type()
             if event_type in (QEvent.Type.Resize, QEvent.Type.Move, QEvent.Type.LayoutRequest):
@@ -118,14 +109,12 @@ class QtOverlay(QWidget):
         return super().eventFilter(recv, event)
 
     def event(self, event):
-        """Update geometry when the overlay layout changes."""
         if event.type() == QEvent.Type.LayoutRequest:
             self._relayout()
             return True
         return super().event(event)
 
     def paintEvent(self, event: QPaintEvent) -> None:
-        """Paint the widget using the active style."""
         option = QStyleOption()
         option.initFrom(self)
         painter = QPainter(self)
@@ -133,7 +122,6 @@ class QtOverlay(QWidget):
         del event
 
     def showEvent(self, event) -> None:
-        """Refresh geometry when the overlay becomes visible."""
         super().showEvent(event)
         self._relayout()
 
@@ -252,8 +240,6 @@ class QtOverlay(QWidget):
 
 
 class QtOverlayWidget(QFrame):
-    """Simple overlay body that renders a single line of text."""
-
     def __init__(self, parent: QWidget | None = None, text: str = "", **kwargs):
         super().__init__(parent, **kwargs)
         self.setObjectName("overlayCard")
@@ -272,8 +258,6 @@ class QtOverlayWidget(QFrame):
 
 
 class QtOverlayLabel(QtOverlay):
-    """Text label that sits on top of another widget."""
-
     def __init__(
         self,
         parent: QWidget | None = None,
@@ -291,19 +275,15 @@ class QtOverlayLabel(QtOverlay):
 
     @property
     def text(self) -> str:
-        """Return overlay text."""
         return self._msg_widget.text_label.text()
 
     def set_text(self, text: str) -> None:
-        """Update overlay text."""
         self._msg_widget.text_label.setText(text)
         self.updateGeometry()
         self._relayout()
 
 
 class QtMessageWidget(QFrame):
-    """Widget to display a simple message with optional actions."""
-
     evt_accepted = Signal()
     evt_rejected = Signal()
     evt_dismissed = Signal()
@@ -363,7 +343,6 @@ class QtMessageWidget(QFrame):
 
     @property
     def is_dismissed(self) -> bool:
-        """Return whether the message was dismissed for the current session."""
         return self._dismissed
 
     def set_buttons(
@@ -374,7 +353,6 @@ class QtMessageWidget(QFrame):
         ok_func: Callable | None = None,
         ok_text: str = "OK",
     ) -> None:
-        """Configure which buttons are visible."""
         self.ok_btn.setVisible(ok_btn)
         self.ok_btn.setText(ok_text)
         if ok_func is not None and callable(ok_func):
@@ -385,35 +363,28 @@ class QtMessageWidget(QFrame):
         self.dismiss_btn.setVisible(dismiss_btn)
 
     def display(self) -> None:
-        """Display the message if it has not been dismissed."""
         if self._dismissed:
             return
         self.show()
 
     def on_accept(self) -> None:
-        """Close the message and emit the accept signal."""
         self.hide()
         self.evt_accepted.emit()
 
     def on_close(self) -> None:
-        """Close the message and emit the reject signal."""
         self.hide()
         self.evt_rejected.emit()
 
     def on_dismiss(self) -> None:
-        """Dismiss the message for the current session."""
         self.hide()
         self._dismissed = True
         self.evt_dismissed.emit()
 
     def dismiss(self) -> None:
-        """Dismiss the message for the current session."""
         self.on_dismiss()
 
 
 class QtOverlayMessage(QtOverlay):
-    """Message widget that sits on top of another widget."""
-
     evt_accepted = Signal()
     evt_rejected = Signal()
     evt_dismissed = Signal()
@@ -450,22 +421,18 @@ class QtOverlayMessage(QtOverlay):
 
     @property
     def is_dismissed(self) -> bool:
-        """Return whether the message has been dismissed."""
         return self._msg_widget.is_dismissed
 
     @property
     def is_displayed(self) -> bool:
-        """Return whether the message content is currently visible."""
         return self._msg_widget.isVisible()
 
     def dismiss(self) -> None:
-        """Dismiss the message."""
         self._msg_widget.dismiss()
         if not self._can_dismiss:
             self._msg_widget._dismissed = False
 
     def display(self) -> None:
-        """Display the message."""
         self._msg_widget.display()
         if self.widget() is not None and self.widget().isVisible():
             self.show()
@@ -473,8 +440,6 @@ class QtOverlayMessage(QtOverlay):
 
 
 class QtOverlayDismissMessage(QtOverlayMessage):
-    """Overlay message preconfigured with dismiss and optional OK actions."""
-
     def __init__(
         self,
         parent: QWidget | None = None,

@@ -24,8 +24,6 @@ PRESENT_ROLE = Qt.ItemDataRole.UserRole + 3
 
 
 class QtMultiDictTagEditor(QWidget):
-    """Editor for managing multiple dictionaries side by side."""
-
     evt_items_changed = Signal(dict)
     evt_key_added = Signal(str)
     evt_key_removed = Signal(str)
@@ -148,21 +146,17 @@ class QtMultiDictTagEditor(QWidget):
         self._resize_columns()
 
     def sample_names(self) -> list[str]:
-        """Return the configured sample names."""
         return list(self._samples)
 
     def current_value_type(self) -> str:
-        """Return the currently selected value type."""
         value = self.type_toggle.value
         return "str" if not isinstance(value, str) else value
 
     def set_current_value_type(self, value_type: str) -> None:
-        """Set the current value type and refresh validation."""
         self.type_toggle.value = value_type
         self._on_type_changed(value_type)
 
     def set_samples(self, samples: list[str]) -> None:
-        """Set the active sample names."""
         cleaned = [sample.strip() for sample in samples if sample.strip()]
         self._samples = cleaned
         self.sample_combo.set_items(self._samples)
@@ -171,7 +165,6 @@ class QtMultiDictTagEditor(QWidget):
         self._resize_columns()
 
     def items(self) -> dict[str, dict[str, DictTagValue]]:
-        """Return the current sample dictionaries."""
         exported = {sample: {} for sample in self._samples}
         for row in range(self.table.rowCount()):
             key_item = self.key_table.item(row, 0)
@@ -186,11 +179,9 @@ class QtMultiDictTagEditor(QWidget):
         return exported
 
     def export_dicts(self) -> dict[str, dict[str, DictTagValue]]:
-        """Export the current nested dictionaries."""
         return self.items()
 
     def set_items(self, items: Mapping[str, Mapping[str, DictTagValue]]) -> None:
-        """Replace all sample dictionaries."""
         self.set_samples(list(items))
         self.clear_items(emit_signal=False)
 
@@ -230,7 +221,6 @@ class QtMultiDictTagEditor(QWidget):
         target_samples: list[str] | None = None,
         value_type: str | None = None,
     ) -> bool:
-        """Add a key to one sample or all samples."""
         display_key = key.strip()
         if not display_key:
             return False
@@ -263,7 +253,6 @@ class QtMultiDictTagEditor(QWidget):
         target_samples: list[str] | None = None,
         value_type: str | None = None,
     ) -> bool:
-        """Set a value for a key in one sample or all samples."""
         if value is not None and not isinstance(value, (str, int, float)):
             raise TypeError("Value must be str, int, float, or None.")
 
@@ -289,7 +278,6 @@ class QtMultiDictTagEditor(QWidget):
         return True
 
     def add_current_key(self) -> bool:
-        """Add the current key to the selected target."""
         key = self.key_edit.text().strip()
         if not key:
             return False
@@ -310,7 +298,6 @@ class QtMultiDictTagEditor(QWidget):
         return added
 
     def apply_current_value(self) -> bool:
-        """Apply the current value to the selected target for the current key."""
         key = self.key_edit.text().strip()
         if not key:
             row = self._current_row()
@@ -334,7 +321,6 @@ class QtMultiDictTagEditor(QWidget):
         )
 
     def remove_key(self, key: str) -> bool:
-        """Remove a key from all samples."""
         row = self._find_row(key)
         if row is None:
             return False
@@ -347,7 +333,6 @@ class QtMultiDictTagEditor(QWidget):
         return True
 
     def remove_selected_key(self) -> bool:
-        """Remove the selected key row."""
         row = self._current_row()
         if row < 0:
             return False
@@ -357,7 +342,6 @@ class QtMultiDictTagEditor(QWidget):
         return self.remove_key(key_item.text())
 
     def clear_items(self, emit_signal: bool = True) -> None:
-        """Remove all keys from all samples."""
         self.key_table.setRowCount(0)
         self.table.setRowCount(0)
         self.key_table.clearSelection()
@@ -367,14 +351,12 @@ class QtMultiDictTagEditor(QWidget):
             self._emit_items_changed()
 
     def confirm_clear_items(self) -> bool:
-        """Ask for confirmation before clearing all keys."""
         if not hp.confirm(self, "Are you sure you want to clear all items?", "Clear items?"):
             return False
         self.clear_items()
         return True
 
     def get_value(self, key: str, sample: str) -> DictTagValue:
-        """Return the typed value for a key in a sample."""
         row = self._find_row(key)
         if row is None:
             raise KeyError(key)
@@ -386,20 +368,17 @@ class QtMultiDictTagEditor(QWidget):
         return item.data(VALUE_ROLE)
 
     def current_target_sample(self) -> str | None:
-        """Return the current target sample when exactly one sample is selected."""
         selected = self.current_target_samples()
         if len(selected) != 1:
             return None
         return selected[0]
 
     def current_target_samples(self) -> list[str]:
-        """Return the currently selected target samples."""
         if len(self._selected_target_samples) == len(self._samples):
             return list(self._samples)
         return list(self._selected_target_samples)
 
     def set_target_samples(self, samples: list[str]) -> None:
-        """Set the selected target samples."""
         cleaned = [sample for sample in samples if sample in self._samples]
         if not cleaned and self._samples:
             cleaned = list(self._samples)
@@ -410,7 +389,6 @@ class QtMultiDictTagEditor(QWidget):
         self._on_target_changed()
 
     def select_all_samples(self) -> None:
-        """Select every configured sample in the target picker."""
         self._selected_target_samples = list(self._samples)
         self.sample_combo.set_selected(list(self._samples))
         self._refresh_target_summary()

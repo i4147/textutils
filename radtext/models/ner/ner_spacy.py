@@ -1,10 +1,8 @@
 import collections
 from typing import List, Generator
-
 from bioc import BioCAnnotation, BioCLocation, BioCPassage, BioCSentence
 from spacy.matcher import PhraseMatcher
 from spacy.tokens.doc import Doc
-
 from radtext.core import BioCProcessor
 from radtext.models.ner.utils import (
     longest_matching,
@@ -43,7 +41,6 @@ class NerSpacyPhraseMatchers:
             nermatch.start = doc[start].idx
             nermatch.end = doc[end - 1].idx + len(doc[end - 1])
             nermatch.text = doc[start:end].text
-            # print(nermatch)
             yield nermatch
 
 
@@ -77,23 +74,11 @@ class BioCNerSpacy(BioCProcessor):
         self.filter_integers = filter_integers
         self.model = name
 
-    # def _find_other_ids(self, ann):
-    #     this_id = ann.infons['source_concept_id']
-    #     if ann.text == ann.infons['source_concept']:
-    #         return
-    #     for i, id in enumerate(self.extractor.text2ids[ann.text], 1):
-    #         if id != this_id:
-    #             ann.infons['note_nlp_concept_id'] += ';{}'.format(id)
-    #             ann.infons['note_nlp_concept'] += ';{}'.format(self.extractor.id2pref[id])
-    #             # ann.infons[f'concept_id_{i}'] = id
-    #             # ann.infons[f'preferred_name_{i}'] = self.extractor.id2pref[id]
-
     def ner(self, text, offset):
         anns = []
         for match in self.extractor.findall(text):
             start = match.start
             end = match.end
-
             ann = BioCAnnotation()
             ann.id = "a{}".format(match.start)
             ann.infons["note_nlp_concept_id"] = match.concept_id
@@ -103,13 +88,6 @@ class BioCNerSpacy(BioCProcessor):
             ann.add_location(BioCLocation(start + offset, end - start))
             ann.text = match.text
             anns.append(ann)
-
-            # self._find_other_ids(ann)
-
-            # k = ann.total_span
-            # if k not in ann_map:
-            #     ann_map[k] = ann
-
         return anns
 
     def process_passage(self, passage: BioCPassage, docid: str = None) -> BioCPassage:

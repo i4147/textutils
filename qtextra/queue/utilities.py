@@ -27,12 +27,10 @@ TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
 def _log_process_finished(exit_code: int, _exit_status) -> None:
-    """Log process completion at trace level."""
     logger.trace(f"Command finished with {exit_code}")
 
 
 def set_process(process: QProcess, command: str, args: list[str]) -> None:
-    """Set process."""
     process.setProgram(command)
     if IS_WIN:
         if hasattr(process, "setNativeArguments"):
@@ -44,7 +42,6 @@ def set_process(process: QProcess, command: str, args: list[str]) -> None:
 
 
 def run_command(command: list[str]) -> None:
-    """Execute command using the QProcess wrapper."""
     from qtextra.helpers import get_main_window
 
     program, args = command[0], command[1:]
@@ -69,7 +66,6 @@ def listify_multiple(
     spacer: str = "",
     suffix: str = "",
 ) -> ty.List[str]:
-    """Parse multiple inputs into single string."""
     ret = []
     for value in values:
         value = pad_str(value, suffix) if pad else f"{value!s}{suffix}"
@@ -81,14 +77,12 @@ def listify_multiple(
 
 
 def pad_str(value: ty.Any, suffix: str = "") -> str:
-    """Pad string with quotes around out."""
     # if IS_WIN:
     return f'"{value!s}{suffix}"'
     # return f"{value!s}{suffix}"
 
 
 def get_icon_state(errors: list[str]) -> tuple[str, str]:
-    """Return icon state based on the error messages."""
     state = "check"
     if len([error for error in errors if 'class="warning"' in error]) > 0:
         state = "check_warning"
@@ -98,19 +92,6 @@ def get_icon_state(errors: list[str]) -> tuple[str, str]:
 
 
 def format_interval(t: float) -> str:
-    """
-    Formats a number of seconds as a clock time, [H:]MM:SS.
-
-    Parameters
-    ----------
-    t  : float
-        Number of seconds.
-
-    Returns
-    -------
-    out  : str
-        [H:]MM:SS
-    """
     if t is None:
         return "N/A"
     minutes, s = divmod(int(t), 60)
@@ -121,7 +102,6 @@ def format_interval(t: float) -> str:
 
 
 def format_timestamp(timestamp: float) -> str:
-    """Format timestamp so it returns a human-readable string."""
     import datetime
 
     if not timestamp:
@@ -130,7 +110,6 @@ def format_timestamp(timestamp: float) -> str:
 
 
 def iterable_callbacks(func: ty.Union[ty.Callable, Callback] | None) -> ty.Sequence[ty.Callable]:
-    """Callbacks should always be a sequence."""
     if func is None:
         return []
     if isinstance(func, ty.Sequence):
@@ -165,10 +144,6 @@ ansi_escape = re.compile(
 
 
 def escape_ansi(text: str) -> str:
-    """Try auto-escaping ANSI codes.
-
-    See: https://stackoverflow.com/questions/14693701/how-can-i-remove-the-ansi-escape-sequences-from-a-string-in-python
-    """
     try:
         return ansi_escape.sub("", text)
     except Exception:
@@ -176,7 +151,6 @@ def escape_ansi(text: str) -> str:
 
 
 def format_command(commands: list[str], is_dev: bool = True) -> str:
-    """Format command."""
     command = "; ".join(commands)
     if is_dev:
         command = command.replace("--no_color --debug", "--dev")
@@ -186,7 +160,6 @@ def format_command(commands: list[str], is_dev: bool = True) -> str:
 
 
 def decode(text: bytes) -> str:
-    """Decode text."""
     try:
         return text.decode("utf-8-sig")
     except UnicodeDecodeError:

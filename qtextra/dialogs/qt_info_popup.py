@@ -5,8 +5,6 @@ from qtextra.widgets.qt_dialog import QtFramelessPopup
 
 
 class InfoDialog(QtFramelessPopup):
-    """Dialog to display some useful information."""
-
     def __init__(self, parent: QWidget, text: str):
         super().__init__(parent)
         self.setMinimumWidth(300)
@@ -14,7 +12,6 @@ class InfoDialog(QtFramelessPopup):
         self.label.setText(text)
 
     def make_panel(self) -> QFormLayout:
-        """Make panel."""
         header_layout = self._make_title_handle("Help information")
 
         self.label = hp.make_scrollable_label(

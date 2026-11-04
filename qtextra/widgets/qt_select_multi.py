@@ -19,30 +19,24 @@ IconOption = tuple[IconType, str]
 
 
 def filter_selected(current_options: list[str], all_options: list[str]) -> list[str]:
-    """Filter selected options."""
     return [option for option in current_options if option in all_options]
 
 
 def format_options(options: list[str]) -> str:
-    """Format options."""
     return "; ".join(options)
 
 
 def unformat_options(options: str) -> list[str]:
-    """Unformat options."""
     return [option.strip() for option in options.split(";") if option.strip()]
 
 
 def format_icon_options(options: list[IconOption], selected_options: list[str]) -> str:
-    """Return a readable label for the selected icon options."""
     selected_lookup = set(selected_options)
     labels = [tooltip or icon_key for icon_key, tooltip in options if icon_key in selected_lookup]
     return "; ".join(labels)
 
 
 class SelectionWidget(QtFramelessPopup):
-    """Selection widget."""
-
     TABLE_CONFIG = (
         TableConfig()
         .add("", "check", "bool", 25, no_sort=True, hidden=False, sizing="fixed")
@@ -67,7 +61,6 @@ class SelectionWidget(QtFramelessPopup):
         self.filter_by_option.setFocus()
 
     def set_options(self, options: list[str], selected_options: list[str] | None = None) -> None:
-        """Set options."""
         if not selected_options:
             selected_options = []
 
@@ -88,30 +81,25 @@ class SelectionWidget(QtFramelessPopup):
 
     @property
     def selected_options(self) -> list[str]:
-        """Return selected options."""
         indices = self.table.get_all_checked()
         self.options = [self.table.get_value(self.TABLE_CONFIG.option, index) for index in indices]
         return self.options
 
     def accept(self) -> None:
-        """Return state."""
         # self.evt_changed.emit(self.selected_options)
         self.evt_update.emit(self.selected_options)
         super().accept()
 
     def on_cancel(self) -> None:
-        """Return state."""
         self.cancel_clicked = True
         self.reject()
 
     def reject(self) -> None:
-        """Return state."""
         options = self.original_options if self.cancel_clicked else self.selected_options
         self.evt_update.emit(options)
         super().reject()
 
     def on_check(self, index: int, _state: bool) -> None:
-        """Check."""
         indices = self.table.get_all_checked()
         options = [self.table.get_value(self.TABLE_CONFIG.option, index) for index in indices]
         self.evt_temp_changed.emit(options)
@@ -120,19 +108,15 @@ class SelectionWidget(QtFramelessPopup):
             self.table.set_value(self.TABLE_CONFIG.check, other_index, False)
 
     def on_show_selected(self) -> None:
-        """Show/hide selected."""
         self.table_proxy.setFilterByState(True, self.TABLE_CONFIG.check)
 
     def on_show_unselected(self) -> None:
-        """Show/hide unselected."""
         self.table_proxy.setFilterByState(False, self.TABLE_CONFIG.check)
 
     def on_show_selected_clear(self) -> None:
-        """Show/hide unselected."""
         self.table_proxy.setFilterByState(None, self.TABLE_CONFIG.check)
 
     def make_panel(self) -> QFormLayout:
-        """Make panel."""
         self.table = QtCheckableTableView(self, config=self.TABLE_CONFIG, enable_all_check=True, sortable=True)
         self.table.setCornerButtonEnabled(False)
         self.table.evt_checked.connect(self.on_check)
@@ -190,13 +174,10 @@ class SelectionWidget(QtFramelessPopup):
         return layout
 
     def _on_filter_option_changed(self, text: str) -> None:
-        """Filter the proxy model by option text."""
         self.table_proxy.setFilterByColumn(text, self.TABLE_CONFIG.option)
 
 
 class QtMultiSelect(QWidget):
-    """Multi-select widget."""
-
     editingFinished = Signal()
     textChanged = Signal(str)
     evt_selection_changed = Signal(list)
@@ -242,13 +223,11 @@ class QtMultiSelect(QWidget):
         self.text_edit.textChanged.connect(self.textChanged.emit)
 
     def enterEvent(self, event: ty.Any) -> None:
-        """Enter event."""
         if self.hover_opens:
             self.text_edit.setFocus()
         super().enterEvent(event)
 
     def eventFilter(self, obj: QObject, evt: QEvent) -> bool:
-        """Event filter."""
         if self.isEnabled() and obj == self.text_edit and evt.type() == QEvent.Type.MouseButtonPress:
             self.on_select()
             return True
@@ -270,7 +249,6 @@ class QtMultiSelect(QWidget):
         sort: bool = False,
         **_kwargs: ty.Any,
     ) -> QtMultiSelect:
-        """Init."""
         if default:
             value = default
         if value is None:
@@ -296,39 +274,32 @@ class QtMultiSelect(QWidget):
         return obj
 
     def polish(self) -> None:
-        """Polish widget."""
         hp.polish_widget(self, self.text_edit)
 
     def setObjectName(self, name: str) -> None:
-        """Set object name."""
         self.text_edit.setObjectName(name)
         super().setObjectName(name)
 
     def currentOptions(self) -> list[str]:
-        """Return current options."""
         return self.options
 
     def clear_current(self) -> None:
-        """Clear selection."""
         self.selected_options = []
         self.text_edit.setText("")
         self.evt_selection_changed.emit(self.selected_options)
 
     def clear(self) -> None:
-        """Clear selection."""
         self.text_edit.setText("")
         self.selected_options = []
         self.options = []
 
     def toggle_clear_action(self) -> None:
-        """Toggle visibility of clear action."""
         if not self.text_edit.isClearButtonEnabled():
             return
         text = self.text_edit.text()
         self._clear_action.setVisible(text != "")
 
     def set_options(self, options: list[str], selected_options: list[str] | None = None) -> None:
-        """List of options."""
         if selected_options is None:
             selected_options = []
         selected_options = filter_selected(selected_options, options)
@@ -337,7 +308,6 @@ class QtMultiSelect(QWidget):
         self.text_edit.setText(format_options(selected_options))
 
     def set_selected_options(self, selected_options: list[str]) -> None:
-        """List of options."""
         if selected_options is None:
             selected_options = []
         if not isinstance(selected_options, list):
@@ -350,7 +320,6 @@ class QtMultiSelect(QWidget):
         self.toggle_clear_action()
 
     def _set_selected_options(self, selected_options: list[str]) -> None:
-        """List of options."""
         if not selected_options:
             selected_options = []
         self.selected_options = selected_options
@@ -361,13 +330,11 @@ class QtMultiSelect(QWidget):
         self.toggle_clear_action()
 
     def set_selected_options_temp(self, selected_options: list[str]) -> None:
-        """List of options."""
         with hp.qt_signals_blocked(self.text_edit):
             self.set_selected_options(selected_options)
             self.toggle_clear_action()
 
     def on_select(self) -> None:
-        """Select."""
         dlg = SelectionWidget(self, n_max=self.n_max, min_width=self.text_edit.width())
         dlg.set_options(self.options, self.selected_options)
         dlg.filter_by_option.setFocus()
@@ -376,13 +343,10 @@ class QtMultiSelect(QWidget):
         dlg.show_below_widget(self, x_offset=0, y_offset=0)
 
     def get_checked(self) -> list[str]:
-        """Return list of checked values."""
         return self.selected_options
 
 
 class IconSelectionWidget(QtFramelessPopup):
-    """Popup widget that lets users select one or more icon buttons."""
-
     evt_update = Signal(list)
     evt_changed = Signal(list)
     evt_temp_changed = Signal(list)
@@ -412,13 +376,11 @@ class IconSelectionWidget(QtFramelessPopup):
 
     @property
     def selected_options(self) -> list[str]:
-        """Return the currently selected icon keys."""
         if self.allow_multiple:
             return [icon_key for icon_key, button in self.buttons.items() if button.isChecked()]
         return [icon_key for icon_key, button in self.buttons.items() if button.property("selected")]
 
     def set_options(self, options: list[IconOption], selected_options: list[str] | None = None) -> None:
-        """Populate the popup with icon buttons."""
         selected = set(selected_options or [])
         self.options = options
         self.original_options = list(selected_options or [])
@@ -449,25 +411,21 @@ class IconSelectionWidget(QtFramelessPopup):
             self.grid_layout.addWidget(button, index // 6, index % 6)
 
     def accept(self) -> None:
-        """Emit the current selection and close the popup."""
         self.selection = self.selected_options
         self.evt_update.emit(self.selection)
         super().accept()
 
     def on_cancel(self) -> None:
-        """Reject the popup and restore the original selection."""
         self.cancel_clicked = True
         self.reject()
 
     def reject(self) -> None:
-        """Emit either the original or current selection before closing."""
         options = self.original_options if self.cancel_clicked else self.selected_options
         self.selection = options or []
         self.evt_update.emit(options or [])
         super().reject()
 
     def make_panel(self) -> QFormLayout:
-        """Build the popup layout."""
         layout = hp.make_form_layout(parent=self, margin=6)
 
         if self.text:
@@ -503,12 +461,10 @@ class IconSelectionWidget(QtFramelessPopup):
         return layout
 
     def _on_multi_button_clicked(self) -> None:
-        """Emit the temporary multi-selection state."""
         self.selection = self.selected_options
         self.evt_temp_changed.emit(self.selection)
 
     def _on_single_button_clicked(self, icon_key: str) -> None:
-        """Select one icon, emit updates, and close immediately."""
         for key, button in self.buttons.items():
             is_selected = key == icon_key
             button.setProperty("selected", is_selected)
@@ -521,8 +477,6 @@ class IconSelectionWidget(QtFramelessPopup):
 
 
 class QtMultiIconSelect(QWidget):
-    """Widget for selecting one or more QtAwesome icon buttons from a popup."""
-
     editingFinished = Signal()
     textChanged = Signal(str)
     evt_selection_changed = Signal(list)
@@ -570,13 +524,11 @@ class QtMultiIconSelect(QWidget):
         self.text_edit.textChanged.connect(self.textChanged.emit)
 
     def enterEvent(self, event: ty.Any) -> None:
-        """Focus the field on hover when configured."""
         if self.hover_opens:
             self.text_edit.setFocus()
         super().enterEvent(event)
 
     def eventFilter(self, obj: QObject, evt: QEvent) -> bool:
-        """Open the popup when the line edit is clicked."""
         if self.isEnabled() and obj == self.text_edit and evt.type() == QEvent.Type.MouseButtonPress:
             self.on_select()
             return True
@@ -598,7 +550,6 @@ class QtMultiIconSelect(QWidget):
         icon_size: tuple[int, int] = (24, 24),
         **kwargs: ty.Any,
     ) -> QtMultiIconSelect:
-        """Create an icon-select widget from schema-style arguments."""
         if default:
             value = default
         if value is None:
@@ -624,7 +575,6 @@ class QtMultiIconSelect(QWidget):
         return obj
 
     def set_options(self, options: list[IconOption], selected_options: list[str] | None = None) -> None:
-        """Set the available icon options and current selection."""
         selected = self._filter_selected(selected_options or [], options)
         self.options = options
         self.selected_options = selected
@@ -632,7 +582,6 @@ class QtMultiIconSelect(QWidget):
         self.toggle_clear_action()
 
     def set_selected_options(self, selected_options: list[str]) -> None:
-        """Set the selected icon keys."""
         selected = self._coerce_selection(selected_options)
         if self.options:
             selected = self._filter_selected(selected, self.options)
@@ -643,34 +592,29 @@ class QtMultiIconSelect(QWidget):
         self.toggle_clear_action()
 
     def set_selected_options_temp(self, selected_options: list[str]) -> None:
-        """Temporarily update the visible selection without emitting signals."""
         with hp.qt_signals_blocked(self.text_edit):
             self.set_selected_options(selected_options)
             self.toggle_clear_action()
 
     def clear_current(self) -> None:
-        """Clear the current selection."""
         self.selected_options = []
         self.text_edit.setText("")
         self.evt_selection_changed.emit(self.selected_options)
         self.toggle_clear_action()
 
     def clear(self) -> None:
-        """Clear selection and available options."""
         self.text_edit.setText("")
         self.selected_options = []
         self.options = []
         self.toggle_clear_action()
 
     def toggle_clear_action(self) -> None:
-        """Toggle visibility of the clear action."""
         if not self.text_edit.isClearButtonEnabled():
             return
         text = self.text_edit.text()
         self._clear_action.setVisible(text != "")
 
     def on_select(self) -> None:
-        """Show the icon selection popup."""
         dlg = IconSelectionWidget(
             self,
             allow_multiple=self.allow_multiple,
@@ -683,11 +627,9 @@ class QtMultiIconSelect(QWidget):
         dlg.show_below_widget(self, x_offset=0, y_offset=0)
 
     def get_checked(self) -> list[str]:
-        """Return the selected icon keys."""
         return self.selected_options
 
     def _set_selected_options(self, selected_options: list[str]) -> None:
-        """Persist the selected icon keys and emit update signals."""
         selected = self._coerce_selection(selected_options)
         if not self.allow_multiple and selected:
             selected = selected[:1]
@@ -701,13 +643,11 @@ class QtMultiIconSelect(QWidget):
 
     @staticmethod
     def _filter_selected(selected_options: list[str], options: list[IconOption]) -> list[str]:
-        """Keep only selected icon keys that exist in the available options."""
         valid_options = [icon_key for icon_key, _tooltip in options]
         return filter_selected(selected_options, valid_options)
 
     @staticmethod
     def _coerce_selection(selected_options: list[str] | str | None) -> list[str]:
-        """Normalise the selection input into a list of icon keys."""
         if selected_options is None:
             return []
         if isinstance(selected_options, str):

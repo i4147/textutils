@@ -15,10 +15,7 @@ from qtextra.typing import Callback, TaskState
 
 
 class Queue(SimpleQueue):
-    """Queue class with few missing methods."""
-
     def clear(self) -> None:
-        """Clear queue."""
         while not self.empty():
             try:
                 self.get_nowait()
@@ -27,27 +24,19 @@ class Queue(SimpleQueue):
 
 
 class QueueCommand:
-    """Command."""
-
     def __init__(self, task_id: str, command_index: int, command_args: list[str]) -> None:
-        """Initialize."""
         self.task_id = task_id
         self.command_index = command_index
         self.command_args = command_args
 
 
 class QueueTask:
-    """Task."""
-
     def __init__(self, index: int, task: Task) -> None:
-        """Initialize."""
         self.index = index
         self.task = task
 
 
 class QProcessWrapper(QObject):
-    """Wrapper around QProcess that handles multiple tasks."""
-
     evt_started = Signal(Task)
     evt_next = Signal(Task)
     evt_finished = Signal(Task)
@@ -74,7 +63,6 @@ class QProcessWrapper(QObject):
         func_end: Callback | None = None,
         func_post: Callback | None = None,
     ):
-        """Initialize."""
         super().__init__(parent=parent)
         self.logger = logger_.bind(src=task.task_id)
         self.task = task
@@ -97,7 +85,6 @@ class QProcessWrapper(QObject):
         self.func_post = iterable_callbacks(func_post)
 
     def on_stdout(self) -> None:
-        """Record stdout emitted by the process."""
         with suppress(KeyError, RuntimeError):
             if self.task:
                 text = self.process.readAllStandardOutput().data()
@@ -111,7 +98,6 @@ class QProcessWrapper(QObject):
                     return
 
     def on_stderr(self) -> None:
-        """Record stderr emitted by the process."""
         with suppress(KeyError, RuntimeError):
             if self.task:
                 text = self.process.readAllStandardError().data()
@@ -122,42 +108,34 @@ class QProcessWrapper(QObject):
 
     @property
     def master_started(self) -> bool:
-        """Return bool if a task had started."""
         return self._master_started
 
     @master_started.setter
     def master_started(self, value: bool) -> None:
-        """Set task had started."""
         self._master_started = value
         self._master_finished = not value
 
     @property
     def master_finished(self) -> bool:
-        """Return bool if a task had started."""
         return self._master_finished
 
     @property
     def task_id(self) -> str:
-        """Return task id."""
         return self.task.task_id
 
     def is_running(self) -> bool:
-        """Flag to indicate whether the task is running."""
         return bool(self.process.state() == QProcess.ProcessState.Running)
 
     def summary(self) -> str:
-        """Return task summary."""
         return self.task.task_name
 
     def on_started(self) -> None:
-        """The process has started."""
         self.task.state = TaskState.RUNNING
         _safe_call(self.func_start, self.task, "task_started")
         self.master_started = True
         self.evt_started.emit(self.task)
 
     def populate_command_queue(self) -> str | None:
-        """Add commands to queue."""
         if not self._task_queue_populated:
             self._task_queue_populated = True
             self.logger.trace(f"Populating CommandQueue for '{self.task.task_name}'...")
@@ -185,7 +163,6 @@ class QProcessWrapper(QObject):
         return None
 
     def on_setup_task(self) -> None:
-        """Execute next task."""
         if not self.command_queue.empty():
             self.on_execute_task()
         else:
@@ -201,7 +178,6 @@ class QProcessWrapper(QObject):
                 self.on_execute_task()
 
     def on_execute_task(self) -> None:
-        """Execute tasks in the queue."""
         try:
             cmd: QueueCommand = self.command_queue.get_nowait()
             command_args = cmd.command_args
@@ -235,7 +211,6 @@ class QProcessWrapper(QObject):
             self.logger.trace("The queue was empty. Going to try to get next task...")
 
     def on_finished(self, exit_code: int, exit_status: QProcess.ExitStatus) -> None:
-        """The process has finished."""
         if exit_code != 0:
             self.logger.error(f"Task exited with non-zero exit code. ({exit_code}; {exit_status!s})")
             self.on_error(self.process.error())
@@ -264,7 +239,6 @@ class QProcessWrapper(QObject):
             self.logger.debug("Task finished successfully.")
 
     def on_error(self, _error: ty.Any) -> None:
-        """Process has errored."""
         self.process.setProgram(None)
         self.task.state = TaskState.FAILED
         if self.task.state != TaskState.FINISHED:
@@ -282,7 +256,6 @@ class QProcessWrapper(QObject):
         _safe_call(self.func_error, self.task, "task_errored")
 
     def run(self) -> None:
-        """Execute task."""
         if self.master_started:
             self.logger.debug("Task has already started.")
             return
@@ -290,7 +263,6 @@ class QProcessWrapper(QObject):
         self.start()
 
     def start(self) -> None:
-        """Start the process."""
         if not self.master_started:
             self.logger.debug("Task could not start as 'master_started' is not set.")
             return
@@ -316,14 +288,12 @@ class QProcessWrapper(QObject):
                 self.process.start()
 
     def pause(self, paused: bool) -> None:
-        """Pause process."""
         self._paused = paused
         self.task.state = TaskState.PAUSING if paused else TaskState.RUNNING
         self.start()
         self.logger.debug(f"{'Pausing' if paused else 'Resuming'} '{self.task.task_name}'")
 
     def cancel(self) -> None:
-        """Cancel process."""
         self._cancelled = True
         self.task.state = TaskState.CANCELLING if self.is_running() else TaskState.CANCELLED
         try:

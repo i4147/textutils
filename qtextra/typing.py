@@ -32,8 +32,6 @@ QtaSizePreset = ty.Literal[
 
 
 class TaskState(StrEnum):
-    """State of the task."""
-
     QUEUED = "queued"
     RUN_NEXT = "run-next"
     RUNNING = "running"
@@ -50,8 +48,6 @@ class TaskState(StrEnum):
 
 
 class TaskProgress(StrEnum):
-    """Progress of a task."""
-
     PENDING = "wait"
     COMPLETE = "check"
     INCOMPLETE = "cross"
@@ -59,40 +55,30 @@ class TaskProgress(StrEnum):
 
 
 class WorkerState(StrEnum):
-    """Worker state."""
-
     FINISHED = "finished"
     NOT_ENOUGH_SPACE = "not_enough_space"
 
 
 class ProcessState(StrEnum):
-    """Process state."""
-
     PASS = "pass"
     FAIL = "fail"
     CANCEL = "cancel"
 
 
 class TaskType(StrEnum):
-    """Task types."""
-
     PROCESS = "process"
     THREAD = "thread"
     CLI = "console"
 
 
 class State(StrEnum):
-    """State."""
-
     COMPLETE = "check"
     INCOMPLETE = "cross"
 
 
 class Connectable(ty.Protocol):
-    """Protocol for connectable objects."""
-
     def connect(self, func: ty.Callable) -> ty.Any:
-        """Connect function."""
+        pass
 
     def disconnect(self, func: ty.Callable) -> ty.Any:
-        """Disconnect function."""
+        pass

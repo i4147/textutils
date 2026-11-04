@@ -12,19 +12,13 @@ import psutil
 
 from pretext.utils import hash_path, home_path
 
-# Get access to logger
 log = logging.getLogger("ptxlogger")
 
-# Limit for how many entries to allow in the server file
-# before attempting to clean up non-running entries.
-# Note: This is not a limit to the number of concurrent servers.
 PURGE_LIMIT = 10
 
 
 @dataclass
 class RunningServerInfo:
-    """A simple dataclass to hold the information in the running servers file."""
-
     path_hash: str
     pid: int
     port: int
@@ -35,7 +29,6 @@ class RunningServerInfo:
         try:
             path_hash, pid, port, binding = line.split()
         except ValueError:
-            # We only call this function when line.strip() is true, so line is not empty
             log.debug(f"Invalid line in running servers file: {line}")
             raise
         return RunningServerInfo(path_hash=path_hash, pid=int(pid), port=int(port), binding=binding)
@@ -44,7 +37,6 @@ class RunningServerInfo:
         return f"{self.path_hash} {self.pid} {self.port} {self.binding}\n"
 
     def is_active_server(self) -> bool:
-        """Returns whether the server represented by this object is active on the provided port"""
         try:
             p = psutil.Process(self.pid)
             if not p.is_running():
@@ -82,7 +74,6 @@ class RunningServerInfo:
             return False
 
     def terminate(self) -> None:
-        """Attempt to terminate the process described by this info."""
         try:
             log.debug(f"Terminating {self.pid}")
             remove_server_entry(self.path_hash)
@@ -103,10 +94,6 @@ def is_port_in_use(port: int) -> bool:
 
 
 def get_running_servers() -> t.List[RunningServerInfo]:
-    """
-    Processes the ~/.ptx/running_servers file to retrieve a list
-    of any possibly current running servers.
-    """
     if not home_path().exists():
         return []
     try:
@@ -122,16 +109,10 @@ def get_running_servers() -> t.List[RunningServerInfo]:
 
 
 def save_running_servers(running_servers: t.List[RunningServerInfo]) -> None:
-    """
-    Overwrites the ~/.ptx/running_servers file to store
-    the new list of running servers.
-    """
-    # Ensure home path exists
     os.makedirs(home_path(), exist_ok=True)
     try:
         running_servers_file = home_path() / "running_servers"
         with open(running_servers_file, "w") as f:
-            # Write each server info to a new line
             f.writelines([info.to_file_line() for info in running_servers])
     except IOError as e:
         log.error("Unable to write running servers file.")
@@ -139,10 +120,6 @@ def save_running_servers(running_servers: t.List[RunningServerInfo]) -> None:
 
 
 def add_server_entry(path_hash: str, pid: int, port: int, binding: str) -> None:
-    """Add a new server entry to ~/.ptx/running_servers.
-
-    This function does not attempt to ensure that an active server doesn't already exist.
-    """
     running_servers = get_running_servers()
     new_entry = RunningServerInfo(path_hash=path_hash, pid=pid, port=port, binding=binding)
     running_servers.append(new_entry)
@@ -161,7 +138,6 @@ def remove_server_entry(path_hash: str) -> None:
 def stop_inactive_servers(
     servers: t.List[RunningServerInfo],
 ) -> t.Iterator[RunningServerInfo]:
-    """Stops any inactive servers and yields the active ones."""
     for server in servers:
         if server.is_active_server():
             yield server
@@ -176,8 +152,6 @@ def active_server_for_path_hash(path_hash: str) -> t.Optional[RunningServerInfo]
     )
 
 
-# boilerplate to prevent overzealous caching by preview server, and
-# avoid port issues
 def binding_for_access(access: t.Literal["public", "private"] = "private") -> str:
     if access == "private":
         return "localhost"
@@ -190,24 +164,19 @@ def start_server(
     port: int = 8128,
     callback: t.Callable[[int], None] | None = None,
 ) -> None:
-    # We call this when we are sure we want a new server on a new port, currently just from the CLI's view command after already checking that the current project doesn't already have a running server.
     log.info("setting up PreTeXt web server ...")
     path_hash = hash_path(base_dir)
     pid = os.getpid()
     binding = binding_for_access(access)
-    # Look for a port that isn't already listed in the running_servers
     while is_port_in_use(port):
         log.debug(f"Port {port} is in use.")
         port = port + 1
         log.debug(f"Trying port {port} instead.")
-        # prevent an infinite loop in case something is very wrong.
         if port > 8199:
             log.warning("Couldn't find a port within a reasonable time, stopping search.")
             break
     log.debug("values set: %s, %s, %s", path_hash, binding, port)
 
-    # Previously we defined a custom handler to prevent caching, but we don't need to do that anymore.  It was causing issues with the _static js/css files inside codespaces for an unknown reason.  Might bring this back in the future.
-    # 2024-04-05: try using this again to let Firefox work
     class RequestHandler(SimpleHTTPRequestHandler):
         def __init__(self, *args: t.Any, **kwargs: t.Any):
             super().__init__(*args, directory=base_dir.as_posix(), **kwargs)

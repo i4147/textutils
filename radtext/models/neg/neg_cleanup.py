@@ -1,15 +1,11 @@
 from typing import List
-
 from bioc import BioCAnnotation, BioCPassage
-
 from radtext.core import BioCProcessor
 from radtext.models.constants import UNCERTAINTY, NEGATION, POSITIVE
 
 
 def extend_anns(annotations: List[BioCAnnotation]):
-    """Mark all annotations in [begin:end] as type"""
     annotations = sorted(annotations, key=lambda a: (a.total_span.offset, -a.total_span.end))
-
     for i in range(len(annotations)):
         ai = annotations[i]
         ai_loc = ai.total_span
@@ -32,31 +28,22 @@ def extend_anns(annotations: List[BioCAnnotation]):
 
 class NegCleanUp(BioCProcessor):
     def __init__(self, sort_anns: bool = False, extend_anns: bool = True):
-        """
-        Args:
-            sort_anns: sort annotations by its location
-            extend_anns: if A covers B, B has the same type as A.
-        """
         super(NegCleanUp, self).__init__(nlp_system="regex")
         self.sort_anns = sort_anns
         self.extend_anns = extend_anns
 
     def process_passage(self, passage: BioCPassage, docid: str = None) -> BioCPassage:
         del passage.sentences[:]
-
         if self.extend_anns:
             extend_anns(passage.annotations)
-
         if self.sort_anns:
             anns = passage.annotations
             anns = sorted(anns, key=lambda a: (a.total_span.offset, a.total_span.end))
             for i, ann in enumerate(anns):
                 ann.id = str(i)
             passage.annotations = anns
-
         for ann in passage.annotations:
             if NEGATION in ann.infons or UNCERTAINTY in ann.infons:
                 if POSITIVE in ann.infons:
                     ann.infons.pop(POSITIVE)
-
         return passage

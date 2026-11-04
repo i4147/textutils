@@ -8,8 +8,6 @@ from qtpy.QtWidgets import QMenu, QToolButton
 
 
 class QtToolButton(QToolButton):
-    """QToolButton."""
-
     _icon, _pixmap = None, None
 
     def __init__(self, parent, text: str = "", icon: QIcon | None = None):
@@ -23,7 +21,6 @@ class QtToolButton(QToolButton):
             self.set_icon(icon)
 
     def set_menu(self, menu: QMenu, action: Callable | None = None, auto_pop: bool = True) -> None:
-        """Set tool button menu."""
         if not isinstance(menu, QMenu):
             raise TypeError("'menu' argument must be a QMenu instance")
 
@@ -36,7 +33,6 @@ class QtToolButton(QToolButton):
             self.pressed.connect(self.autopop)
 
     def set_icon(self, icon: QIcon | None) -> None:
-        """Set the icon for the status bar widget."""
         if icon is not None and isinstance(icon, QIcon):
             self._icon = icon
             self._pixmap = icon.pixmap(self._icon_size)
@@ -44,17 +40,14 @@ class QtToolButton(QToolButton):
             self.setMinimumWidth(37)
 
     def set_size(self, size: list | tuple) -> None:
-        """Set size of the button."""
         if isinstance(size, (list, tuple)):
             self.setMinimumSize(QSize(*size))
             self.setMaximumSize(QSize(*size))
 
     def autopop(self) -> None:
-        """When button is clicked (not necessarily on the down arrow, menu will be shown."""
         self.menu().popup(QCursor.pos())
 
     def popup(self) -> None:
-        """When button is clicked (not necessarily on the down arrow, menu will be shown."""
         self.menu().popup(QCursor.pos())
 
 

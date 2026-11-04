@@ -10,8 +10,6 @@ from qtextra.config import THEMES
 
 
 class QtPushButton(QPushButton):
-    """Standard Qt button. Here to enable easier styling."""
-
     evt_right_click = Signal()
     has_right_click: bool = False
 
@@ -32,32 +30,26 @@ class QtPushButton(QPushButton):
             self.setText(text)
 
     def setWordWrap(self, state: bool) -> None:
-        """Set word wrap on the button."""
         label = self.findChild(QLabel)
         if label:
             label.setWordWrap(state)
 
     def setText(self, text: str) -> None:
-        """Set text on the label."""
         self._label.setText(text)
 
     def setTextFormat(self, fm: Qt.TextFormat) -> None:
-        """SEt text format."""
         self._label.setTextFormat(fm)
 
     def text(self) -> str:
-        """Return text."""
         return self._label.text()
 
     def mousePressEvent(self, evt: QEvent) -> None:
-        """Mouse press event."""
         if evt.button() == Qt.MouseButton.RightButton:
             self.evt_right_click.emit()
         else:
             super().mousePressEvent(evt)
 
     def sizeHint(self) -> QSize:
-        """Return size hints."""
         sh = super().sizeHint()
         lb_sh = self._label.sizeHint()
         width = max(sh.width(), lb_sh.width())
@@ -67,17 +59,14 @@ class QtPushButton(QPushButton):
         return sh
 
     def paintEvent(self, event) -> None:
-        """Paint event/."""
         super().paintEvent(event)
         if self.has_right_click:
             self._paint_right_click_corner()
 
     def _paint_menu_corner(self) -> None:
-        """Draw a small downward chevron in the bottom-right corner."""
         self._paint_corner("info")
 
     def _paint_right_click_corner(self) -> None:
-        """Draw a filled triangular 'page-fold' in the bottom-right corner."""
         self._paint_corner("success")
 
     def _paint_corner(self, color: str) -> None:
@@ -100,12 +89,6 @@ class QtPushButton(QPushButton):
         painter.drawPolygon(QPolygonF(points))
 
     def connect_to_right_click(self, func: ty.Callable) -> None:
-        """Connect function right right-click.
-
-        It is not possible to check whether a function is connected to a signal so its better to use this function to
-        connect via this function which leaves behind a flag so the paint event will add rectangle to the edge so the
-        user knows there is a right-click menu available.
-        """
         from qtextra.helpers import set_properties
 
         self.evt_right_click.connect(func)
@@ -114,8 +97,6 @@ class QtPushButton(QPushButton):
 
 
 class QtActivePushButton(QtPushButton):
-    """Qt button with activity indicator built-in."""
-
     _pixmap = None
 
     def __init__(self, *args: ty.Any, which: str = "infinity", **kwargs: ty.Any):
@@ -127,12 +108,10 @@ class QtActivePushButton(QtPushButton):
         self.active = False
 
     def _update_icon(self, _frame: int) -> None:
-        """Update frame."""
         self.setIcon(self.loading_movie.currentPixmap())
 
     @property
     def active(self) -> bool:
-        """Update the state of the loading label."""
         return self.loading_movie.state() == QMovie.MovieState.Running
 
     @active.setter
@@ -142,12 +121,10 @@ class QtActivePushButton(QtPushButton):
             self.setIcon(None)
 
     def setIcon(self, icon):
-        """Set icon."""
         self._pixmap = icon
         self.repaint()
 
     def paintEvent(self, event) -> None:
-        """Paint event/."""
         super().paintEvent(event)
         painter = QPainter(self)
         if self._pixmap is not None:
@@ -156,8 +133,6 @@ class QtActivePushButton(QtPushButton):
 
 
 class QtRichTextButton(QtPushButton):
-    """Rich-text button."""
-
     def __init__(self, parent: QWidget | None = None, text: str | None = None):
         super().__init__(parent=parent, text=text)
         self._label.setTextFormat(Qt.TextFormat.RichText)

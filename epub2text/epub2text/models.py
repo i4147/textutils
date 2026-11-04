@@ -1,0 +1,77 @@
+from dataclasses import dataclass, field
+from enum import Enum
+
+
+class PageSource(Enum):
+    EPUB_PAGE_LIST = "epub_page_list"
+    SYNTHETIC = "synthetic"
+
+
+@dataclass
+class Page:
+    page_number: str
+    text: str
+    char_count: int
+    source: PageSource
+    chapter_id: str | None = None
+    chapter_title: str | None = None
+
+    def __str__(self) -> str:
+        source_str = "print" if self.source == PageSource.EPUB_PAGE_LIST else "syn"
+        return f"Page {self.page_number} ({self.char_count:,} chars, {source_str})"
+
+
+@dataclass
+class Chapter:
+    id: str
+    title: str
+    text: str
+    char_count: int
+    parent_id: str | None = None
+    level: int = 0
+
+    def __str__(self) -> str:
+        return f"{self.title} ({self.char_count:,} chars)"
+
+
+@dataclass
+class Metadata:
+    title: str | None = None
+    authors: list[str] = field(default_factory=list)
+    publisher: str | None = None
+    publication_year: str | None = None
+    description: str | None = None
+    identifier: str | None = None
+    language: str | None = None
+    contributors: list[str] = field(default_factory=list)
+    rights: str | None = None
+    coverage: str | None = None
+
+    def __str__(self) -> str:
+        lines = []
+        if self.title:
+            lines.append(f"Title: {self.title}")
+        if self.authors:
+            lines.append(f"Author(s): {', '.join(self.authors)}")
+        if self.contributors:
+            lines.append(f"Contributor(s): {', '.join(self.contributors)}")
+        if self.publisher:
+            lines.append(f"Publisher: {self.publisher}")
+        if self.publication_year:
+            lines.append(f"Year: {self.publication_year}")
+        if self.identifier:
+            lines.append(f"Identifier: {self.identifier}")
+        if self.language:
+            lines.append(f"Language: {self.language}")
+        if self.rights:
+            lines.append(f"Rights: {self.rights}")
+        if self.coverage:
+            lines.append(f"Coverage: {self.coverage}")
+        if self.description:
+            desc = (
+                self.description[:200] + "..."
+                if len(self.description) > 200
+                else self.description
+            )
+            lines.append(f"Description: {desc}")
+        return "\n".join(lines)

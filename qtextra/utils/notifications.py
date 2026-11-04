@@ -30,8 +30,6 @@ name2num = {
 
 
 class NotificationSeverity(StringEnum):
-    """Severity levels for the notification dialog.  Along with icons for each."""
-
     NONE = auto()
     DEBUG = auto()
     INFO = auto()
@@ -78,22 +76,6 @@ logger_call = {
 
 
 class Notification(Event):
-    """A Notification event.  Usually created by :class:`NotificationManager`.
-
-    Parameters
-    ----------
-    message : str
-        The main message/payload of the notification.
-    severity : str or NotificationSeverity, optional
-        The severity of the notification, by default
-        `NotificationSeverity.WARNING`.
-    actions : sequence of tuple, optional
-        Where each tuple is a `(str, callable)` 2-tuple where the first item
-        is a name for the action (which may, for example, be put on a button),
-        and the callable is a callback to perform when the action is triggered.
-        (for example, one might show a traceback dialog). by default ()
-    """
-
     def __init__(
         self,
         message: str,
@@ -112,25 +94,20 @@ class Notification(Event):
 
     @classmethod
     def from_exception(cls, exc: BaseException, **kwargs) -> Notification:
-        """Create notification from error."""
         return ErrorNotification(exc, **kwargs)
 
     @classmethod
     def from_warning(cls, warning: Warning, **kwargs) -> Notification:
-        """Create notification from warning."""
         return WarningNotification(warning, **kwargs)
 
     def __str__(self):
         return f"{self.date} ({str(self.severity).upper()}): {self.message}"
 
     def as_plain_str(self) -> str:
-        """Render as string."""
         return f"{self.date}: {self.message}"
 
 
 class ErrorNotification(Notification):
-    """Error notification."""
-
     exception: BaseException
     _traceback = None
 
@@ -160,13 +137,11 @@ class ErrorNotification(Notification):
 
     @property
     def traceback(self):
-        """Retrieve traceback."""
         if self._traceback is None:
             self._traceback = self.exception.__traceback__
         return self._traceback
 
     def as_html(self):
-        """Render as html."""
         from napari.utils._tracebacks import get_tb_formatter
 
         fmt = get_tb_formatter()
@@ -179,7 +154,6 @@ class ErrorNotification(Notification):
         return fmt(exc_info, as_html=True)
 
     def as_text(self) -> str:
-        """Render as text."""
         from napari.utils._tracebacks import get_tb_formatter
 
         fmt = get_tb_formatter()
@@ -191,15 +165,12 @@ class ErrorNotification(Notification):
         return fmt(exc_info, as_html=False, color="NoColor")
 
     def as_plain_str(self) -> str:
-        """Render as string."""
         import traceback
 
         return "".join(traceback.format_stack())
 
 
 class WarningNotification(Notification):
-    """Warning notification."""
-
     warning: Warning
 
     def __init__(self, warning: Warning, filename=None, lineno=None, *args, **kwargs):
@@ -216,26 +187,6 @@ class WarningNotification(Notification):
 
 
 class NotificationManager:
-    """
-    A notification manager, to route all notifications through.
-
-    Only one instance is in general available through napari; as we need
-    notification to all flow to a single location that is registered with the
-    sys.except_hook  and showwarning hook.
-
-    This can and should be used a context manager; the context manager will
-    properly re-entered, and install/remove hooks and keep them in a stack to
-    restore them.
-
-    While it might seem unnecessary to make it re-entrant; or to make the
-    re-entrancy no-op; one need to consider that this could be used inside
-    another context manager that modify except_hook and showwarning.
-
-    Currently the original except and show warnings hooks are not called; but
-    this could be changed in the future; this poses some questions with the
-    re-entrency of the hooks themselves.
-    """
-
     records: ty.List[Notification]
     _instance: NotificationManager | None = None
 
@@ -258,16 +209,10 @@ class NotificationManager:
         self.restore_hooks()
 
     def clear(self):
-        """Remove past notifications from the records list."""
         self.records.clear()
         self.records_cleared(Event("clear"))
 
     def install_hooks(self):
-        """
-        Install a `sys.excepthook`, a `showwarning` hook and a
-        threading.excepthook to display any message in the UI,
-        storing the previous hooks to be restored if necessary.
-        """
         enabled = os.getenv("QTEXTRA_NOTIFICATION_HOOKS_ENABLED") in ("1", "True")
 
         if enabled:
@@ -281,7 +226,6 @@ class NotificationManager:
             warnings.showwarning = self.receive_warning
 
     def restore_hooks(self) -> None:
-        """Remove hooks installed by `install_hooks` and restore previous hooks."""
         if getattr(threading, "excepthook", None) and self._originals_thread_except_hooks:
             threading.excepthook = self._originals_thread_except_hooks.pop()
 
@@ -291,7 +235,6 @@ class NotificationManager:
             warnings.showwarning = self._original_showwarnings_hooks.pop()
 
     def dispatch(self, notification: Notification) -> None:
-        """Dispatch notification."""
         self.records.append(notification)
         self.notification_ready(notification)
 
@@ -304,7 +247,6 @@ class NotificationManager:
             threading.Thread | None,
         ],
     ) -> None:
-        """Receive thread error."""
         self.receive_error(*args)
 
     def receive_error(
@@ -314,7 +256,6 @@ class NotificationManager:
         traceback: TracebackType | None = None,
         thread: threading.Thread | None = None,
     ) -> None:
-        """Receive error."""
         if isinstance(value, KeyboardInterrupt):
             sys.exit("Closed by KeyboardInterrupt")
 
@@ -335,7 +276,6 @@ class NotificationManager:
         file=None,
         line=None,
     ):
-        """Receive warning."""
         msg = message if isinstance(message, str) else message.args[0]
         if (msg, category, filename, lineno) in self._seen_warnings:
             return
@@ -349,7 +289,6 @@ class NotificationManager:
         )
 
     def receive_info(self, message: str) -> None:
-        """Receive info."""
         self.dispatch(Notification(message, severity="INFO"))
 
 
@@ -357,35 +296,30 @@ NOTIFICATION_MANAGER: NotificationManager = NotificationManager()
 
 
 def show_debug(message: str) -> None:
-    """Show a debug message in the notification manager."""
     NOTIFICATION_MANAGER.dispatch(
         Notification(message, severity=NotificationSeverity.DEBUG),
     )
 
 
 def show_info(message: str) -> None:
-    """Show an info message in the notification manager."""
     NOTIFICATION_MANAGER.dispatch(
         Notification(message, severity=NotificationSeverity.INFO),
     )
 
 
 def show_warning(message: str) -> None:
-    """Show a warning in the notification manager."""
     NOTIFICATION_MANAGER.dispatch(
         Notification(message, severity=NotificationSeverity.WARNING),
     )
 
 
 def show_error(message: str) -> None:
-    """Show an error in the notification manager."""
     NOTIFICATION_MANAGER.dispatch(
         Notification(message, severity=NotificationSeverity.ERROR),
     )
 
 
 def _setup_thread_excepthook():
-    """Workaround for `sys.excepthook` thread bug from: http://bugs.python.org/issue1230540."""
     _init = threading.Thread.__init__
 
     def init(self, *args, **kwargs):

@@ -8,33 +8,18 @@ from qtextra.widgets.qt_button_icon import QtImagePushButton
 
 
 def copy_text_to_clipboard(text: str):
-    """Helper function to easily copy text to clipboard while notifying the user."""
     cb = QGuiApplication.clipboard()
     cb.setText(text)
     EVENTS.evt_msg_success.emit("Copied text to clipboard!")
 
 
 def copy_image_to_clipboard(image: QImage):
-    """Helper function to easily copy image to clipboard while notifying the user."""
     cb = QGuiApplication.clipboard()
     cb.setImage(image)
     EVENTS.evt_msg_success.emit("Copied image to clipboard!")
 
 
 class QtCopyToClipboardButton(QtImagePushButton):
-    """Button to copy text box information to the clipboard.
-
-    Parameters
-    ----------
-    text_edit : qtpy.QtWidgets.QTextEdit
-        The text box contents linked to copy to clipboard button.
-
-    Attributes
-    ----------
-    text_edit : qtpy.QtWidgets.QTextEdit
-        The text box contents linked to copy to clipboard button.
-    """
-
     def __init__(self, text_edit: QLabel | QTextEdit, parent: QWidget | None = None):
         super().__init__(parent)
         # self.setObjectName("QtCopyToClipboardButton")
@@ -44,7 +29,6 @@ class QtCopyToClipboardButton(QtImagePushButton):
         self.clicked.connect(self.copy_to_clipboard)
 
     def text_to_copy(self) -> str:
-        """Copy text from the field."""
         if hasattr(self.text_edit, "toPlainText"):
             return str(self.text_edit.toPlainText())
         if hasattr(self.text_edit, "text"):
@@ -52,7 +36,6 @@ class QtCopyToClipboardButton(QtImagePushButton):
         return ""
 
     def copy_to_clipboard(self) -> None:
-        """Copy text to the clipboard."""
         from qtextra.helpers import add_flash_animation
 
         copy_text_to_clipboard(self.text_to_copy())

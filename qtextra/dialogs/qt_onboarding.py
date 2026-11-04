@@ -21,26 +21,12 @@ from qtextra.widgets.qt_dialog import QtDialog
 
 
 class WhatsNewPage(BaseModel):
-    """Data for a single onboarding page.
-
-    Parameters
-    ----------
-    title : str
-        Page heading.
-    body_html : str
-        Rich text body shown on the left side.
-    image_path : str | None
-        Optional image path rendered on the right side.
-    """
-
     title: str
     body_html: str
     image_path: str | None = None
 
 
 class _DotIndicator(QWidget):
-    """Lightweight page indicator."""
-
     def __init__(self, count: int = 0, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._count = max(0, count)
@@ -49,14 +35,12 @@ class _DotIndicator(QWidget):
         self.setMinimumWidth(max(24, count * 18))
 
     def set_count(self, count: int) -> None:
-        """Update the number of visible dots."""
         self._count = max(0, count)
         self._current = min(self._current, max(0, self._count - 1))
         self.updateGeometry()
         self.update()
 
     def set_current_index(self, index: int) -> None:
-        """Update the active dot."""
         if self._count == 0:
             self._current = 0
         else:
@@ -64,7 +48,6 @@ class _DotIndicator(QWidget):
         self.update()
 
     def paintEvent(self, event: QPaintEvent) -> None:
-        """Paint indicator dots."""
         if self._count == 0:
             return
 
@@ -93,8 +76,6 @@ class _DotIndicator(QWidget):
 
 
 class _OnboardingPageWidget(QWidget):
-    """Single page view for the onboarding dialog."""
-
     def __init__(self, page: WhatsNewPage, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.page = page
@@ -103,7 +84,6 @@ class _OnboardingPageWidget(QWidget):
         self._load_image()
 
     def _build(self) -> None:
-        """Create the page layout."""
         root = hp.make_h_layout(margin=(24, 24, 24, 24), spacing=24, parent=self)
 
         text_container = QWidget(self)
@@ -150,7 +130,6 @@ class _OnboardingPageWidget(QWidget):
         )
 
     def _load_image(self) -> None:
-        """Load the configured image if available."""
         image_path = self.page.image_path
         if not image_path:
             self._original_pixmap = None
@@ -172,12 +151,10 @@ class _OnboardingPageWidget(QWidget):
         self._update_pixmap()
 
     def resizeEvent(self, event: QResizeEvent) -> None:
-        """Keep the preview image scaled to the available space."""
         self._update_pixmap()
         super().resizeEvent(event)
 
     def _update_pixmap(self) -> None:
-        """Scale the image to the current preview area."""
         if self._original_pixmap is None:
             return
 
@@ -191,8 +168,6 @@ class _OnboardingPageWidget(QWidget):
 
 
 class QtOnboardingDialog(QtDialog):
-    """Dialog for onboarding or release-note walkthroughs."""
-
     skipped = Signal()
     finished_viewing = Signal()
     dont_show_again_changed = Signal(bool)
@@ -220,7 +195,6 @@ class QtOnboardingDialog(QtDialog):
         self._update_ui()
 
     def make_panel(self) -> QVBoxLayout:
-        """Build the onboarding layout."""
         root = hp.make_v_layout(margin=(16, 16, 16, 16), spacing=12)
 
         title_text = f"What's New in {self.app_name}"
@@ -268,17 +242,14 @@ class QtOnboardingDialog(QtDialog):
         return root
 
     def current_index(self) -> int:
-        """Return the current page index."""
         return self.stack.currentIndex()
 
     def set_current_index(self, index: int) -> None:
-        """Set the current page index."""
         index = max(0, min(index, self.stack.count() - 1))
         self.stack.setCurrentIndex(index)
         self._update_ui()
 
     def next_page(self) -> None:
-        """Advance to the next page or finish on the last page."""
         current = self.current_index()
         if current < self.stack.count() - 1:
             self.set_current_index(current + 1)
@@ -286,13 +257,11 @@ class QtOnboardingDialog(QtDialog):
             self._on_done()
 
     def previous_page(self) -> None:
-        """Navigate to the previous page."""
         current = self.current_index()
         if current > 0:
             self.set_current_index(current - 1)
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
-        """Support arrow-key navigation through the onboarding pages."""
         if event.key() in (Qt.Key.Key_Right, Qt.Key.Key_Down, Qt.Key.Key_PageDown):
             self.next_page()
             return
@@ -302,7 +271,6 @@ class QtOnboardingDialog(QtDialog):
         super().keyPressEvent(event)
 
     def _update_ui(self) -> None:
-        """Refresh button and indicator state."""
         idx = self.current_index()
         last = self.stack.count() - 1
 
@@ -312,22 +280,18 @@ class QtOnboardingDialog(QtDialog):
         self.next_button.setText("Done" if is_last else "Next >")
 
     def _on_skip(self) -> None:
-        """Skip the onboarding flow."""
         self.skipped.emit()
         self.reject()
 
     def _on_done(self) -> None:
-        """Finish the onboarding flow."""
         self.finished_viewing.emit()
         self.accept()
 
     def _on_dont_show_again_toggled(self, state: bool) -> None:
-        """Mirror the checkbox state so it is still available after teardown."""
         self._dont_show_again = bool(state)
         self.dont_show_again_changed.emit(self._dont_show_again)
 
     def dont_show_again(self) -> bool:
-        """Return whether the user opted out of future onboarding prompts."""
         try:
             return self.dont_show_again_checkbox.isChecked()
         except RuntimeError:

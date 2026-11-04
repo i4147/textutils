@@ -8,8 +8,6 @@ from qtextra.config import THEMES
 
 
 class QtActiveOverlay(QWidget):
-    """Widget that displays that action is in progress."""
-
     timer_id: int | None = None
     counter: int = 0
 
@@ -27,7 +25,6 @@ class QtActiveOverlay(QWidget):
         QWidget.__init__(self, parent)
 
     def paintEvent(self, event):
-        """Paint event."""
         painter = QPainter()
         painter.begin(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -52,7 +49,6 @@ class QtActiveOverlay(QWidget):
             painter.drawEllipse(x, height, self.SIZE, self.SIZE)
 
     def showEvent(self, event):
-        """Show event."""
         if self.timer_id is not None:
             self.killTimer(self.timer_id)
         self.timer_id = self.startTimer(self.INTERVAL)
@@ -60,7 +56,6 @@ class QtActiveOverlay(QWidget):
         super().showEvent(event)
 
     def timerEvent(self, event):
-        """Timer event."""
         if event.timerId() != self.timer_id:
             return super().timerEvent(event)
         self.counter += 1
@@ -71,24 +66,19 @@ class QtActiveOverlay(QWidget):
         return None
 
     def hideEvent(self, event):
-        """Hide event."""
         if self.timer_id is not None:
             self.killTimer(self.timer_id)
             self.timer_id = None
         super().hideEvent(event)
 
     def sizeHint(self) -> QSize:
-        """Return the size hint for the widget."""
         return QSize(self.SPACING * (self.N_DOTS + 1), 120)
 
     def minimumHeight(self) -> QSize:
-        """Return the minimum height for the widget."""
         return QSize(self.SPACING * (self.N_DOTS + 1), 120)
 
 
 class QtActiveWidget(QWidget):
-    """Widget that displays activity."""
-
     def __init__(self, text: str = "", which: str = "infinity", size: tuple[int, int] = (64, 64), parent=None):
         super().__init__(parent)
 

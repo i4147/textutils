@@ -10,8 +10,6 @@ from qtextra.widgets.qt_layout_scroll import QtScrollableHLayoutWidget
 
 
 class QtFilterEdit(QWidget):
-    """Scrollable edit.."""
-
     evt_filters_changed = Signal(list, str)
 
     def __init__(
@@ -69,17 +67,14 @@ class QtFilterEdit(QWidget):
         self.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
 
     def on_add_action(self) -> None:
-        """This is a workaround some minor issues with action being triggered twice."""
         with hp.qt_signals_blocked(self.text_edit):
             self.on_add()
 
     def on_add(self) -> None:
-        """Add filter."""
         text = self.text_edit.text()
         self.add_filter(text)
 
     def add_filter(self, text: str) -> None:
-        """Add filter."""
         filters = self.get_filters()
         if not text or text in filters:
             return
@@ -91,26 +86,22 @@ class QtFilterEdit(QWidget):
         self.text_edit.setText("")
 
     def on_update(self, text: str) -> None:
-        """Update filter."""
         self.text_edit.setText(text)
         self.text_edit.setFocus()
         self.on_remove(text)
 
     def on_remove(self, text: str) -> None:
-        """Remove filter."""
         filters = self.get_filters()
         index = filters.index(text)
         self._filter_layout.removeWidgetOrLayout(index)
         self.evt_filters_changed.emit(self.get_filters(), self.mode)
 
     def on_remove_all(self) -> None:
-        """Remove all filters."""
         while self._filter_layout.count() != self._n:
             self._filter_layout.removeWidgetOrLayout(0)
         self.evt_filters_changed.emit([], self.mode)
 
     def get_filters(self, current: bool = False) -> list[str]:
-        """Get list of currently selected filters."""
         tags = []
         for i in range(self._filter_layout.count() - self._n):
             widget = self._filter_layout.get_widget(i)
@@ -124,13 +115,11 @@ class QtFilterEdit(QWidget):
 
     @property
     def mode(self) -> str | None:
-        """Get mode."""
         if not self.enable_switch:
             return None
         return "AND" if self.switch_toggle.state else "OR"
 
     def emit_current_filters(self) -> None:
-        """Emit current filters."""
         self.evt_filters_changed.emit(self.get_filters(current=True), self.mode)
 
     getFilters = get_filters

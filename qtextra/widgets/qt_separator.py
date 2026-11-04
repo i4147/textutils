@@ -6,8 +6,6 @@ import qtextra.helpers as hp
 
 
 class QtHorzLine(QFrame):
-    """Horizontal line."""
-
     def __init__(self, parent: QWidget):
         super().__init__(parent=parent)
         self.setFrameShape(QFrame.Shape.HLine)
@@ -15,8 +13,6 @@ class QtHorzLine(QFrame):
 
 
 class QtHorzLineWithText(QWidget):
-    """Horizontal line with text."""
-
     def __init__(self, parent: QWidget, label: str, bold: bool = False, position: str = "center", **kwargs: ty.Any):
         super().__init__(parent=parent)
 
@@ -33,13 +29,10 @@ class QtHorzLineWithText(QWidget):
         hp.make_h_layout(*widgets, stretch_id=stretch_ids, spacing=2, margin=1, parent=self)
 
     def setText(self, text: str) -> None:
-        """Set text of the label."""
         self.label.setText(text)
 
 
 class QtVertLine(QFrame):
-    """Vertical line."""
-
     def __init__(self, parent: QWidget):
         super().__init__(parent=parent)
         self.setFrameShape(QFrame.Shape.VLine)
@@ -47,8 +40,6 @@ class QtVertLine(QFrame):
 
 
 class QtVertLineWithText(QWidget):
-    """Vertical line with text."""
-
     def __init__(self, parent: QWidget, label: str, bold: bool = False, position: str = "center", **kwargs: ty.Any):
         super().__init__(parent=parent)
 

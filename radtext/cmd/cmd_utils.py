@@ -1,8 +1,6 @@
 import logging
 import os
-
 import tqdm
-
 import bioc
 from radtext.core import BioCProcessor
 
@@ -17,7 +15,6 @@ def set_logging(argv):
         verbose = 0
     else:
         verbose = int(argv["--verbose"])
-
     if verbose == 0:
         logging_level = logging.CRITICAL
     elif verbose == 1:
@@ -26,9 +23,7 @@ def set_logging(argv):
         logging_level = logging.DEBUG
     else:
         logging_level = logging.INFO
-
     format = r"%(asctime)s - %(name)s - %(lineno)d - %(levelname)s - %(message)s"
-    # logging.basicConfig(level=logging.DEBUG, format=format, datefmt='%m-%d %H:%M', filename=filename, filemode='w')
     console = logging.StreamHandler()
     console.setLevel(logging_level)
     formatter = logging.Formatter(format)
@@ -47,7 +42,6 @@ def check_outfile(argv):
 def process_file(src, dest, processor: BioCProcessor, level: int):
     with open(src) as fp:
         collection = bioc.load(fp)
-
     for doc in tqdm.tqdm(collection.documents):
         if level == bioc.DOCUMENT:
             processor.process_document(doc)
@@ -58,6 +52,5 @@ def process_file(src, dest, processor: BioCProcessor, level: int):
             for passage in tqdm.tqdm(doc.passages, leave=False):
                 for sentence in tqdm.tqdm(passage.sentences, leave=False):
                     processor.process_sentence(sentence, doc.id)
-
     with open(dest, "w") as fp:
         bioc.dump(collection, fp)

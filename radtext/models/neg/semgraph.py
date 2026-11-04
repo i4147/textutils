@@ -1,27 +1,9 @@
 import logging
-
 import bioc
 import networkx as nx
 
 
 def load(sentence: bioc.BioCSentence) -> nx.DiGraph:
-    """
-    Args:
-        sentence: a sentence with tag, text, lemma, start and end
-
-    Returns:
-        DiGraph: dependency graph
-
-    Examples:
-        ```xml
-        <annotation id="T0">
-          <infon key="lemma">small</infon>
-          <infon key="tag">JJ</infon>
-          <location length="5" offset="128"/>
-          <text>Small</text>
-        </annotation>
-        ```
-    """
     graph = nx.DiGraph()
     for ann in sentence.annotations:
         loc = ann.total_span

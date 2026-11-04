@@ -10,8 +10,6 @@ import qtextra.helpers as hp
 
 
 class QtConfirmCloseDialog(QDialog):
-    """Confirm close dialog with an option to not ask again."""
-
     def __init__(
         self,
         parent: QWidget,
@@ -86,13 +84,11 @@ class QtConfirmCloseDialog(QDialog):
         self.cancel_btn = cancel_btn
 
     def save_and_accept(self):
-        """Save and accept."""
         if callable(self.save_func):
             self.save_func()
         return self.accept()
 
     def accept(self):
-        """Accept."""
         if self.do_not_ask.isChecked() and self.config and self.attr is not None:
             setattr(self.config, self.attr, False)
         return super().accept()

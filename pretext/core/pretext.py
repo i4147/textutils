@@ -1,170 +1,78 @@
-# ********************************************************************
-# Copyright (C) 2010-2026  Robert A. Beezer
 #
-# This file is part of PreTeXt.
 #
-# PreTeXt is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 2 or version 3 of the
-# License (at your option).
 #
-# PreTeXt is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with PreTeXt.  If not, see <http://www.gnu.org/licenses/>.
-# *********************************************************************
 
-# Python Version History
-# vermin is a great linter/checker to check versions required
-#     https://github.com/netromdk/vermin.git
-# 2026-07-06: this module expects Python 3.10 or newer
-#     FileInput(..., encoding="utf-8") added, required Python 3.10
-#     stack.py: str.removeprefix(), str.removesuffix() requires Python 3.9
-# 2023-10-13: this module expects Python 3.8 or newer
-#     shutil.copytree now has dirs_exist_ok argument
-# 2021-05-21: this module expects Python 3.6 or newer
-#     subprocess.run() requires Python 3.5
-#     shutil.which() member requires 3.3
-#     otherwise Python 3.0 might be sufficient
-# 2020-05-20: this module expects Python 3.4 or newer
 
-# Set up logging package:
 import logging
 
 log = logging.getLogger("ptxlogger")
 
-# Can show full traceback, and then continue processing
-# https://stackoverflow.com/questions/3702675/
-# how-to-catch-and-print-the-full-exception-traceback-without-halting-exiting-the
-import traceback  # format_exc()
+import traceback
 
-########################
-# Module/Package Imports
-########################
 
-#   IMPORTANT NOTES:
 #
-# * Never use the forms:
 #   from foo import *
 #   from foo import bar, baz
 #
-#   Always use the forms:
 #   import foo
 #   import foo as BAR
 #
-#   Only use the latter sparingly, only for module-level imports,
-#   and with recognizable and rational aliases
 #
-#   This makes debugging easier (we always know where a function is coming from)
-#   and it makes maintenance easier (search, and replace, are both more reliable)
 #
-# * For standard libraries used routinely, place import statements
-#   here at the module level, with some documentation of the necessity
 #
-# * For standard libraries used infrequently (in three or fewer functions?),
-#   include imports in the functions
 
-# primarily directory manipulations (creating, switching, deleting)
 import os
 
-# primarily joining paths, but sometimes splitting
 import os.path
 
-# primarily copying entire directory trees of files, also which()
-# we limit ourselves to shutil.copy2 and shutil.copytree
-# Study: https://www.techbeamers.com/python-copy-file/
 import shutil
 
-# "shelling out" to run executables
-# TODO: run() is preferable to call()
 import subprocess
 
-# version and platform inspection
 import sys
 
-# creation of zip'ed output or bundles
 import zipfile
 
-# regular expression tools
 import re
 
-# contextmanager tools
 import contextlib
 
 import time
 
-# cleanup multiline strings used as source code
 import textwrap
 
-# * For non-standard packages (such as those installed via PIP) try to keep
-#   dependencies to a minimum by *not* importing at the module-level
-#   (with justified exceptions)
 #
-# * For non-standard packages always import within a try/except block
-#   and use the provided warning message for failures
 #
-# * The "requests" module would be a candidate for a module-level
-#   import but we prefer to leave it as an optional dependency
 
-# ----------------------------------------------------------------------
-# 2026 module split: the lengthy WeBWorK and STACK routines, and the
-# shared low-level helpers, were moved out of this file into siblings.
-# The import graph is strictly one-way, so there are no import cycles:
 #
-#     common.py        - imports nothing from its siblings
-#       ^  ^  ^
-#       |  |  +---- pretext.py  (this file)
-#       |  +------- stack.py
-#       +---------- webwork.py
 #
-#   "webwork" and "stack" import only "common".
-#   "pretext" imports all three; it imports "webwork"/"stack" only to
-#   re-export their public names (see end of file), so the public
-#   ptx.NAME interface used by the driver script is unchanged.
 #
-# "common" holds the canonical __module_warning; we alias it here so the
-# import guards below and existing bare references keep working.
-# ----------------------------------------------------------------------
 from . import common
 
 __module_warning = common.__module_warning
 from . import webwork
 from . import stack
 
-# Not much can be done without the "lxml" module which mimics
-# the "xsltproc" executable (they share the same libraries)
 try:
     import lxml.etree as ET
 except ImportError:
     raise ImportError(__module_warning.format("lxml"))
 
 
-#############################
 #
-#  Math as LaTeX on web pages
 #
-#############################
 
 
 def mathjax_latex(xml_source, pub_file, out_file, dest_dir, math_format, math_cross_references):
-    """Convert PreTeXt source to a structured file of representations of mathematics"""
-    # formats:  'svg', 'mml', 'nemeth', 'speech', 'kindle'
-    # Internal calls will specify out_file with complete path
-    # External calls might only specify a destination directory
-    import fileinput  # for &nbsp; fix
+    import fileinput
 
     log.info("converting LaTeX from {} into {} format".format(xml_source, math_format))
     log.debug("converting LaTeX from {} into {} format".format(xml_source, math_format))
 
-    # construct filenames for pre- and post- XSL stylesheets in xsl/support
     extraction_xslt = os.path.join(common.get_ptx_xsl_path(), "support/extract-math.xsl")
     cleaner_xslt = os.path.join(common.get_ptx_xsl_path(), "support/package-math.xsl")
 
-    # Extraction stylesheet makes a simple, mock web page for MathJax
-    # And MathJax executables preserve the page while changing the math
     tmp_dir = common.get_temporary_directory()
     mjinput = os.path.join(tmp_dir, "mj-input-latex.html")
     mjintermediate = os.path.join(tmp_dir, "mj-intermediate.html")
@@ -173,45 +81,25 @@ def mathjax_latex(xml_source, pub_file, out_file, dest_dir, math_format, math_cr
     log.debug("temporary directory for MathJax work: {}".format(tmp_dir))
     log.debug("extracting LaTeX from {} and collected in {}".format(xml_source, mjinput))
 
-    # SVG, MathML, and PNG are visual and we help authors move punctuation into
-    # displays, but not into inline versions.  Nemeth braille and speech are not,
-    # so we leave punctuation outside.
-    # 2022-11-01: extraction stylesheet now supports a subtree root,
-    # which we could pass from the interface, into this function, then
-    # into the string parameters.  However, we don't see a real need yet
-    # for this, so we just leave this comment instead.
     if math_format in ["svg", "mml", "kindle"]:
         punctuation = "display"
     elif math_format in ["nemeth", "speech"]:
         punctuation = "none"
     params = {}
     params["math.punctuation"] = punctuation
-    # a single-file target (XSL-FO/PDF) can ask that cross-references
-    # inside mathematics become active internal links (an SVG "a")
     if math_cross_references:
         params["math.cross-references"] = "yes"
     if pub_file:
         params["publisher"] = pub_file
     common.xsltproc(extraction_xslt, xml_source, mjinput, None, params)
-    # Trying to correct baseline for inline math in Kindle, so we
-    # insert a \mathstrut into all the inline math before feeding to MathJax
     if math_format == "kindle":
-        # fileinput's in-place mode rewrites each file line by line: print() writes
-        # back onto the file, and end="" suppresses the extra newline it would add
-        # (the line already carries its own).  Two Windows pitfalls handled here:
-        #   - the "with" context manager closes the handle before the file is
-        #     reopened/replaced, which otherwise raises a PermissionError (PR #1779)
-        #   - encoding="utf-8" reads/writes UTF-8 rather than the locale default,
-        #     which would mis-decode UTF-8 math/HTML on a cp1252 locale (PR #3003)
         with fileinput.FileInput(mjinput, inplace=True, encoding="utf-8") as file:
             for line in file:
                 print(line.replace(r"\(", r"\(\mathstrut "), end="")
 
-    # shell out to process with MathJax/SRE node program
     msg = "calling MathJax to convert LaTeX from {} into raw representations as {} in {}"
     log.debug(msg.format(mjinput, math_format, mjoutput))
 
-    # process with  pretext.js  executable from  MathJax (Davide Cervone, Volker Sorge)
     node_exec_cmd = common.get_executable_cmd("node")
     mjsre_page = os.path.join(common.get_ptx_path(), "script", "mjsre", "mj-sre-page.js")
     output = {
@@ -231,52 +119,29 @@ def mathjax_latex(xml_source, pub_file, out_file, dest_dir, math_format, math_cr
     with open(mjoutput, "w", encoding="utf-8") as outfile:
         subprocess.run(mjpage_cmd, stdout=outfile)
 
-    # the 'mjpage' executable converts spaces inside of a LaTeX
-    # \text{} into &nbsp; entities, which is a good idea, and
-    # fine for HTML, but subsequent conversions expecting XHTML
-    # do not like &nbsp; nor &#xa0.  Be careful just below, as
-    # repl contains a *non-breaking space* not a generic space.
     orig = "&nbsp;"
     repl = " "
     xhtml_elt = re.compile(orig)
     with common.working_directory(tmp_dir):
         html_file = mjoutput
-        # fileinput's in-place mode rewrites each file line by line: print() writes
-        # back onto the file, and end="" suppresses the extra newline it would add
-        # (the line already carries its own).  Two Windows pitfalls handled here:
-        #   - the "with" context manager closes the handle before the file is
-        #     reopened/replaced, which otherwise raises a PermissionError (PR #1779)
-        #   - encoding="utf-8" reads/writes UTF-8 rather than the locale default,
-        #     which would mis-decode UTF-8 math/HTML on a cp1252 locale (PR #3003)
         with fileinput.FileInput(html_file, inplace=True, encoding="utf-8") as file:
             for line in file:
                 print(xhtml_elt.sub(repl, line), end="")
 
-    # clean up and package MJ representations, font data, etc
     derivedname = common.get_output_filename(xml_source, out_file, dest_dir, "-" + math_format + ".xml")
     log.debug("packaging math as {} from {} into XML file {}".format(math_format, mjoutput, out_file))
     common.xsltproc(cleaner_xslt, mjoutput, derivedname)
     log.info("XML file of math representations deposited as {}".format(derivedname))
 
 
-##############################################
 #
-#  Graphics Language Extraction and Processing
 #
-##############################################
 
 
 def prefigure_conversion(xml_source, pub_file, stringparams, xmlid_root, dest_dir, outformat, ext_converter):
-    """Extract PreFigure code for diagrams and convert to graphics formats"""
-    # ext_converter: an optinal hook for external libraries to patch
-    #                the conversion of individual images.  The intent is that ext_converter
-    #                attempts to use a cached version of the image, or else calls
-    #                individual_prefigure_conversion() to generate the image (and cache it).
     #
-    # stringparams is a dictionary, best for lxml parsing
     import glob
 
-    # to ensure provided stringparams aren't mutated unintentionally
     stringparams = stringparams.copy()
 
     msg = "converting PreFigure diagrams from {} to {} graphics for placement in {}"
@@ -286,71 +151,52 @@ def prefigure_conversion(xml_source, pub_file, stringparams, xmlid_root, dest_di
     log.debug("temporary directory: {}".format(tmp_dir))
     ptx_xsl_dir = common.get_ptx_xsl_path()
     extraction_xslt = os.path.join(ptx_xsl_dir, "extract-prefigure.xsl")
-    # support publisher file, subtree argument
     if pub_file:
         stringparams["publisher"] = pub_file
     if xmlid_root:
         stringparams["subtree"] = xmlid_root
-    # no output (argument 3), stylesheet writes out per-image file
-    # outputs a list of ids, but we just loop over created files
     log.info("extracting PreFigure diagrams from {}".format(xml_source))
     log.info("string parameters passed to extraction stylesheet: {}".format(stringparams))
 
     common.xsltproc(extraction_xslt, xml_source, None, tmp_dir, stringparams)
 
-    # Resulting prefigure files are in tmp_dir, switch there to work
     with common.working_directory(tmp_dir):
         if outformat == "source" or outformat == "all":
             log.info("copying PreFigure source files into {}".format(dest_dir))
             shutil.copytree(tmp_dir, dest_dir, dirs_exist_ok=True)
 
-        # get a list of all the source files and remove the publication file
         pf_source_files = os.listdir(tmp_dir)
         try:
             pf_source_files.remove("pf_publication.xml")
         except ValueError:
             pass
 
-        # Need to copy entire "external" directory
-        # Also data (e.g. for plots) is made available
-        # NB: we might really do this sooner, but then all
-        # the files in "external" and "data" get added
-        # into the list of source files, pf_source_files
         _, external_dir = common.get_managed_directories(xml_source, pub_file)
         data_dir = common.get_source_directories(xml_source)
         common.copy_managed_directories(tmp_dir, external_abs=external_dir, data_abs=data_dir)
 
-        # make output/tactile directory if the outformat is "all"
-        # PreFigure makes 'output' but we also want to create 'output/tactile'
         if outformat == "all":
             os.mkdir("output")
             os.mkdir("output/tactile")
 
-        # Process each pf_source_file for requested format
         for pfdiagram in pf_source_files:
             if ext_converter:
                 ext_converter(pfdiagram, outformat, tmp_dir)
             else:
                 individual_prefigure_conversion(pfdiagram, outformat)
 
-        # Check to see if we made some diagrams before copying the tree
         if os.path.exists("output"):
             log.info("copying PreFigure output to {}".format(dest_dir))
             shutil.copytree("output", dest_dir, dirs_exist_ok=True)
 
 
 def individual_prefigure_conversion(pfdiagram, outformat):
-    # We need to import prefig for this function.  Okay that we do it for each
-    # diagram; python will cache the module after the first import.
     try:
         import prefig
     except ImportError:
         raise ImportError(__module_warning.format("prefig"))
 
     if outformat == "tactile" or outformat == "all":
-        # THe tactile outformat produces a pdf, but is different from the pdf outformat.
-        # After producing the output, it must be moved to the tactile subdirectory.
-        # NB we must do this before the pdf outformat option to avoid overwriting the regular pdf.
         log.info("compiling PreFigure source file {} to tactile PDF".format(pfdiagram))
         prefig.engine.pdf("tactile", pfdiagram)
         pdf_name = pfdiagram[:-4] + ".pdf"
@@ -370,33 +216,19 @@ def individual_prefigure_conversion(pfdiagram, outformat):
 
 
 def asymptote_conversion(xml_source, pub_file, stringparams, xmlid_root, dest_dir, outformat, method, ext_converter):
-    """Extract asymptote code for diagrams and convert to graphics formats"""
-    # stringparams is a dictionary, best for lxml parsing
-    # method == 'local': use a system executable from pretext.cfg
-    # method == 'server': hit a server at U of Alberta, Asymptote HQ
-    # ext_converter: an optinal hook for external libraries to patch
-    #                the conversion of individual images.  The intent is that ext_converter
-    #                attempts to use a cached version of the image, or else calls
-    #                individual_asymptote_conversion() to generate the image (and cache it).
     #
-    # If buggy, and server/communication is suspected, try an Asy
-    # source file generated by this script (located in temporary
-    # directory preserved by -vv), using, e.g.,
-    #   curl --data-binary @source.asy 'asymptote.ualberta.ca:10007?f=svg' > output.svg
     import glob
 
-    # to ensure provided stringparams aren't mutated unintentionally
     stringparams = stringparams.copy()
 
     try:
-        import requests  # post()
+        import requests
     except ImportError:
         raise ImportError(__module_warning.format("requests"))
 
     msg = 'converting Asymptote diagrams from {} to {} graphics for placement in {} with method "{}"'
     log.info(msg.format(xml_source, outformat.upper(), dest_dir, method))
 
-    # front-ends and calling routines should guarantee the following
     if not (method in ["local", "server"]):
         raise ValueError("{} is not a method for Asymptote diagram generation".format(method))
 
@@ -404,42 +236,30 @@ def asymptote_conversion(xml_source, pub_file, stringparams, xmlid_root, dest_di
     log.debug("temporary directory: {}".format(tmp_dir))
     ptx_xsl_dir = common.get_ptx_xsl_path()
     extraction_xslt = os.path.join(ptx_xsl_dir, "extract-asymptote.xsl")
-    # support publisher file, subtree argument
     if pub_file:
         stringparams["publisher"] = pub_file
     if xmlid_root:
         stringparams["subtree"] = xmlid_root
-    # no output (argument 3), stylesheet writes out per-image file
-    # outputs a list of ids, but we just loop over created files
     log.info("extracting Asymptote diagrams from {}".format(xml_source))
     log.info("string parameters passed to extraction stylesheet: {}".format(stringparams))
     common.xsltproc(extraction_xslt, xml_source, None, tmp_dir, stringparams)
-    # Resulting *.asy files are in tmp_dir, switch there to work
     with common.working_directory(tmp_dir):
-        # simply copy for source file output
-        # no need to check executable or server, PreTeXt XSL does it all
         if outformat == "source" or outformat == "all":
             for asydiagram in os.listdir(tmp_dir):
                 log.info("copying source file {}".format(asydiagram))
                 shutil.copy2(asydiagram, dest_dir)
-        # consolidated process for five possible output formats
-        # parameterized for places where  method  differs
         if outformat == "all":
             outformats = ["html", "svg", "png", "pdf", "eps"]
         elif outformat in ["html", "svg", "png", "pdf", "eps"]:
             outformats = [outformat]
         else:
             outformats = []
-        # The version does not vary with the output format, so we ask for it
-        # once rather than once per format, and any advisory about a version
-        # we cannot read is then issued just once as well.
         asy_executable_cmd = []
         asyversion = ""
         rendering_option = []
         if outformats and (method == "local"):
             asy_executable_cmd = common.get_executable_cmd("asy")
             proc = subprocess.Popen([asy_executable_cmd[0], "--version"], stderr=subprocess.PIPE)
-            # bytes -> ASCII, strip final newline
             asyversion = proc.stderr.read().decode("ascii")[:-1]
             version_numbers = asymptote_version_numbers(asyversion)
             if version_numbers is None:
@@ -452,28 +272,14 @@ def asymptote_conversion(xml_source, pub_file, stringparams, xmlid_root, dest_di
                 ]
                 log.warning("\n".join(msg))
                 version_numbers = (3, 13)
-            # "-offscreen" has come and gone: Asymptote introduced it at 2.11,
-            # dropped it at 2.66, and restored it at 3.12.  (Checked against
-            # every release from 1.67 to 3.13.)  A version lacking the option
-            # does not say so.  Its parser reads "-offscreen" as "-o ffscreen",
-            # so every image is written to a file of that name, and Asymptote
-            # exits successfully and silently: only the missing file betrays
-            # it.  "-iconify" is understood by every release, and so serves
-            # wherever offscreen rendering cannot be asked for.
             if ((2, 11) <= version_numbers < (2, 66)) or ((3, 12) <= version_numbers):
                 rendering_option = ["-offscreen"]
             else:
                 rendering_option = ["-iconify"]
         for outform in outformats:
-            # initialize variables for each method
             asy_cli = []
             alberta = ""
-            # setup, depending on the method
             if method == "local":
-                # build command line to suit
-                # 2021-12-10, Michael Doob: "-noprc" is default for the server,
-                # and newer CLI versions.  Retain for explicit use locally when
-                # perhaps an older version is being employed
                 asy_cli = asy_executable_cmd + ["-f", outform, "-noV"]
                 if outform in ["pdf", "eps"]:
                     asy_cli += ["-noprc"] + rendering_option + ["-tex", "xelatex", "-batchMask"]
@@ -481,7 +287,6 @@ def asymptote_conversion(xml_source, pub_file, stringparams, xmlid_root, dest_di
                     asy_cli += ["-render=4", "-tex", "xelatex"] + rendering_option
             if method == "server":
                 alberta = "http://asymptote.ualberta.ca:10007?f={}".format(outform)
-            # loop over .asy files, doing conversions
             for asydiagram in glob.glob(os.path.join(tmp_dir, "*.asy")):
                 if ext_converter:
                     ext_converter(asydiagram, outform, method, asy_cli, asyversion, alberta, dest_dir)
@@ -490,11 +295,6 @@ def asymptote_conversion(xml_source, pub_file, stringparams, xmlid_root, dest_di
 
 
 def asymptote_version_numbers(version_banner):
-    """Asymptote's version as a tuple of integers, or None if not discernable"""
-    # Asked for "--version", Asymptote replies on standard error with a
-    # banner whose first line reads, for example,
-    #     Asymptote version 3.12 [(C) 2004 Andy Hammerlindl, ...
-    # Integers, and not the string, so that 3.9 precedes 3.11
     version_match = re.search(r"Asymptote version ([0-9]+(?:\.[0-9]+)*)", version_banner)
     if not version_match:
         return None
@@ -503,14 +303,13 @@ def asymptote_version_numbers(version_banner):
 
 def individual_asymptote_conversion(asydiagram, outform, method, asy_cli, asyversion, alberta, dest_dir):
     try:
-        import requests  # post()
+        import requests
     except ImportError:
         raise ImportError(__module_warning.format("requests"))
 
     filebase, _ = os.path.splitext(asydiagram)
     asyout = "{}.{}".format(filebase, outform)
     log.info("converting {} to {}".format(asydiagram, asyout))
-    # do the work, depending on method
     if method == "local":
         asy_cmd = asy_cli + [asydiagram]
         log.debug("asymptote conversion {}".format(asy_cmd))
@@ -518,11 +317,9 @@ def individual_asymptote_conversion(asydiagram, outform, method, asy_cli, asyver
     if method == "server":
         log.debug("asymptote server query {}".format(alberta))
         with open(asydiagram, encoding="utf-8") as f:
-            # protect against Unicode (in comments?)
             data = f.read().encode("utf-8")
             response = requests.post(url=alberta, data=data)
             open(asyout, "wb").write(response.content)
-    # copy resulting image file, or warn/advise about failure
     if os.path.exists(asyout):
         shutil.copy2(asyout, dest_dir)
     else:
@@ -543,13 +340,7 @@ def individual_asymptote_conversion(asydiagram, outform, method, asy_cli, asyver
 
 def sage_conversion(xml_source, pub_file, stringparams, xmlid_root, dest_dir, outformat, ext_converter):
 
-    # ext_converter: an optinal hook for external libraries to patch
-    #                the conversion of individual images.  The intent is that ext_converter
-    #                attempts to use a cached version of the image, or else calls
-    #                individual_sage_conversion() to generate the image (and cache it).
     #
-    # To make all four formats, just call this routine
-    # four times and halt gracefully with an explicit "return"
     if outformat == "all":
         log.info('Pass 1 for "all" formats, now generating PDF')
         sage_conversion(xml_source, pub_file, stringparams, xmlid_root, dest_dir, "pdf", ext_converter)
@@ -560,10 +351,6 @@ def sage_conversion(xml_source, pub_file, stringparams, xmlid_root, dest_dir, ou
         log.info('Pass 4 for "all" formats, now generating HTML')
         sage_conversion(xml_source, pub_file, stringparams, xmlid_root, dest_dir, "html", ext_converter)
         return None
-    # The real routine, which is thinly parameterized by "outformat",
-    # thus necessitating the four separate calls above due to the
-    # extraction stylesheet producing slightly different Sage code
-    # for each possible output format
     log.info(
         "converting Sage diagrams from {} to {} graphics for placement in {}".format(
             xml_source, outformat.upper(), dest_dir
@@ -572,15 +359,11 @@ def sage_conversion(xml_source, pub_file, stringparams, xmlid_root, dest_dir, ou
     tmp_dir = common.get_temporary_directory()
     log.debug("temporary directory: {}".format(tmp_dir))
     sage_executable_cmd = common.get_executable_cmd("sage")
-    # TODO why this debug line? get_executable_cmd() outputs the same debug info
     log.debug("sage executable: {}".format(sage_executable_cmd[0]))
     ptx_xsl_dir = common.get_ptx_xsl_path()
     extraction_xslt = os.path.join(ptx_xsl_dir, "extract-sageplot.xsl")
     log.info("extracting Sage diagrams from {}".format(xml_source))
-    # extraction stylesheet is parameterized by fileformat
-    # this is an internal parameter only, do not use otherwise
     stringparams["sageplot.fileformat"] = outformat
-    # support publisher file, subtree argument
     if pub_file:
         stringparams["publisher"] = pub_file
     if xmlid_root:
@@ -597,14 +380,12 @@ def sage_conversion(xml_source, pub_file, stringparams, xmlid_root, dest_dir, ou
             except Exception as e:
                 failed_images.append(sageplot)
                 log.warning(e)
-    # raise an error if there were *any* failed images
     if failed_images:
         msg = "\n".join([
             "Sage conversion failed for {} sageplot(s).",
             "Build with '-v debug' option and review the log for error messages.",
             "Images are:",
         ]).format(len(failed_images))
-        # 2-space indentation
         image_list = "\n  " + "\n  ".join(failed_images)
         raise ValueError(msg + image_list)
 
@@ -625,13 +406,7 @@ def individual_sage_conversion(sageplot, outformat, dest_dir, sage_executable_cm
 
 
 def latex_image_conversion(xml_source, pub_file, stringparams, xmlid_root, dest_dir, outformat, method, ext_converter):
-    # stringparams is a dictionary, best for lxml parsing
-    # ext_converter: an optinal hook for external libraries to patch
-    #                the conversion of individual images.  The intent is that ext_converter
-    #                attempts to use a cached version of the image, or else calls
-    #                individual_latex_image_conversion() to generate the image (and cache it).
 
-    # to ensure provided stringparams aren't mutated unintentionally
     stringparams = stringparams.copy()
 
     log.info(
@@ -643,27 +418,18 @@ def latex_image_conversion(xml_source, pub_file, stringparams, xmlid_root, dest_
     log.debug("temporary directory for latex-image conversion: {}".format(tmp_dir))
     ptx_xsl_dir = common.get_ptx_xsl_path()
     log.info("extracting latex-image pictures from {}".format(xml_source))
-    # support publisher file, subtree argument
     if pub_file:
         stringparams["publisher"] = pub_file
     if xmlid_root:
         stringparams["subtree"] = xmlid_root
     log.info("string parameters passed to extraction stylesheet: {}".format(stringparams))
-    # Need to copy entire external directory in the managed case.
-    # Making data files available for latex image compilation is
-    # not supported outside of the managed directory scheme (2021-07-28)
     _, external_dir = common.get_managed_directories(xml_source, pub_file)
     data_dir = common.get_source_directories(xml_source)
     common.copy_managed_directories(tmp_dir, external_abs=external_dir, data_abs=data_dir)
-    # now create all the standalone LaTeX source files
     extraction_xslt = os.path.join(ptx_xsl_dir, "extract-latex-image.xsl")
-    # no output (argument 3), stylesheet writes out per-image file
     common.xsltproc(extraction_xslt, xml_source, None, tmp_dir, stringparams)
-    # now work in temporary directory
     with common.working_directory(tmp_dir):
-        # and maintain a list of failures for later
         failed_images = []
-        # files *only*, from top-level
         files = list(filter(os.path.isfile, os.listdir(tmp_dir)))
         for latex_image in files:
             try:
@@ -672,33 +438,28 @@ def latex_image_conversion(xml_source, pub_file, stringparams, xmlid_root, dest_
                 else:
                     individual_latex_image_conversion(latex_image, outformat, dest_dir, method)
             except ImportError:
-                # re-raise the ImportError pdfCropMargins or pyMuPDF is not imported.
                 raise
             except Exception as e:
                 failed_images.append(latex_image)
-                # We continue to try to process other images, but log a warning.
                 log.warning(e)
 
-    # raise an error if there were *any* failed images
     if failed_images:
         msg = "\n".join([
             'LaTeX compilation failed for {} "latex-image"(s).',
             "Review the log for error messages, and LaTeX transcripts.",
             "Images are:",
         ]).format(len(failed_images))
-        # 2-space indentation
         image_list = "\n  " + "\n  ".join(failed_images)
         raise ValueError(msg + image_list)
 
 
 def individual_latex_image_conversion(latex_image, outformat, dest_dir, method):
-    # external module, often forgotten
     try:
         import pdfCropMargins
     except ImportError:
         raise ImportError(__module_warning.format("pdfCropMargins"))
     try:
-        import fitz  # for svg and png conversion
+        import fitz
     except ImportError:
         raise ImportError(__module_warning.format("pyMuPDF"))
 
@@ -712,18 +473,14 @@ def individual_latex_image_conversion(latex_image, outformat, dest_dir, method):
         latex_image_png = "{}.png".format(filebase)
         latex_image_eps = "{}.eps".format(filebase)
         latex_image_log = "{}.log".format(filebase)
-        # process with a  latex  engine
         latex_key = common.get_deprecated_tex_fallback(method)
         tex_executable_cmd = common.get_executable_cmd(latex_key)
-        # TODO why this debug line? get_executable_cmd() outputs the same debug info
         log.debug("tex executable: {}".format(tex_executable_cmd[0]))
         latex_cmd = tex_executable_cmd + ["-interaction=nonstopmode", "-halt-on-error", latex_image]
         log.info("converting {} to {}".format(latex_image, latex_image_pdf))
         result = _latex_compile(latex_cmd, latex_image_log, latex_image, capture_output=True)
 
         if result.returncode != 0:
-            # failed to compile the LaTeX image
-            # we help as much as we can
             msg = "\n".join([
                 "LaTeX compilation of {} failed.",
                 'Re-run, requesting "source" as the format, to analyze the image.',
@@ -732,11 +489,8 @@ def individual_latex_image_conversion(latex_image, outformat, dest_dir, method):
             ]).format(latex_image)
             log.error(msg)
             log.debug(result.stdout)
-            # and raise an exception so the calling function can add the image to the list of failed images
             raise Exception("LaTeX compilation of {} failed".format(latex_image))
         else:
-            # Threshold implies only byte value 255 is white, which
-            # assumes these images are *produced* on white backgrounds
             pcm_cmd = [
                 latex_image_pdf,
                 "-o",
@@ -763,7 +517,6 @@ def individual_latex_image_conversion(latex_image, outformat, dest_dir, method):
             if outformat == "pdf" or outformat == "all":
                 shutil.copy2(latex_image_pdf, dest_dir)
             if outformat == "svg" or outformat == "all":
-                # create svg using pymupdf:
                 log.info("converting {} to {}".format(latex_image_pdf, latex_image_svg))
                 with fitz.Document(latex_image_pdf) as doc:
                     svg = doc.load_page(0).get_svg_image()
@@ -778,7 +531,6 @@ def individual_latex_image_conversion(latex_image, outformat, dest_dir, method):
                     )
                 shutil.copy2(latex_image_svg, dest_dir)
             if outformat == "png" or outformat == "all":
-                # create high-quality png using pymupdf:
                 log.info("converting {} to {}".format(latex_image_pdf, latex_image_png))
                 with fitz.Document(latex_image_pdf) as doc:
                     png = doc.load_page(0).get_pixmap(dpi=300, alpha=True)
@@ -794,7 +546,6 @@ def individual_latex_image_conversion(latex_image, outformat, dest_dir, method):
                 shutil.copy2(latex_image_png, dest_dir)
             if outformat == "eps" or outformat == "all":
                 pdfeps_executable_cmd = common.get_executable_cmd("pdfeps")
-                # TODO why this debug line? get_executable_cmd() outputs the same debug info
                 log.debug("pdfeps executable: {}".format(pdfeps_executable_cmd[0]))
                 eps_cmd = pdfeps_executable_cmd + [
                     "-eps",
@@ -812,18 +563,12 @@ def individual_latex_image_conversion(latex_image, outformat, dest_dir, method):
                 shutil.copy2(latex_image_eps, dest_dir)
 
 
-#############################################
 #
-# Binary Source Files to Base 64 in XML Files
 #
-#############################################
 
 
 def datafiles_to_xml(xml_source, pub_file, stringparams, xmlid_root, dest_dir):
-    """Convert certain  files in source to text representations in XML files"""
-    # stringparams is a dictionary, best for lxml parsing
 
-    # to ensure provided stringparams aren't mutated unintentionally
     stringparams = stringparams.copy()
 
     import base64
@@ -836,28 +581,21 @@ def datafiles_to_xml(xml_source, pub_file, stringparams, xmlid_root, dest_dir):
     ptx_xsl_dir = common.get_ptx_xsl_path()
     extraction_xslt = os.path.join(ptx_xsl_dir, "extract-datafile.xsl")
     the_files = os.path.join(tmp_dir, "datafile-list.txt")
-    # support publisher file, subtree argument
     if pub_file:
         stringparams["publisher"] = pub_file
     if xmlid_root:
         stringparams["subtree"] = xmlid_root
-    # no output (argument 3), stylesheet writes out per-image file
-    # outputs a list of ids, but we just loop over created files
     log.info("extracting source files from {}".format(xml_source))
     log.info("string parameters passed to extraction stylesheet: {}".format(stringparams))
     common.xsltproc(extraction_xslt, xml_source, the_files, None, stringparams)
 
-    # Copy in external resources (e.g., js code)
     generated_abs, external_abs = common.get_managed_directories(xml_source, pub_file)
 
-    # Each file receives a single element as its root
-    # element. These are templates for that entry
     image_info = (
         '<pi:image-b64 xmlns:pi="http://pretextbook.org/2020/pretext/internal" pi:mime-type="{}" pi:base64="{}"/>'
     )
     text_info = '<pi:text-file xmlns:pi="http://pretextbook.org/2020/pretext/internal">{}</pi:text-file>'
 
-    # read lines, one-per-binary
     with open(the_files, "r", encoding="utf-8") as datafile_list:
         dfs = datafile_list.readlines()
     for df in dfs:
@@ -865,17 +603,8 @@ def datafiles_to_xml(xml_source, pub_file, stringparams, xmlid_root, dest_dir):
         data_file = os.path.join(external_abs, relative_path)
         log.debug("converting data file {} to a text/XML file".format(data_file))
 
-        # Now condition of the "kind" of file given in source
-        # according to the use of certain PTX elements
-        # Each stanza should produce the contents of a UTF-8 XML file
         if file_type == "image":
-            # best guess of image type, as a MIME type
-            # https://en.wikipedia.org/wiki/Media_type
-            # https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types
-            # https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types
             _, extension = os.path.splitext(data_file)
-            # normalize, drop leading period
-            # in rough popularity order
             lcext = extension[1:].lower()
             if lcext in ["jpeg", "jpg"]:
                 mime_type = "image/jpeg"
@@ -889,14 +618,12 @@ def datafiles_to_xml(xml_source, pub_file, stringparams, xmlid_root, dest_dir):
                 mime_type = "image/avif"
             elif lcext == "apng":
                 mime_type = "image/apng"
-            # Do we want to base64 an XML file???
             elif lcext == "svg":
                 mime_type = "image/svg+xml"
             else:
                 log.info("PTX:WARNING : MIME type of image {} not determined".format(data_file))
                 mime_type = "unknown"
 
-            # Open binary file and encode in base64 with standard module
             with open(data_file, "rb") as f:
                 base64version = base64.b64encode(f.read()).decode("utf8")
             xml_representation = image_info.format(mime_type, base64version)
@@ -907,25 +634,17 @@ def datafiles_to_xml(xml_source, pub_file, stringparams, xmlid_root, dest_dir):
         else:
             xml_representation = "<oops/>"
 
-        # Open as a text file (i.e. not binary), since we have
-        # built text/XML representations, we know this really is
-        # "straight" ASCII.  The XML header says "UTF-8", which
-        # is not a problem?
         out_filename = os.path.join(dest_dir, visible_id + ".xml")
         with open(out_filename, "w", encoding="utf-8") as f:
             f.write(__xml_header)
             f.write(xml_representation)
 
 
-#######################
 #
-#  LaTeX Tactile Images
 #
-#######################
 
 
 def latex_tactile_image_conversion(xml_source, pub_file, stringparams, dest_dir, outformat):
-    """Support for tactile versions of "latex-image" removed 2024-07-29"""
 
     msg = "\n".join([
         'Support for production of "latex-image" as tactile',
@@ -935,25 +654,15 @@ def latex_tactile_image_conversion(xml_source, pub_file, stringparams, dest_dir,
     raise ValueError(msg)
 
 
-#####################
-# Traces for CodeLens
-#####################
-
-# Convert program source code into traces for the interactive
-# CodeLens tool in Runestone
-
-
 def tracer(xml_source, pub_file, stringparams, xmlid_root, dest_dir):
 
-    # to ensure provided stringparams aren't mutated unintentionally
     stringparams = stringparams.copy()
 
     try:
-        import requests  # post()
+        import requests
     except ImportError:
         raise ImportError(__module_warning.format("requests"))
 
-    # Trace Server: language abbreviation goes in argument
     url_string = "http://tracer.runestone.academy:5000/trace{}"
     server_error_msg = "\n".join([
         "the server at {} could not process program source file {}.",
@@ -963,17 +672,14 @@ def tracer(xml_source, pub_file, stringparams, xmlid_root, dest_dir):
     log.info("creating trace data from {} for placement in {}".format(xml_source, dest_dir))
     ptx_xsl_dir = common.get_ptx_xsl_path()
     extraction_xslt = os.path.join(ptx_xsl_dir, "extract-trace.xsl")
-    # support publisher file, subtree argument
     if pub_file:
         stringparams["publisher"] = pub_file
     if xmlid_root:
         stringparams["subtree"] = xmlid_root
-    # Build list of id's, languages, sources into a scratch directory/file
     tmp_dir = common.get_temporary_directory()
     code_filename = os.path.join(tmp_dir, "codelens.txt")
     log.debug("Program sources for traces temporarily in {}".format(code_filename))
     common.xsltproc(extraction_xslt, xml_source, code_filename, None, stringparams)
-    # get trace file contents minus trailing blank line
     with open(code_filename, "r", encoding="utf-8") as code_file:
         contents = code_file.read().rstrip()
 
@@ -981,9 +687,7 @@ def tracer(xml_source, pub_file, stringparams, xmlid_root, dest_dir):
         log.info("no traces found to generate in {}".format(code_filename))
         return
 
-    # special line separates groups
     program_groups = contents.split("!end_codelens_trace_group!")
-    # will be one extra empty group, remove it
     program_groups.pop()
     for program_group in program_groups:
         lines = program_group.split("\n")
@@ -1005,14 +709,10 @@ def tracer(xml_source, pub_file, stringparams, xmlid_root, dest_dir):
         if language == "python":
             url = url_string.format("py")
         else:
-            # c, cpp, java
             url = url_string.format(language)
-        # instead use  .decode('string_escape')  somehow
-        # as part of reading the file?
         source = source.replace("\\n", "\n")
         log.info("converting {} source {} to tracefile {}...".format(language, visible_id, trace_filename))
 
-        # success will replace this empty string
         trace = ""
         if (language == "c") or (language == "cpp"):
             try:
@@ -1039,15 +739,11 @@ def tracer(xml_source, pub_file, stringparams, xmlid_root, dest_dir):
                 log.debug(traceback.format_exc())
                 log.error(server_error_msg.format(url, visible_id))
 
-        # should now have a trace, except for timing out
-        # no trace, then do not even try to produce a file
         if trace:
             import json
 
             trace_dict = json.loads(trace)
-            # add startingInstruction to the trace
             trace_dict["startingInstruction"] = starting_instruction
-            # inject questions into trace
             if questions:
                 trace_steps = trace_dict.get("trace")
                 for question in questions:
@@ -1068,9 +764,6 @@ def tracer(xml_source, pub_file, stringparams, xmlid_root, dest_dir):
                             trace_step["question"] = question_dict
             trace = json.dumps(trace_dict)
 
-            # We will hardcode in the ID based on the runestone_id as built. It will be a fallback.
-            # But also try to dynamically grab the ID of the containing codelens so
-            # Eventually we could maybe deprecate the hardcoded value.
             script_template = """
                 if (allTraceData === undefined) {{
                     var allTraceData = {{}};
@@ -1090,48 +783,29 @@ def tracer(xml_source, pub_file, stringparams, xmlid_root, dest_dir):
                 f.write(trace)
 
 
-################################
 #
-#  Dynamic Exercise Static Representations
 #
-################################
 def dynamic_substitutions(xml_source, pub_file, stringparams, xmlid_root, dest_dir, ext_rs_methods):
-    # Standard reference locations
     ptx_dir = common.get_ptx_path()
     ptx_xsl_dir = common.get_ptx_xsl_path()
     node_exec_cmd = common.get_executable_cmd("node")
-    # Identify resource files to process dynamic exercises
     extraction_xslt = os.path.join(ptx_xsl_dir, "extract-dynamic.xsl")
     script = os.path.join(ptx_dir, "script", "dynsub", "dynamic_extract.mjs")
-    # Where to store the results
     dyn_subs_file = os.path.join(dest_dir, "dynamic_substitutions.xml")
 
-    # Make a copy of stringparams to modify
     stringparams = stringparams.copy()
 
-    # support publisher file, subtree argument
     if pub_file:
         stringparams["publisher"] = pub_file
     if xmlid_root:
         stringparams["subtree"] = xmlid_root
-    # Always act as though web is the target
     stringparams["host-platform"] = "web"
 
-    # Build temporary json file to include how each dynamic problem is setup
-    # and all of the substitutions that will be required
     tmp_dir = common.get_temporary_directory()
     json_file = os.path.join(tmp_dir, "dynamic-setup.json")
     log.info("Creating temporary dynamic exercise setup JSON: {}".format(json_file))
     common.xsltproc(extraction_xslt, xml_source, json_file, tmp_dir, stringparams)
 
-    # An exercise may pull in a Javascript library kept with the project, and
-    # the extraction stylesheet writes the path to it the same way it writes
-    # the path for HTML: relative, and led by the "external" directory.  The
-    # JSON just written names every project-local library any exercise in the
-    # document imports (one xsltproc pass, over the whole tree, ahead of the
-    # one Node process below that will import them all), so only those
-    # specific libraries -- not the whole external directory -- need to be
-    # reproduced for the script to resolve against.
     import json
 
     external_directory_prefix = "external/"
@@ -1146,7 +820,6 @@ def dynamic_substitutions(xml_source, pub_file, stringparams, xmlid_root, dest_d
     _, external_dir = common.get_managed_directories(xml_source, pub_file)
     common.copy_managed_resources(tmp_dir, external_abs=external_dir, external_resources=local_libraries)
 
-    # Use Node (Deno) to process the JSON to create the XML substitution file
     log.info("Generating substitutions.")
     import subprocess
 
@@ -1154,9 +827,6 @@ def dynamic_substitutions(xml_source, pub_file, stringparams, xmlid_root, dest_d
         result = subprocess.run(
             node_exec_cmd
             + [
-                # The next two arguments would be used for permissions when change to deno
-                # "--allow-read={}".format(json_file),
-                # "--allow-write={}".format(dyn_subs_file),
                 script,
                 "--input={}".format(json_file),
                 "--output={}".format(dyn_subs_file),
@@ -1170,27 +840,13 @@ def dynamic_substitutions(xml_source, pub_file, stringparams, xmlid_root, dest_d
         msg = "PTX:ERROR:   There was a problem generating dynamic substitutions.\n"
         raise ValueError(msg + root_cause)
 
-    # The script reports a failed exercise on stderr and carries on, so that one
-    # broken exercise does not cost the whole document its static content.  It
-    # writes a usable substitutions file whenever it can, so the exit code says
-    # how much to trust what was written rather than merely whether the run was
-    # happy:
     #
-    #   0  every substitution was evaluated
-    #   1  the file is usable, but some substitutions are error markers
-    #   2  no usable file was written at all
     #
-    # Relay whatever was reported, at the severity its own "PTX:TOKEN"
-    # asks for, through the same routing common.py uses for a stylesheet's
-    # relayed messages -- one table, one definition of "malformed token",
-    # for every PreTeXt-style message stream, not just this one.
     for line in result.stderr.splitlines():
         if not line.strip():
             continue
         common.log_relayed_message(line)
     if result.returncode == 1:
-        # Reported, not raised.  Well-formed file created, but some exercises did not
-        # evaluate and their substitutions contain error place-holders
         log.error(
             "Some dynamic substitutions could not be generated.  The "
             'affected exercises will read "[ERROR generating substitution]" in '
@@ -1204,53 +860,29 @@ def dynamic_substitutions(xml_source, pub_file, stringparams, xmlid_root, dest_d
         )
 
 
-################################
 #
-#  WeBWorK Extraction Processing
 #
-################################
 
 
-################################
 #
-#  WeBWorK Problem Sets
 #
-################################
 
 
-################################
 #
-#  WeBWorK PG Macro Library
 #
-################################
 
 
-############################################################
 #
-#  References and Citations via Citation Stylesheet Language
 #
-############################################################
 
 
-# A helper function to clean up references and Citations
-# Likely preferable to use a CiteProc formatter object
 def _pretextify(biblio):
-    """Convert a string from CiteProc light HTML markup to PreTeXt internal markup"""
 
-    # biblio: some string formated by the CiteProc HTML formatter
-    # Return: string with better PreTeXt (internal) markup
-
-    # italics
     biblio = re.sub(r"<i>", r"<pi:italic>", biblio)
     biblio = re.sub(r"</i>", r"</pi:italic>", biblio)
-    # bold
     biblio = re.sub(r"<b>", r"<pi:bold>", biblio)
     biblio = re.sub(r"</b>", r"</pi:bold>", biblio)
-    # Unicode en dash, U+2013, e.g. for date ranges
-    # Escape sequence only, not "raw" r
     biblio = re.sub("\u2013", r"<ndash/>", biblio)
-    # TODO: curly quotes as left/right pair/group
-    # THEN as left/right characters, U+201C, U+201D
     biblio = re.sub("\u201c", r"<lq/>", biblio)
     biblio = re.sub("\u201d", r"<rq/>", biblio)
 
@@ -1259,20 +891,10 @@ def _pretextify(biblio):
 
 def references(xml_source, pub_file, stringparams, xmlid_root, dest_dir):
 
-    ### Verify need for CSL processing ###
     #
-    # * Examine publisher file, get string for CSL file name
-    # * Use of CSL styles in "opt-in", condition here
-    # * Abandon with an error message if not possible
 
-    # Compute publisher variable report one time, collecting results
     pub_vars = common.get_publisher_variable_report(xml_source, pub_file, stringparams)
-    # style file name selected by the publisher, no path information
-    # citeproc-py looks in their DATAPATH/STYLES_PATH = data/styles
-    # so place by a given style file by hand right now
-    # Call below does not need an extension, so we do not supply it
     csl_style = common.get_publisher_variable(pub_vars, "csl-style-file")
-    # XSL "value-of" for boolean reports strings "true" or "false"
     using_csl_styles = common.get_publisher_variable(pub_vars, "b-using-csl-styles")
 
     if using_csl_styles == "false":
@@ -1282,42 +904,23 @@ def references(xml_source, pub_file, stringparams, xmlid_root, dest_dir):
             "No action is being taken.",
         ])
         log.error(msg)
-        # bail out and do not do *anything*
         return
 
-    ### Imports, Constants, Helpers ###
     #
-    import json  # parse JSON CSL for cite
+    import json
 
-    # Requires the "citeproc-py" Python package to do
-    # most (all?) of the processing of a citation
-    # https://github.com/citeproc-py/citeproc-py
+    import citeproc.source.json
+    import citeproc
 
-    import citeproc.source.json  # CiteProcJSON
-    import citeproc  # CitationStylesStyle, CitationStylesBibliography, formatter, CitationItem, Citation
-
-    # Necessary namespace information for creating
-    # a file of bibliographic information later
-    # "cs"/CSL might be avoided when we better
-    #   understand querying the style with CiteProc
     XML = "http://www.w3.org/XML/1998/namespace"
     PI = "http://pretextbook.org/2020/pretext/internal"
     CSL = "http://purl.org/net/xbiblio/csl"
     NSMAP = {"xml": XML, "pi": PI, "cs": CSL}
 
-    # callback for non-existent citation
-    # copied from citeproc-py example
     def warn(citation_item):
         log.warning("PTX:WARNING: Reference with key '{}' not found in the bibliography.".format(citation_item.key))
 
-    ### XSL Stylesheet To Analyze Author's Source Bibliography ###
     #
-    # * xsl/extract-biblio-csl.xsl
-    # * JSON blob of "biblio" information, indexed by biblio/@xml:id
-    # * Note that author's markup (e.g. "m" in a title) was converted
-    #   to text as it entered the JSON blob
-    # * Space separated list of xref/@ref, indexed by xref/@xml:id,
-    #   only when the xref/@ref points to backmatter/references/biblio
 
     stringparams = stringparams.copy()
 
@@ -1326,34 +929,17 @@ def references(xml_source, pub_file, stringparams, xmlid_root, dest_dir):
     ptx_xsl_dir = common.get_ptx_xsl_path()
     extraction_xslt = os.path.join(ptx_xsl_dir, "extract-biblio-csl.xsl")
 
-    # And a place to work and a file there for result tree
     tmp_dir = common.get_temporary_directory()
     biblio_xml = os.path.join(tmp_dir, "biblio-csl.xml")
 
-    # Harvest bibliographic items and citations, converted to JSON
     common.xsltproc(extraction_xslt, xml_source, biblio_xml, None, stringparams)
 
-    # parse for lxml access
     biblio_tree = ET.parse(biblio_xml)
 
-    ### Initialize CSL Style File ###
     #
-    # * Examine publisher file, get string for CSL file name
-    # * Needs to be moved manually to <cite-proc>/data/styles
-    # * Need to automate placing the style file
-    # * We interrogate the punctuation of citations
 
-    # Initialize use of the chosen style
     style = citeproc.CitationStylesStyle(csl_style, validate=False)
 
-    # The citepoc-py "CitationStylesStyle" object is derived ultimately
-    # from an lxml Element Tree in a "xml" property of the object.  We
-    # can inspect this as needed, but there are better ways provided by
-    # the package.  Still, we preserve a bit of code that was functional
-    # on 2025-05-29 in case an example is useful later.  The
-    # CSL  /style/citation/layout  XML element has children that describe
-    # how a citation is rendered.  Compare this with ways to access
-    # (and manipulate!) these elements below.
     #
     # style_layout = style.xml.xpath("/cs:style/cs:citation/cs:layout", namespaces=NSMAP)[0]
     # citation_punct = style_layout.attrib
@@ -1362,12 +948,7 @@ def references(xml_source, pub_file, stringparams, xmlid_root, dest_dir):
     # else:
     #     prefix = ""
 
-    # Some aspects of styles are not supported
-    # and some influence behavior later.
-
-    # style/@class: "in-text" or "note"
     style_class = style.root.get("class")
-    # Bail-out on a value we do not know
     if not (style_class in ["in-text", "note"]):
         msg = " ".join([
             'The requested CSL style file ("{}") has a /style/@class',
@@ -1376,7 +957,6 @@ def references(xml_source, pub_file, stringparams, xmlid_root, dest_dir):
         ])
         log.error(msg.format(csl_style, style_class))
         return
-    # Bail-out for footnote/endnote styles
     if style_class == "note":
         msg = " ".join([
             'The requested CSL style file ("{}") uses a footnote/endnote',
@@ -1386,10 +966,7 @@ def references(xml_source, pub_file, stringparams, xmlid_root, dest_dir):
         log.error(msg.format(csl_style))
         return
 
-    # We need to know about a "numeric" style later
-    # style/info/category/@citation-format: "numeric", "author-date", "note"
     style_citation_format = style.root.info.category.get("citation-format")
-    # Bail-out on a value we do not know
     if not (style_citation_format in ["numeric", "author-date", "note"]):
         msg = " ".join([
             'The requested CSL style file ("{}") has a/style/info/category/@citation-format',
@@ -1412,10 +989,6 @@ def references(xml_source, pub_file, stringparams, xmlid_root, dest_dir):
             <text variable="citation-number" prefix="[" suffix="]"/>
     """
 
-    # Assume reference is identified numerically until shown otherwise.
-    # If numeric, grab the "suffix" to help with parsing out numeric
-    # identification is loosely structured/formatted output from the
-    # cite processor.
     numeric_suffix = None
     if is_numeric:
         layout_element = style.xml.xpath(
@@ -1423,54 +996,22 @@ def references(xml_source, pub_file, stringparams, xmlid_root, dest_dir):
         )[0]
         numeric_suffix = layout_element.get("suffix")
 
-    ### Import JSON References to CiteProc ###
     #
-    # "references" collects a single overall JSON blob of the
-    # PTX "references" backmatter division. We "load" the json
-    # and feed it to the CiteProcJSON constructor
-    # lxml makes a list of length 1, which we massage some
 
     references_blob = biblio_tree.xpath("/pi:pretext-biblio-csl/pi:biblio-csl", namespaces=NSMAP)
     json_raw = references_blob[0].text
     json_parsed = json.loads(json_raw)
-    # Process the JSON data to generate a citeproc-py BibliographySource.
     references_source = citeproc.source.json.CiteProcJSON(json_parsed)
-    # Initialize a CitationStylesBibliography with a style,
-    # the internalized source, and a formatter.  You would think
-    # we had nicely formatted reference items now. No, we need
-    # to supply the actual citations
     references = citeproc.CitationStylesBibliography(style, references_source, citeproc.formatter.html)
-    # You would think we had nicely formatted reference items now.
-    # No, we need to supply the actual citations since their
-    # appearance and order affects the references.  For example,
-    # if a reference is never cited, it does not appear in the
-    # references.
 
-    ### Citations ###
     #
-    # * Retrieve citations/xref from analysis of author's source,
-    #   as a space separated list of @ref that point to "biblio"
-    # * Per citation/xref make a list of CitationItem that
-    #   correspond to the @ref values/ids.
-    # * Wrap as a Citation object representing a multi-target
-    #   citation from the author.
-    # * Register each one with the CiteProc references (bibliography)
 
     citation_xref = biblio_tree.xpath("/pi:pretext-biblio-csl/pi:xref-csl", namespaces=NSMAP)
 
-    # citations/xref never get sorted until part of a
-    # multi-part overall citation.  Here are two useful
-    # parallel Python lists we can make now and use later
-
-    # A citation has an @xml:id on an originating xref, it is
-    # the @id attribute in the XML derived from the author's source
     xref_ids = [c.attrib["id"] for c in citation_xref]
 
-    # Each citation is a list, @ref in author's source of the
-    # values of @xml:id on the biblio.  XML has a space-separated list
     xref_refs = [c.text.split() for c in citation_xref]
 
-    # Now make CiteProc objects, and register
     citeproc_citations = []
     for ref_list in xref_refs:
         citeproc_citation_items = []
@@ -1478,33 +1019,13 @@ def references(xml_source, pub_file, stringparams, xmlid_root, dest_dir):
             citeproc_citation_items.append(citeproc.CitationItem(ref))
         citeproc_citation = citeproc.Citation(citeproc_citation_items)
         citeproc_citations.append(citeproc_citation)
-        # CiteProc *must* see a Citation() being registered.
         references.register(citeproc_citation)
 
-    ### References formatted ###
     #
-    # * Sort the references since we will eventually absorb "biblio"
-    #   from an external BibTeX-like file. And have no real control
-    #   over ordering.  Presumably different styles will have different
-    #   sort orders.
-    # * Replace resuts of HTML formatter with PreTeXt internal
-    #   non-semantic font-changing markup.  And other sensible
-    #   PreTeXt markup.
-    # * Eventually we will have an integrated formatter
-    # * Wrap up as "csl-biblio" elements to pass into PreTeXt
 
-    # Here is the formatted version: a string representation of each reference
-    # Author's XML is here still and is still text.
-    # Note: attributes the pre-processor added are being capitalized?
-    # str() is necessary here, and results are strings, not objects [checked]
-    # Note markup conversion from CiteProc HTML to "internal" PreTeXt (mostly)
     references.sort()
     references_formatted = [_pretextify(str(item)) for item in references.bibliography()]
 
-    # references.keys gets sorted along, since these are the biblio/@xml:id,
-    # so we can continue to track the sorted version of the references
-    # for references with numeric identifiers, we split that identifier
-    # off as an attribute, which presumes it has no markup
     references_wrapped = []
     biblio_pattern = '<pi:csl-biblio numeric="{}" xml:id="{}" xmlns:{}="{}">{}</pi:csl-biblio>'
     for k, rf in zip(references.keys, references_formatted):
@@ -1512,78 +1033,38 @@ def references(xml_source, pub_file, stringparams, xmlid_root, dest_dir):
         if numeric_suffix:
             numeric, rf = rf.split(numeric_suffix, 1)
             numeric = numeric + numeric_suffix
-            # (strip down numeric trailing whitespace?)
 
-        # references are text right now, we make a proper
-        # snippet of XML that can be parsed by the lxml
-        # "fromstring()" function into an ET element object.
-        # "xml" namespace seems to be known to lxml anyway
         references_wrapped.append(biblio_pattern.format(numeric, k, "pi", PI, rf))
 
-    ### Citations formatted ###
     #
-    # Now the formatted versions of the citations.  These are multi-part,
-    # which is going to be a big problem, as we want each part to be
-    # realized as a cross-refeence in various outputs as hyperlinks, knowls, etc.
 
-    #  Strategy
-    #  We will get back from CiteProc citations that might look like
     #
-    #    (Brown, et al. 2025, Blue 1933)
     #
-    #  and we want to turn them into PreTeXt source that looks like
     #
-    #    (<xref ref="brown-paper">Brown, et al. 2025</xref>, <xref ref="blue-book">Grey 1933</xref>)
     #
-    #  Not only is it hard to reliably find the separator (", ") but
-    #  the actual citations get re-ordered from whatever order the
-    #  actual "xref" are made.  So..
     #
-    #  We first *replace* the separator, so we can reliably split
-    #  the multi-part citation, and then we mimic the sorting operation
 
-    # A faux separator on citations, which should be so rare
-    # that we can reliably match it.  Linux mkpasswd of "beezer"
     rare = "P1zXvPN5SACeY"
 
-    # citeproc.py has a slew of objects that encapsulate parts of
-    # the CSL XML specification. These can be located from our
-    # style variable via a hierarchy from the root. Here we get
-    # the layout for citations, to retrieve the overall formatting
-    # of citation AND we make a change, by *inserting* our rare
-    # separator (delimiter).
     layout = style.root.citation.layout
     prefix = layout.get("prefix", "")
     real_delimiter = layout.get("delimiter", "")
     suffix = layout.get("suffix", "")
     layout.set("delimiter", rare)
 
-    # Similarly citeproc-py has a "sort" *object* inside
-    # "citation" which in turn has an optional "sort" object,
-    # which has a "sort" method
     citation = style.root.citation
     sorter = citation.sort
 
-    # Here we go, we collect formatted citations
     citations_wrapped = []
     solo_xref_pattern = '<xref ref="{}" pi:custom-text="yes" xmlns:{}="{}">{}</xref>'
     citation_pattern = '<pi:csl-citation xml:id="{}" xmlns:{}="{}">{}</pi:csl-citation>'
     for c, xref_id in zip(citeproc_citations, xref_ids):
-        # version with rare separator
-        # strip the prefix and suffix,
-        # and blow it up into pieces
         rough = references.cite(c, warn)
         rough = rough[len(prefix) : -len(suffix)]
         rough = rough.split(rare)
 
-        # get the permutation from the re-ordering
-        # this is all borrowed from the Layout Class
-        # and its render_citation() method
         cites = c.cites
-        # generic sort on keys, this is the "natural" order
-        # of the appearnce in the sorted bibliography
         cites.sort(key=lambda x: references.keys.index(x.key))
-        # but if there is a sorting specified, do that
         if sorter is not None:
             cites = sorter.sort(cites, layout)
         one_citation = []
@@ -1594,22 +1075,9 @@ def references(xml_source, pub_file, stringparams, xmlid_root, dest_dir):
         a_cite = citation_pattern.format(xref_id, "pi", PI, a_cite)
         citations_wrapped.append(a_cite)
 
-    ### Produce Useful XML ###
     #
-    # * Build up a simple XML tree from pieces above
-    # * Make available as a generated product to be saved
-    # * Components will be assembled into source, as
-    #   replacements of backmatter/references and xref
 
-    # Root element of produced XML file, "pi:csl-references"
     csl_references = ET.Element(ET.QName(NSMAP["pi"], "csl-references"), nsmap=NSMAP)
-    # Somewhat like "versioning" a file, set an attribute
-    # (@csl-style-file) on the root element of the file.
-    # In the XSL processing this can be compared to the
-    # value from the current publication file as a check
-    # that production and consumption are in-sync at the
-    # time of consumption.  The Python string here was
-    # determined at the time of production (i.e. now).
     csl_references.set("csl-style-file", csl_style)
 
     index = 1
@@ -1617,14 +1085,11 @@ def references(xml_source, pub_file, stringparams, xmlid_root, dest_dir):
         biblio_tree = ET.fromstring(rw)
         csl_references.insert(index, biblio_tree)
         index = index + 1
-    # not sure how to *start* with next_child,
-    # so keep index running for more insertions
     for cw in citations_wrapped:
         xref_tree = ET.fromstring(cw)
         csl_references.insert(index, xref_tree)
         index = index + 1
 
-    # Fill an XML file with the  csl_references  tree
     bib_file = os.path.join(dest_dir, "csl-bibliography.xml")
 
     try:
@@ -1636,11 +1101,8 @@ def references(xml_source, pub_file, stringparams, xmlid_root, dest_dir):
         raise ValueError(msg.format(f) + root_cause)
 
 
-##############################
 #
-#  GDScript interactive packing
 #
-##############################
 
 
 def gd_pack(source_dir, dest_zip_file, pack_name, version):
@@ -1663,16 +1125,13 @@ def gd_pack(source_dir, dest_zip_file, pack_name, version):
     PROJECT_FILENAME = "project.godot"
     EXPORTS_FILENAME = "export_presets.cfg"
     EXPORT_FILENAME = "export_preset.cfg"
-    # Work on a disposable copy of the project so we never modify source_dir.
     tmp_dir = common.get_temporary_directory()
     log.debug("temporary directory for Godot pack build: {}".format(tmp_dir))
     shutil.copytree(source_path, tmp_dir, dirs_exist_ok=True)
 
     source_config_path = os.path.join(tmp_dir, "practice_solutions", pack_name, EXPORT_FILENAME)
 
-    # Define the destination path for the config file in the project folder
     target_config_path = os.path.join(tmp_dir, EXPORTS_FILENAME)
-    # Define the destination path for the project file in the project folder
     target_project_path = os.path.join(tmp_dir, PROJECT_FILENAME)
 
     godot_template_path = os.path.join(get_ptx_path(), "pretext", "lib", "godot")
@@ -1680,14 +1139,10 @@ def gd_pack(source_dir, dest_zip_file, pack_name, version):
     shutil.copy2(source_config_path, target_config_path)
     shutil.copy2(template_project_path, target_project_path)
 
-    # dry run: Godot needs this pass to build/import files that are
-    # missing before it can export the pack in the step below.
     command = [godot_cmd, "--headless", "--path", tmp_dir, "--editor", "--quit"]
 
-    # Execute the command
     result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-    # Check for success or failure of dry run
     if result.returncode == 0:
         log.info("Trial successful!")
         log.info(result.stdout)
@@ -1699,9 +1154,7 @@ def gd_pack(source_dir, dest_zip_file, pack_name, version):
         raise OSError(result.stderr)
     command = [godot_cmd, "--headless", "--path", tmp_dir, "--export-pack", pack_name, dest_zip_file]
 
-    # Execute the command
     result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    # Check for success or failure
     if result.returncode == 0:
         log.info("Export successful! File saved to: {}".format(dest_zip_file))
         log.info(result.stdout)
@@ -1715,41 +1168,29 @@ def gd_pack(source_dir, dest_zip_file, pack_name, version):
 
 def gdscript_pck(xml_source, pub_file, stringparams, xmlid_root, dest_dir):
 
-    # to ensure provided stringparams aren't mutated unintentionally
     stringparams = stringparams.copy()
     source_dir = common.get_source_path(xml_source)
     log.info("exporting GDScript interactives from {} for placement in {}".format(source_dir, dest_dir))
     ptx_xsl_dir = common.get_ptx_xsl_path()
     extraction_xslt = os.path.join(ptx_xsl_dir, "extract-gdscript.xsl")
-    # support publisher file, subtree argument
     if pub_file:
         stringparams["publisher"] = pub_file
     if xmlid_root:
         stringparams["subtree"] = xmlid_root
-    # Build list of id's into a scratch directory/file
     tmp_dir = common.get_temporary_directory()
     id_filename = os.path.join(tmp_dir, "gdscript-ids.txt")
     log.debug("GDScript id list temporarily in {}".format(id_filename))
-    # this builds the gdscript names
     common.xsltproc(extraction_xslt, xml_source, id_filename, None, stringparams)
-    # "run" an assignment for the list of quads of strings
     with open(id_filename, "r") as id_file:
-        # read lines, but only lines that are comma delimited
         quads = [p.strip() for p in id_file.readlines() if "," in p]
     for quad in quads:
         src = path = name = version = None
         try:
-            # first item is destination name, second item is source,
-            # third item is scene to derive export name
             quad_a = quad.split(",")
             src = os.path.join(source_dir, quad_a[1])
-            # this is the path to the destination file
             path = os.path.join(dest_dir, quad_a[0] + ".zip")
-            # split third item on path separator
             parts = quad_a[2].split("/")
-            # the second to last part should be the problem name
             name = parts[-2]
-            # get the version
             version = quad_a[3]
             log.info("exporting {} as {} using {} ...".format(src, path, name))
             gd_pack(src, path, name, version)
@@ -1764,52 +1205,39 @@ def gdscript_pck(xml_source, pub_file, stringparams, xmlid_root, dest_dir):
     log.info("GDScript pck exporting complete")
 
 
-##############################
 #
-#  You Tube thumbnail scraping
 #
-##############################
 
 
 def youtube_thumbnail(xml_source, pub_file, stringparams, xmlid_root, dest_dir):
 
-    # to ensure provided stringparams aren't mutated unintentionally
     stringparams = stringparams.copy()
 
     try:
-        import requests  # YouTube server
+        import requests
     except ImportError:
         raise ImportError(__module_warning.format("requests"))
 
     log.info("downloading YouTube thumbnails from {} for placement in {}".format(xml_source, dest_dir))
     ptx_xsl_dir = common.get_ptx_xsl_path()
     extraction_xslt = os.path.join(ptx_xsl_dir, "extract-youtube.xsl")
-    # support publisher file, subtree argument
     if pub_file:
         stringparams["publisher"] = pub_file
     if xmlid_root:
         stringparams["subtree"] = xmlid_root
-    # Build list of id's into a scratch directory/file
     tmp_dir = common.get_temporary_directory()
     id_filename = os.path.join(tmp_dir, "youtube-ids.txt")
     log.debug("YouTube id list temporarily in {}".format(id_filename))
     common.xsltproc(extraction_xslt, xml_source, id_filename, None, stringparams)
-    # "run" an assignment for the list of triples of strings
     with open(id_filename, "r", encoding="utf-8") as id_file:
-        # read lines, but only lines that are comma delimited
         thumbs = [t.strip() for t in id_file.readlines() if "," in t]
 
-    # A failed download (a video gone missing, a network hiccup) is
-    # reported and the remainder still downloads; the whole run only
-    # errors afterward, naming every failure.
     failed_thumbnails = []
     for thumb in thumbs:
         thumb_pair = thumb.split(",")
         url = "http://i.ytimg.com/vi/{}/default.jpg".format(thumb_pair[0])
         path = os.path.join(dest_dir, thumb_pair[1] + ".jpg")
         log.info("downloading {} as {}...".format(url, path))
-        # http://stackoverflow.com/questions/13137817/how-to-download-image-using-requests/13137873
-        # removed some settings wrapper from around the URL, otherwise verbatim
         try:
             r = requests.get(url, stream=True, timeout=10)
         except requests.exceptions.RequestException as e:
@@ -1833,15 +1261,11 @@ def youtube_thumbnail(xml_source, pub_file, stringparams, xmlid_root, dest_dir):
     log.info("YouTube thumbnail download complete")
 
 
-##########################
 #
-#  Video Play Button Image
 #
-##########################
 
 
 def play_button(dest_dir):
-    """Copy generic static video image to a directory"""
 
     ptx_xsl_dir = common.get_ptx_xsl_path()
     play_button_provided_image = os.path.join(ptx_xsl_dir, "support", "play-button", "play-button.png")
@@ -1849,19 +1273,14 @@ def play_button(dest_dir):
     shutil.copy2(play_button_provided_image, dest_dir)
 
 
-########################
 #
-#  QR Code manufacturing
 #
-########################
 
 
 def qrcode(xml_source, pub_file, stringparams, xmlid_root, dest_dir):
 
-    # to ensure provided stringparams aren't mutated unintentionally
     stringparams = stringparams.copy()
 
-    # Establish whether there is an image from pub file
     has_image = False
     try:
         pub_vars = common.get_publisher_variable_report(xml_source, pub_file, stringparams)
@@ -1873,9 +1292,8 @@ def qrcode(xml_source, pub_file, stringparams, xmlid_root, dest_dir):
     except:
         pass
 
-    # https://pypi.org/project/qrcode/
     try:
-        import qrcode  # YouTube server
+        import qrcode
     except ImportError:
         raise ImportError(__module_warning.format("qrcode"))
 
@@ -1884,19 +1302,12 @@ def qrcode(xml_source, pub_file, stringparams, xmlid_root, dest_dir):
     log.info("manufacturing QR codes from {} for placement in {}".format(xml_source, dest_dir))
     ptx_xsl_dir = common.get_ptx_xsl_path()
     extraction_xslt = os.path.join(ptx_xsl_dir, "extract-qrcode.xsl")
-    # support publisher file, subtree argument
     if pub_file:
         stringparams["publisher"] = pub_file
     if xmlid_root:
         stringparams["subtree"] = xmlid_root
     import xml.etree.ElementTree as ET
 
-    # Extraction writes a sidecar XML file per element (via exsl:document,
-    # holding the standalone and in-context URLs) and returns a manifest of
-    # exactly the elements that earn a QR code in the current document or
-    # subtree.  Iterating that manifest, rather than whatever "*-url.xml"
-    # files happen to be in dest_dir, ensures a stale sidecar (from an
-    # element since relabeled or removed) cannot spawn a QR code.
     pi_ns = {"pi": "http://pretextbook.org/2020/pretext/internal"}
     manifest = common.xsltproc(extraction_xslt, xml_source, None, dest_dir, stringparams)
     for entry in manifest.getroot().findall("pi:qrcode", pi_ns):
@@ -1906,15 +1317,9 @@ def qrcode(xml_source, pub_file, stringparams, xmlid_root, dest_dir):
         url = tree.find("pi:standalone-url", pi_ns).text
         path = os.path.join(dest_dir, the_id + ".png")
         log.info('creating URL with content "{}" as {}...'.format(url, path))
-        # Using more elaborate (class) calls to simply get a zero border,
-        # rather than cropping (ala https://stackoverflow.com/questions/9870876)
-        # Simple version: qr_image = qrcode.make(url), has border
         if has_image:
-            # error correction up to 30%
-            # 2025-08-29: upgraded, as "Q" produces fatal errors
             error_correction = qrcode.constants.ERROR_CORRECT_H
         else:
-            # error correction up to 7%
             error_correction = qrcode.constants.ERROR_CORRECT_L
         qr = qrcode.QRCode(version=None, error_correction=error_correction, box_size=10, border=0)
         qr.add_data(url)
@@ -1924,22 +1329,18 @@ def qrcode(xml_source, pub_file, stringparams, xmlid_root, dest_dir):
             )
         else:
             qr_image = qr.make_image(fill_color="black", back_color="white")
-        # Now save as a PNG
         qr_image.save(path)
     log.info("QR code creation complete")
 
 
-#####################################
 #
-#  Mermaid images
 #
-#####################################
 
 
 def mermaid_images(xml_source, pub_file, stringparams, xmlid_root, dest_dir, outformat):
 
-    import glob  # locate *.mmd files
-    import json  # Mermaid configuration files
+    import glob
+    import json
 
     msg = "converting Mermaid diagrams from {} to {} graphics for placement in {}"
     log.info(msg.format(xml_source, outformat, dest_dir))
@@ -1952,7 +1353,6 @@ def mermaid_images(xml_source, pub_file, stringparams, xmlid_root, dest_dir, out
     ptx_xsl_dir = common.get_ptx_xsl_path()
     extraction_xslt = os.path.join(ptx_xsl_dir, "extract-mermaid.xsl")
 
-    # support publisher file, subtree argument
     if pub_file:
         stringparams["publisher"] = pub_file
     if xmlid_root:
@@ -1960,28 +1360,21 @@ def mermaid_images(xml_source, pub_file, stringparams, xmlid_root, dest_dir, out
 
     log.info("extracting Mermaid diagrams from {}".format(xml_source))
     log.info("string parameters passed to extraction stylesheet: {}".format(stringparams))
-    # generate mmd files with markdown to be converted to png
     common.xsltproc(extraction_xslt, xml_source, None, tmp_dir, stringparams)
 
     pub_vars = common.get_publisher_variable_report(xml_source, pub_file, stringparams)
     mermaid_theme = common.get_publisher_variable(pub_vars, "mermaid-theme")
     mermaid_layout_engine = common.get_publisher_variable(pub_vars, "mermaid-layout-engine")
 
-    # Resulting *.mmd files are in tmp_dir, switch there to work
     with common.working_directory(tmp_dir):
-        # Write a config file as JSON in working directory
         mmd_config = {"theme": mermaid_theme, "layout": mermaid_layout_engine}
         mmd_config_file = os.path.join(tmp_dir, "mermaid-config.json")
         with open(mmd_config_file, "w", encoding="utf-8") as config_file:
             json.dump(mmd_config, config_file, indent=4)
         log.debug("Mermaid configuration file: {}".format(mmd_config_file))
-        # mmdc switches output on the filename extension; there is nothing
-        # to do for a format it cannot produce.  Guard once, before the
-        # loop, so every iteration below has a valid output filename.
         if outformat not in ["png", "svg"]:
             log.error("cannot make Mermaid diagrams in {} file format".format(outformat))
             return
-        # loop over each diagram
         for mmddiagram in glob.glob(os.path.join(tmp_dir, "*.mmd")):
             filebase, _ = os.path.splitext(mmddiagram)
             mmdout = "{}.{}".format(filebase, outformat)
@@ -1995,89 +1388,43 @@ def mermaid_images(xml_source, pub_file, stringparams, xmlid_root, dest_dir, out
                 log.warning(msg.format(mmdout))
 
 
-#####################################
 #
-#  STACK exercises (static)
 #
-#####################################
 
 
-#####################################
 #
-#  Interactive preview screenshotting
 #
-#####################################
 
 
 def preview_images(xml_source, pub_file, stringparams, xmlid_root, dest_dir, method):
-    """
-    Generate preview images for interactive elements using playwright.
-    'method' is expected to be "fast" or "slow", corresponding to a 5000 or 10000 ms timeout.
-    """
-    import asyncio  # run()
+    import asyncio
 
-    # external module, often forgotten
-    # imported here, used only in interior
-    # routine to launch browser
     try:
-        import playwright.async_api  # launch()
+        import playwright.async_api
     except ImportError:
         raise ImportError(__module_warning.format("playwright"))
 
-    # Interior asynchronous routine to manage the Chromium headless browser.
-    # Use the same page instance for the generation of all interactive previews
     async def generate_previews(interactives, baseurl, dest_dir, timeout, design_width):
 
-        # interactives:  list containing the interactive hash/fragment ids [1:]
-        # baseurl:       local server's base url (includes local port)
-        # dest_dir:      folder where images are saved
-        # timeout:       delay in milliseconds to wait for the interactive to load
-        # design_width:  publisher's design width, the browser width to use
-
-        # Open playwright's asynchronous api to load a browser and page
         async with playwright.async_api.async_playwright() as pw:
             browser = await pw.chromium.launch()
-            # A standalone page sizes its "iframe" to the width of the browser
-            # showing it, while the interactive inside is built at a width the
-            # publisher's design width determines.  A default browser width is
-            # much the larger of the two, and then the screenshot is a small
-            # interactive marooned in a wide blank field.  Giving the browser
-            # the design width instead makes the frame and the interactive
-            # inside it the same size, so the picture is of the interactive.
             viewport_height = 1000
             page = await browser.new_page(viewport={"width": design_width, "height": viewport_height})
-            # A standalone page also carries the usual page furniture, which
-            # takes a little of the browser width for itself.  The amount is
-            # the same on every one of these pages, so it is measured on the
-            # first that loads and then given back, and each interactive is
-            # photographed at exactly the width it was designed for.
             calibrated = False
-            # One uncooperative interactive should warn and be skipped, not
-            # abort the whole batch.  "fail_ms" bounds how long we wait on a
-            # broken interactive before abandoning it; it is separate from the
-            # fast/slow settle delay below, which paces a working interactive.
             fail_ms = 5000
             failures = []
-            # First index contains original baseurl of hosted site (not used)
             for preview_fragment in interactives:
-                # loaded page url containing interactive
                 input_page = baseurl + "/" + preview_fragment + ".html"
-                # filename of saved preview image
                 filename = preview_fragment + "-preview.png"
 
-                # the "standalone" page has one "iframe" known by HTML id "preview_fragment"
                 xpath = "//iframe[@id='{}'][1]".format(preview_fragment)
 
-                # progress report
                 msg = 'automatic screenshot of interactive with identifier "{}" on page {} to file {}'
                 log.info(msg.format(preview_fragment, input_page, filename))
 
                 try:
-                    # goto page and wait for content to load
                     await page.goto(input_page, wait_until="domcontentloaded", timeout=fail_ms)
                     if not calibrated:
-                        # the "iframe" sits alone in a container that is as
-                        # wide as the page allows an interactive to be
                         measure = "id => document.getElementById(id).parentElement.getBoundingClientRect().width"
                         available = await page.evaluate(measure, preview_fragment)
                         shortfall = round(design_width - available)
@@ -2085,13 +1432,9 @@ def preview_images(xml_source, pub_file, stringparams, xmlid_root, dest_dir, met
                             await page.set_viewport_size({"width": design_width + shortfall, "height": viewport_height})
                             await page.goto(input_page, wait_until="domcontentloaded", timeout=fail_ms)
                         calibrated = True
-                    # wait again, according to the value of the timeout,
-                    # for more than just splash screens, etc
                     await page.wait_for_timeout(timeout)
-                    # list of locations, need first (and only) one
                     elt = page.locator(xpath)
                     await elt.screenshot(path=filename, scale="css", timeout=fail_ms)
-                    # copy
                     shutil.copy2(filename, dest_dir)
                 except Exception as e:
                     failures.append(preview_fragment)
@@ -2102,11 +1445,7 @@ def preview_images(xml_source, pub_file, stringparams, xmlid_root, dest_dir, met
                 log.error(msg.format(len(interactives) - len(failures), len(interactives), ", ".join(failures)))
             await browser.close()
 
-    # Start http server in a thread
     def start_server():
-        """
-        Starts a simple http.server on port 8888 if available, or finds a random port.  Returns the port and the server object.
-        """
         try:
             import http.server
             import socketserver
@@ -2115,13 +1454,11 @@ def preview_images(xml_source, pub_file, stringparams, xmlid_root, dest_dir, met
         except ImportError:
             raise ImportError("http.server, socketserver, threading, random")
 
-        # Subclass SimpleHTTPRequestHandler to send messages to log.debug:
         class MyHandler(http.server.SimpleHTTPRequestHandler):
             def log_message(self, format, *args):
                 log.debug("http.server: " + format % args)
                 return
 
-        # Find a port to use
         port = 8888
         attempts = 0
         max_attempts = 10
@@ -2148,79 +1485,52 @@ def preview_images(xml_source, pub_file, stringparams, xmlid_root, dest_dir, met
         except Exception as e:
             log.warning("http.server shutdown failed; perhaps it wasn't running? error: {}".format(e))
 
-    # Main content of preview_images function:
     log.info(
         "using playwright package to create previews for interactives from {} for placement in {}".format(
             xml_source, dest_dir
         )
     )
 
-    # Translate the fast/slow timeout to a time in milliseconds
     timeout = 10000 if method == "slow" else 5000
 
-    # Identify interactives that will be processed
     ptx_xsl_dir = common.get_ptx_xsl_path()
     extraction_xslt = os.path.join(ptx_xsl_dir, "extract-interactive.xsl")
-    # support publisher file, subtree argument
     if pub_file:
         stringparams["publisher"] = pub_file
     if xmlid_root:
         stringparams["subtree"] = xmlid_root
-    # Build list of id's into a scratch directory/file
     tmp_dir = common.get_temporary_directory()
     id_filename = os.path.join(tmp_dir, "interactives-ids.txt")
     log.debug("Interactives id list temporarily in {}".format(id_filename))
     log.debug("Interactives html files temporarily in {}".format(tmp_dir))
-    # This next call may be unique in that the stylesheet outputs the
-    # list of ids *and* produce a pile of files (the "standalone") pages
     common.xsltproc(extraction_xslt, xml_source, id_filename, tmp_dir, stringparams)
-    # read the list of interactive identifiers just generated
     with open(id_filename, "r", encoding="utf-8") as id_file:
         interactives = [f.strip() for f in id_file.readlines() if not f.isspace()]
 
-    # the browser width to use, see the screenshot routine above
     pub_vars = common.get_publisher_variable_report(xml_source, pub_file, stringparams)
     design_width = int(common.get_publisher_variable(pub_vars, "html-design-width"))
 
-    # Copy in external resources (e.g., js code)
     _, external_abs = common.get_managed_directories(xml_source, pub_file)
     common.copy_managed_directories(tmp_dir, external_abs=external_abs)
-    # place JS in scratch directory
     copy_html_js(tmp_dir)
 
-    # filenames lead to placement in current working directory
-    # so change to temporary directory, and copy out
-    # TODO: just write to "dest_dir"?
     with common.working_directory(tmp_dir):
-        # event loop and copy, terminating server process even if interrupted
         try:
             log.debug("Starting event loop for playwright, after starting server")
             port, server = start_server()
             baseurl = "http://localhost:{}".format(port)
             asyncio.run(generate_previews(interactives, baseurl, dest_dir, timeout, design_width))
         finally:
-            # close the server
             log.info("Closing http.server thread")
             if server:
                 stop_server(server)
 
 
-############
-# All Images
-############
-
-
 def all_images(xml, pub_file, stringparams, xmlid_root):
-    """All images, in all necessary formats, in subdirectories, for production of any project"""
 
-    # parse source, no harm to assume
-    # xinclude modularization is necessary
-    # NB: see general  "xsltproc()"  for construction of a HUGE parser
     src_tree = ET.parse(xml)
     src_tree.xinclude()
 
-    # explore source for various PreTeXt elements needing assistance
-    # no element => empty list => boolean is False
     has_gdscript = bool(src_tree.xpath("/pretext/*[not(docinfo)]//program[@pck and @interactive='activecode']"))
     has_latex_image = bool(src_tree.xpath("/pretext/*[not(docinfo)]//latex-image"))
     has_asymptote = bool(src_tree.xpath("/pretext/*[not(docinfo)]//asymptote"))
@@ -2228,15 +1538,12 @@ def all_images(xml, pub_file, stringparams, xmlid_root):
     has_youtube = bool(src_tree.xpath("/pretext/*[not(docinfo)]//video[@youtube]"))
     has_preview = bool(src_tree.xpath("/pretext/*[not(docinfo)]//interactive[not(@preview)]"))
 
-    # debugging comment/uncomment or True/False
     # has_latex_image = False
     # has_asymptote = False
     # has_sageplot = False
     # has_youtube = False
     # has_preview = False
 
-    # get the target output directory from the publisher file
-    # this is *required* so fail if pieces are missing
     if not (pub_file):
         msg = " ".join([
             "creating all images requires a directory specification",
@@ -2245,8 +1552,6 @@ def all_images(xml, pub_file, stringparams, xmlid_root):
         raise ValueError(msg)
     generated_dir, _ = common.get_managed_directories(xml, pub_file)
 
-    # correct attribute and not a directory gets caught earlier
-    # but could have publisher file and bad elements/attributes
     if not (generated_dir):
         msg = " ".join([
             "creating all images requires a directory specified in the",
@@ -2254,21 +1559,14 @@ def all_images(xml, pub_file, stringparams, xmlid_root):
         ])
         raise ValueError(msg)
 
-    # first stanza has code comments, and subsequent follow this
-    # model so only comments are for important distinctions
-
-    # latex-image
     #
     if has_latex_image:
-        # empty last part implies directory separator
         dest_dir = os.path.join(generated_dir, "latex-image", "")
-        # make directory if not already present
         if not (os.path.isdir(dest_dir)):
             os.mkdir(dest_dir)
         latex_image_conversion(xml, pub_file, stringparams, xmlid_root, dest_dir, "pdf", True, None)
         latex_image_conversion(xml, pub_file, stringparams, xmlid_root, dest_dir, "svg", True, None)
 
-    # Asymptote
     #
     if has_asymptote:
         dest_dir = os.path.join(generated_dir, "asymptote", "")
@@ -2277,80 +1575,65 @@ def all_images(xml, pub_file, stringparams, xmlid_root):
         asymptote_conversion(xml, pub_file, stringparams, xmlid_root, dest_dir, "pdf", None)
         asymptote_conversion(xml, pub_file, stringparams, xmlid_root, dest_dir, "html", None)
 
-    # Sage plots
     #
     if has_sageplot:
         dest_dir = os.path.join(generated_dir, "sageplot", "")
         if not (os.path.isdir(dest_dir)):
             os.mkdir(dest_dir)
-        # for 3D images might produce a single PNG instead of an SVG and a PDF
-        # conversions look for this PNG as a fallback absent SVG or PDF
         sage_conversion(xml, pub_file, stringparams, xmlid_root, dest_dir, "pdf", None)
         sage_conversion(xml, pub_file, stringparams, xmlid_root, dest_dir, "svg", None)
 
-    # gdscript pck
     #
     if has_gdscript:
         dest_dir = os.path.join(generated_dir, "gdscript", "")
         if not (os.path.isdir(dest_dir)):
             os.mkdir(dest_dir)
-        # call gdscript_pck
         gdscript_pck(xml, pub_file, stringparams, xmlid_root, dest_dir)
 
-    # YouTube previews
     #
     if has_youtube:
         dest_dir = os.path.join(generated_dir, "youtube", "")
         if not (os.path.isdir(dest_dir)):
             os.mkdir(dest_dir)
-        # no format, they are what they are (*.jpg)
         youtube_thumbnail(xml, pub_file, stringparams, xmlid_root, dest_dir)
 
-    # Previews (headless screenshots)
     #
     if has_preview:
         dest_dir = os.path.join(generated_dir, "preview", "")
         if not (os.path.isdir(dest_dir)):
             os.mkdir(dest_dir)
-        # no format, they are what they are (*.png)
         preview_images(xml, pub_file, stringparams, xmlid_root, dest_dir)
 
 
-#####################################
 #
-#  MyOpenMath static problem scraping
 #
-#####################################
 
 
 def mom_static_problems(xml_source, pub_file, stringparams, xmlid_root, dest_dir):
 
     import urllib.parse
-    import PIL.Image  # save images provided by MOM
+    import PIL.Image
     import shutil
-    import asyncio  # for playwright
+    import asyncio
 
-    # to ensure provided stringparams aren't mutated unintentionally
     stringparams = stringparams.copy()
 
     try:
-        import requests  # to access MyOpenMath server
+        import requests
     except ImportError:
         raise ImportError(__module_warning.format("requests"))
     try:
-        import playwright.async_api  # for conversion to PDF and PNG
+        import playwright.async_api
     except ImportError:
         raise ImportError(__module_warning.format("playwright"))
 
     log.info("downloading MyOpenMath static problems from {} for placement in {}".format(xml_source, dest_dir))
     ptx_xsl_dir = common.get_ptx_xsl_path()
     extraction_xslt = os.path.join(ptx_xsl_dir, "extract-mom.xsl")
-    # support publisher file, subtree argument
     if pub_file:
         stringparams["publisher"] = pub_file
     if xmlid_root:
         stringparams["subtree"] = xmlid_root
-    # Build list of id's into a scratch directory/file
     tmp_dir = common.get_temporary_directory()
     id_filename = os.path.join(tmp_dir, "mom-ids.txt")
     log.debug("MyOpenMath id list temporarily in {}".format(id_filename))
@@ -2358,20 +1641,17 @@ def mom_static_problems(xml_source, pub_file, stringparams, xmlid_root, dest_dir
     images_dir = os.path.join(dest_dir, "images")
     if not (os.path.isdir(images_dir)):
         os.mkdir(images_dir)
-    # "run" an assignment for the list of problem numbers
     with open(id_filename, "r", encoding="utf-8") as id_file:
-        # read lines, skipping blank lines
         problems = [p.strip() for p in id_file.readlines() if not p.isspace()]
 
     for problem in problems:
-        # &preservesvg=true is MOM flag to preserve embedded SVG
         url = f"https://www.myopenmath.com/util/mbx.php?id={problem}&preservesvg=true"
         path = os.path.join(dest_dir, f"mom-{problem}.xml")
         log.info(f"downloading MOM #{problem} to {path}...")
 
         try:
             r = requests.get(url, timeout=10)
-            r.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
+            r.raise_for_status()
 
             xml_content = f'<?xml version="1.0" encoding="utf-8"?>\n{r.text}'
             xml_content = xml_content.replace(
@@ -2379,7 +1659,6 @@ def mom_static_problems(xml_source, pub_file, stringparams, xmlid_root, dest_dir
             )
             tree = ET.fromstring(xml_content.encode("utf-8"))
 
-            # Process images
             image_elements = tree.xpath("//image[contains(@source, 'http')]")
             count = 1
             for image_element in image_elements:
@@ -2389,7 +1668,6 @@ def mom_static_problems(xml_source, pub_file, stringparams, xmlid_root, dest_dir
                 _, source_ext = os.path.splitext(source_filename)
                 if source_ext:
                     image_filename = f"mom-{problem}-{count}{source_ext}"
-                # uncertain this is necessary: MOM won't likely allow file without extension
                 else:
                     image_filename = f"mom-{problem}-{count}"
                     log.info(f"No file name extension for MOM {problem} image {count}; results are unpredictable.")
@@ -2399,11 +1677,9 @@ def mom_static_problems(xml_source, pub_file, stringparams, xmlid_root, dest_dir
                 try:
                     imageresp = requests.get(image_url, stream=True, timeout=10)
                     imageresp.raise_for_status()
-                    # save the image file
                     with open(image_path, "wb") as imagefile:
                         imageresp.raw.decode_content = True
                         shutil.copyfileobj(imageresp.raw, imagefile)
-                    # find the width of the image for setting PreTeXt width tag
                     try:
                         img = PIL.Image.open(image_path)
                         imgwidthtag = min(100, round(img.width / 6))
@@ -2418,14 +1694,11 @@ def mom_static_problems(xml_source, pub_file, stringparams, xmlid_root, dest_dir
                     log.error(f"Error downloading image {image_url}: {e}")
                 count += 1
 
-            # Process embedded SVGs
             image_svg_elements = tree.xpath("//image/*[local-name()='svg']")
             for svg_element in image_svg_elements:
                 if svg_element is not None:
                     svg_string = f'<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n{ET.tostring(svg_element, encoding="unicode")}'
-                    # kludge: no nice way to remove namespace inherited from MyOpenMath element
                     svg_string = svg_string.replace(' xmlns:pi="http://pretextbook.org/2020/pretext/internal"', "")
-                    # generate file names for image files
                     svgname = f"images/mom-{problem}-{count}"
                     svgname_ext = f"{svgname}.svg"
                     svgpath = os.path.join(dest_dir, svgname_ext)
@@ -2434,13 +1707,10 @@ def mom_static_problems(xml_source, pub_file, stringparams, xmlid_root, dest_dir
                     pngname_ext = f"{svgname}.png"
                     pngpath = os.path.join(dest_dir, pngname_ext)
 
-                    # write out the embedded SVG to file
                     with open(svgpath, "w", encoding="utf-8") as svgfile:
                         svgfile.write(svg_string)
                         svgfile.close()
 
-                    # SVG width and height needed for PDF conversion and PreTeXt <image>
-                    # Note that these are assumed to be present, if not, fix the SVG image in MOM
                     svg_width = svg_element.get("width")
                     svg_height = svg_element.get("height")
                     svg_viewbox = svg_element.get("viewBox")
@@ -2448,16 +1718,13 @@ def mom_static_problems(xml_source, pub_file, stringparams, xmlid_root, dest_dir
                     svg_height_parsed = re.search(r"([0-9\.]+)([a-zA-Z%]*)", svg_height)
                     if svg_width:
                         svg_units = svg_width_parsed.group(2).lower()
-                        # assume that width and height have the same units
 
                     width = svg_width
                     height = svg_height
                     if svg_units == "%":
-                        # if height or width is in percentage fall back to viewBox
                         height = None
                         width = None
                     elif svg_units == "pt":
-                        # playwright doesn't support pt units, transform to px
                         height = str(float(svg_height_parsed.group(1)) / 72 * 96) + "px"
                         width = str(float(svg_width_parsed.group(1)) / 72 * 96) + "px"
 
@@ -2467,7 +1734,6 @@ def mom_static_problems(xml_source, pub_file, stringparams, xmlid_root, dest_dir
                         width = str(float(viewBox_values[2]) - float(viewBox_values[0])) + "px"
 
                     async def write_pdf(svg_string):
-                        # convert SVG to PDF and PNG
                         static_html = f"""
                         <!DOCTYPE html>
                         <html lang="en">
@@ -2499,11 +1765,8 @@ def mom_static_problems(xml_source, pub_file, stringparams, xmlid_root, dest_dir
 
                             await browser.close()
 
-                    # convert to PDF; asyncio.run requires a synchronous caller
-                    # and raises if a containing tool already runs an event loop
                     asyncio.run(write_pdf(svg_string))
 
-                    # Try to read the SVG width and set PreTeXt width based on document width assumptions
                     if svg_width_parsed:
                         if svg_units:
                             if svg_units == "mm":
@@ -2516,12 +1779,10 @@ def mom_static_problems(xml_source, pub_file, stringparams, xmlid_root, dest_dir
                                 svg_scale = 600
                             imgwidthtag = min(100, round(100 * float(svg_width_parsed.group(1)) / svg_scale))
                         else:
-                            # this condition should never happen: implies badly formed width element
                             imgwidthtag = 100
                     else:
                         imgwidthtag = 100
                     svg_element.getparent().set("width", f"{imgwidthtag}%")
-                    # update the <image> element in MyOpenMath xml to reference the file
                     svg_element.getparent().set(
                         "{http://pretextbook.org/2020/pretext/internal}generated", f"problems/{svgname}"
                     )
@@ -2529,7 +1790,6 @@ def mom_static_problems(xml_source, pub_file, stringparams, xmlid_root, dest_dir
 
                     count += 1
 
-            # Write the modified XML back to file
             with open(path, "wb") as f:
                 f.write(ET.tostring(tree, encoding="utf-8", xml_declaration=True))
 
@@ -2543,36 +1803,10 @@ def mom_static_problems(xml_source, pub_file, stringparams, xmlid_root, dest_dir
     log.info("MyOpenMath static problem download complete")
 
 
-####################
-# Conversion to Text
-####################
-
-
 def text(xml, pub_file, stringparams, out_file, dest_dir, text_format):
-    """
-    Convert XML source to a plain text or markdown rendering.
 
-    Args:
-        xml (str): Path to the XML source file.
-        pub_file (str or None): Path to the publisher configuration file, or None if not used.
-        stringparams (dict): Dictionary of string parameters to control the transformation.
-        out_file (str or None): Path to the output file.  If None, the file lands in dest_dir.
-        dest_dir (str): Directory for the output file when out_file is not specified.
-        text_format (str): "text", "markdown", or "markdown-zip", naming the
-            stylesheet and the file extension.  The last bundles a markdown
-            rendering (with its image directories) as a single zip file.
-
-    Returns:
-        None
-
-    Side Effects:
-        - Generates a text (or markdown) file in the specified destination.
-    """
-
-    # to ensure provided stringparams aren't mutated unintentionally
     stringparams = stringparams.copy()
 
-    # support publisher file, not subtree argument
     if pub_file:
         stringparams["publisher"] = pub_file
 
@@ -2591,8 +1825,6 @@ def text(xml, pub_file, stringparams, out_file, dest_dir, text_format):
     log.info(msg.format(xml, text_format, dest_dir))
 
     conversion_xslt = os.path.join(common.get_ptx_xsl_path(), text_format_stylesheets[text_format])
-    # A zip bundle is staged in a temporary directory, inside a folder
-    # named for the source, so the archive unpacks tidily
     b_zip = text_format == "markdown-zip"
     if b_zip:
         basename = os.path.splitext(os.path.basename(xml))[0]
@@ -2601,11 +1833,6 @@ def text(xml, pub_file, stringparams, out_file, dest_dir, text_format):
         os.mkdir(work_dir)
     else:
         work_dir = dest_dir
-    # One transform serves both shapes of output.  A positive chunking
-    # election (common/chunking/@level in the publication file) makes
-    # the stylesheet write one file per division into the working
-    # directory and leave the result tree empty; otherwise the result
-    # tree is the entire rendering, deposited as a single file
     result_tree = common.xsltproc(conversion_xslt, xml, None, work_dir, stringparams)
     if str(result_tree):
         derivedname = common.get_output_filename(
@@ -2615,8 +1842,6 @@ def text(xml, pub_file, stringparams, out_file, dest_dir, text_format):
         log.info("{} file deposited as {}".format(text_format, derivedname))
     else:
         log.info("{} files deposited in {}".format(text_format, work_dir))
-    # Markdown references image files with relative paths matching the
-    # HTML conversion, so the managed directories ride along
     if text_format in ("markdown", "markdown-zip"):
         generated_abs, external_abs = common.get_managed_directories(xml, pub_file)
         if external_abs:
@@ -2628,38 +1853,21 @@ def text(xml, pub_file, stringparams, out_file, dest_dir, text_format):
         log.info("markdown bundle deposited as {}".format(zip_filename))
 
 
-#######################
-# Conversion to Braille
-#######################
-
-
 def braille(xml_source, pub_file, stringparams, out_file, dest_dir, page_format):
-    """Produce a complete document in BRF format ( = Braille ASCII, plus formatting control)"""
 
-    # to ensure provided stringparams aren't mutated unintentionally
     stringparams = stringparams.copy()
 
-    # general message for this entire procedure
     log.info("converting {} into BRF in {} combining UEB2 and Nemeth".format(xml_source, dest_dir))
 
-    # get chunk level from publisher file, start with sentinel
-    # eventually passed to routine that splits up a BRF
     chunk_level = ""
     if pub_file:
-        # parse publisher file, xinclude is conceivable
-        # for multiple similar publisher files with common parts
         pub_tree = ET.parse(pub_file)
         pub_tree.xinclude()
-        # "chunking" element => single-item list
-        # no "chunking" element => empty list
         chunk_elt = pub_tree.xpath("/publication/common/chunking")
         if chunk_elt:
-            # attribute dictionary
             attrs = chunk_elt[0].attrib
-            # check for attribute @level
             if "level" in attrs:
                 chunk_level = chunk_elt[0].attrib["level"]
-                # respected values are '0' and '1', as *strings*
                 if chunk_level in ["0", "1"]:
                     msg = 'braille chunking level (from publisher file) set to "{}"'
                     log.info(msg.format(chunk_level))
@@ -2667,35 +1875,26 @@ def braille(xml_source, pub_file, stringparams, out_file, dest_dir, page_format)
                     msg = 'braille chunking level in publisher file should be "0" or "1", not "{}".'
                     log.warning(msg.format(chunk_level))
                     chunk_level = ""
-    # never set, or set to an improper value
-    # latter will have issued a warning above
     if chunk_level == "":
         msg = 'braille chunking level was never elected properly in a publisher file, using default value, "0".'
         log.debug(msg)
         chunk_level = "0"
 
-    # Temporarily neuter all of above
     log.warning("Any elective chunking is temporarily disabled")
     chunk_level = "0"
 
-    # Build into a scratch directory
     tmp_dir = common.get_temporary_directory()
     log.debug("Braille manufacture in temporary directory: {}".format(tmp_dir))
 
-    # use of  math_format is for consistency
-    # with MathJax used to make EPUB
     math_format = "nemeth"
     math_representations = os.path.join(tmp_dir, "math-representations-{}.xml".format(math_format))
 
-    # ripping out LaTeX as math representations
     msg = "converting raw LaTeX from {} into clean {} format placed into {}"
     log.debug(msg.format(xml_source, math_format, math_representations))
     mathjax_latex(xml_source, pub_file, math_representations, None, math_format, False)
 
-    # use XSL to make a simplified BRF-like XML version, "preprint"
     msg = "converting source ({}) and clean representations ({}) into preprint XML file ({})"
     stringparams["mathfile"] = math_representations.replace(os.sep, "/")
-    # pass in the page format (for messages about graphics, etc.)
     stringparams["page-format"] = page_format
     if pub_file:
         stringparams["publisher"] = pub_file
@@ -2703,67 +1902,32 @@ def braille(xml_source, pub_file, stringparams, out_file, dest_dir, page_format)
     braille_xslt = os.path.join(common.get_ptx_xsl_path(), "pretext-braille-preprint.xsl")
     common.xsltproc(braille_xslt, xml_source, preprint, tmp_dir, stringparams)
 
-    # use Python to translate all print text to contracted braille,
-    # then to format the result as a real BRF
     from . import braille_translate
     from . import braille_format
 
-    # Translate the preprint: all print text becomes UEB braille,
-    # one liblouis call per stretch of text, typeforms and all
     translated = os.path.join(tmp_dir, "translated.xml")
     msg = "translating print text of preprint ({}) into braille ({})"
     log.debug(msg.format(preprint, translated))
     braille_translate.translate_document(preprint, translated)
 
-    # Build a BRF in the *temporary* directory: final or chunkable
     temp_brf = os.path.join(tmp_dir, "temporary.brf")
-    # Python formatting call
     braille_format.parse_segments(translated, temp_brf, page_format)
 
-    # move out of temporary directory as final product(s)
-    # chunk level is either '0' or '1' (exclusive "if" follow)
     if chunk_level == "0":
-        # monolithic file
         final_brf = common.get_output_filename(xml_source, out_file, dest_dir, ".brf")
         shutil.copyfile(temp_brf, final_brf)
         log.info("Single BRF file deposited as {}".format(final_brf))
     if chunk_level == "1":
-        # chunked into chapters
-        # directory switch could be moved to split routine,
-        # or it could be done in temporary directory and copied out
         with common.working_directory(dest_dir):
             _split_brf(temp_brf)
             log.info("BRF file chunked and deposited in {}".format(dest_dir))
 
 
-############################
-# Splitting braille chapters
-############################
-
-
 def _split_brf(filename):
-    """Decompose a BRF file for a book into multiple files of chapters"""
 
-    # Original author: Alexei Kolesnikov, 2022-12-30
-    # Incorporation into pretext/pretext script: Rob Beezer, 2023-01-01
-
-    # Comments from original version:
-    # This is a script to split a long brf document
-    # that contains many chapters into shorter brf files with a
-    # single chapter each. The script expects that:
     #
-    # * All the pages are numbered, the number is on the last line of
-    # a page. Chapter titles are at the top of a page,
-    # * There is a table of contents, with specific formatting described
-    # in the comments below.
-    # * The TOC begins with a centered title "3t5ts" ("contents", in BRF).
-    # * The TOC ends with a centered chapter title on a new page, followed
-    # by a blank line.
-    # * Chapter line in TOC is indented 2 spaces.
     #
-    # There are limited checks to let the user know when something goes wrong.
 
-    # Utilities to convert BRF digits into ASCII digits
     brf_numbers = "abcdefghij"
     num_numbers = "1234567890"
     brf_to_num_dict = dict(zip(brf_numbers, num_numbers))
@@ -2781,14 +1945,11 @@ def _split_brf(filename):
             out += num_to_brf_dict[char]
         return out
 
-    # Wrapper class for chapter number, chapter page range,
-    # chapter body
     class Chapter:
         def __init__(self, start_page_num, numbered_chapter, chapter_number):
             self.start_page = start_page_num
             self.numbered = numbered_chapter
             self.number = chapter_number
-            # Placeholder values
             self.end_page = -1
             self.body = []
             self.front_matter = True
@@ -2798,7 +1959,6 @@ def _split_brf(filename):
                 self.body += pages[page_num]
 
         def write_body(self):
-            # The last two cases will be used if we want to split frontmatter or backmatter
             if self.numbered:
                 out_filename = f"chapter_{self.number:02d}.brf"
             elif self.front_matter:
@@ -2810,8 +1970,6 @@ def _split_brf(filename):
                 g.writelines(self.body)
 
     def is_chapter_name(line):
-        # If a TOC line starts with two spaces followed by "," (capital letter sign) or "#"
-        # then it is a chapter line
         if len(re.findall("^[ ]{2}[,|#]", line)) > 0:
             chapter_name = True
             if len(re.findall("^[ ]{2}#([a-j]+?) ", line)) > 0:
@@ -2827,42 +1985,17 @@ def _split_brf(filename):
             chapter_name = False
             numbered_chapter = False
             chapter_number = -1
-        # Return whether the TOC line starts a chapter name, whether it is a numbered chapter
-        # and if yes, the chapter number (-1 if not a numbered chapter).
         return (chapter_name, numbered_chapter, chapter_number)
 
-    # Input line, output a pair (page_num_found, page_num)
-    # The first is a Boolean; True if the page number is found on the line,
-    # the second is an integer
     #
-    # Logic:
     #
-    # * Are there lead-to characters?
     #
-    # If yes, we win:
-    # ,foo ''''''' #abc
-    # abc is the page of chapter 'foo'; the number at the end of the lead-to characters is the page number
     #
-    # If not, either the chapter name is too long to have lead-to characters, but the page number is there,
-    # or the number will be on one of the next lines. There are two cases:
     #
-    # If the line is short <40 characters, then definitely the number is on a line below
     #
-    # If the line is not short, there are three subcases:
-    # * If the line ends with " #abc #de", then the first one is the chapter
-    # page number and the second is the TOC page number
-    # * If the line ends with only one number precedeed by more than 3 spaces, then the chapter page
-    # number is on a line below.
-    # * If the line ends with only one number precedeed by no more than 3 spaces, then this is the
-    # chapter page number.
     #
-    # This does take into account some crazy chapter names:
-    # "Key algebro-topological properties of 42  123"
-    # Asked Michael Cantino more about spacing, he is saying the Liblouis spacing
-    # we have is incorrect.
 
     def find_chapter_page_num(line):
-        # Are there lead-to characters " ' "?
         if len(re.findall(" [']{2,35} #", line)) > 0:
             m = re.search("[']{2,35} #(.+?)[ |\n]", line)
 
@@ -2880,20 +2013,14 @@ def _split_brf(filename):
         else:
             raise ValueError(f"A weird long TOC line found:\n{line}")
 
-    # The idea is to scan the BRF file for the word 'contents', or '3t5ts' in ASCII Braille
-    # that appears on a short centered line. This would mark the beginning of the TOC.
     #
-    # Then keep scanning the TOC until we get the next chapter.
-    # Adding running heads will mess with this! So need to revisit when that happens.
     #
-    # Will return three things: TOC, the entire front matter (ending with TOC), and the "body"
-    # All are returned as lists of lines.
 
     def get_TOC(filename):
         f = open(filename, "r", encoding="latin-1")
-        front_matter = []  # We want to keep the entire front matter up to and including TOC, it'll be one of the chunks
-        TOC = []  # This will keep the TOC only
-        text_body = []  # We want to get the text body, to be split into pages and then chapters
+        front_matter = []
+        TOC = []
+        text_body = []
 
         is_contents = False
 
@@ -2903,7 +2030,7 @@ def _split_brf(filename):
             if line == "":
                 raise ValueError("Reached the end of file while looking for Table of Contents")
 
-            if len(re.findall("3t5ts", line)) > 0:  # if a line contains the word 'contents', in the middle
+            if len(re.findall("3t5ts", line)) > 0:
                 if re.search("3t5ts", line).start() > 10 and re.search("3t5ts", line).end() < 30:
                     is_contents = True
                     log.debug("TOC found")
@@ -2914,11 +2041,9 @@ def _split_brf(filename):
             if line == "":
                 raise ValueError("Reached end of file while reading the Table of Contents")
 
-            # Check if the line is likely centered and at the top of the page:
-            trailing_spaces = 40 - len(line) - 2  # -2 for good luck
+            trailing_spaces = 40 - len(line) - 2
             pattern = f"\f[ ]{ {trailing_spaces} }"
             if len(re.findall(pattern, line)) == 0:
-                # if not centered at the top, then add to the TOC list and move on
                 TOC.append(line)
                 front_matter.append(line)
             else:
@@ -2926,14 +2051,11 @@ def _split_brf(filename):
                 line = f.readline()
 
                 if line == "\n":
-                    # if the line after the centered one is empty,
-                    # then we are likely at the start of the next chapter, so done with TOC
                     is_contents = False
                     log.debug(f"Found the end of TOC:\n{temp_line}")
                     text_body.append(temp_line)
                     text_body.append(line)
                 else:
-                    # False alarm
                     TOC.append(temp_line)
                     TOC.append(line)
                     front_matter.append(temp_line)
@@ -2945,9 +2067,6 @@ def _split_brf(filename):
 
         f.close()
         return (TOC, front_matter, text_body)
-
-    # Scan TOC, if a Chapter line is detected (two spaces followed by [,|#] -- anything else?),
-    # then look for a page number of the chapter and append to the list of chapter pages
 
     def get_chapter_list(TOC):
         chapter_list = []
@@ -2972,9 +2091,6 @@ def _split_brf(filename):
         return chapter_list
 
     def split_body_into_pages(text_body):
-        # text_body is a list of lines, let's make it into a dictionary of pages
-        # Each element of 'pages' is a list of lines on the same page, indexed by the
-        # number of the page in BRF file
         pages = dict()
 
         if len(re.findall("\f", text_body[0])) == 0:
@@ -2982,12 +2098,11 @@ def _split_brf(filename):
         current_page = [text_body[0]]
 
         for number, line in enumerate(text_body[1:]):
-            if line != "":  # if we are not at the end
+            if line != "":
                 if len(re.findall("\f", line)) == 0:
-                    # if we are not starting a new page
                     current_page.append(line)
-                else:  # get the page number of the current page, put it in dict and start a new current page
-                    prev_line = text_body[number]  # not 'number - 1' because we are starting with text_body[1]
+                else:
+                    prev_line = text_body[number]
 
                     if len(re.findall("[ ]{2}#([a-j]+?)$", prev_line)) == 0:
                         raise ValueError(f"Page number not found, expected to be on the line\n{prev_line}")
@@ -2995,7 +2110,6 @@ def _split_brf(filename):
                         page_num = brf_to_num(re.findall("[ ]{2}#([a-j]+?)$", prev_line)[0])
                         pages[page_num] = current_page
                         current_page = [line]
-            # if we are at the last line, nothing to be done
         log.debug(f"Successfully split text into {page_num} pages")
         return pages
 
@@ -3007,23 +2121,16 @@ def _split_brf(filename):
         back_matter = []
 
         for index in range(len(chapter_list)):
-            # Assume that un-numbered chapters at the start are part of front matter.
-            # Followed by numbered chapters
-            # Followed by un-numbered back-matter
-
             chapter = chapter_list[index]
-            # End page of a chapter is either the first page of the next chapter
-            # (keeping in mind Python range conventions) or the last page of the document
             if index < len(chapter_list) - 1:
                 chapter.end_page = chapter_list[index + 1].start_page
             else:
                 chapter.end_page = max([num for num in pages.keys()]) + 1
-            # Now we get the pages for each chapter:
             chapter.get_body(pages)
 
             if chapter.numbered:
-                is_front_matter = False  # Somewhat inefficient because we do it
-                unnumbered_counter = 1  # more than once, but no harm
+                is_front_matter = False
+                unnumbered_counter = 1
 
                 chapter.write_body()
 
@@ -3036,7 +2143,7 @@ def _split_brf(filename):
                 else:
                     front_matter += chapter.body
 
-            else:  # Must be back matter
+            else:
                 chapter.front_matter = False
                 if split_backmatter:
                     chapter.number = unnumbered_counter
@@ -3045,40 +2152,18 @@ def _split_brf(filename):
                 else:
                     back_matter += chapter.body
 
-            # Now everything was written except the TOC front matter and backmatter
-            # if we were not splitting
-
             with open("frontmatter.brf", "w", encoding="utf-8") as g:
                 g.writelines(front_matter)
             if back_matter != []:
                 with open("backmatter.brf", "w", encoding="utf-8") as g:
                     g.writelines(back_matter)
 
-            # TODO: add debug message listing all the chapters?
-
     toc, frontmatter, bodytext = get_TOC(filename)
     chapters = get_chapter_list(toc)
     write_chapters(chapters, frontmatter, bodytext)
 
 
-####################
-# Conversion to EPUB
-####################
-
-
 def _sanitize_svg_for_epub(directory):
-    """Rewrite SVG images beneath a directory into EPUB-legal form
-
-    EPUB forbids a document type declaration with an external
-    identifier, and the external entity declarations riding along in
-    an SVG 1.1 DOCTYPE (Sage, and some editors, produce these).
-    Parsing and re-serializing sheds the DOCTYPE.  Two content
-    repairs ride along, for defects observed from image generators:
-    a "path" with no data draws nothing but is a validity error, so
-    it is removed; and a "role" attribute on the root must be one of
-    the three values EPUB sanctions for a foreign resource, so any
-    other value becomes "img".
-    """
     import glob
 
     parser = ET.XMLParser(load_dtd=False, no_network=True, resolve_entities=False)
@@ -3095,8 +2180,6 @@ def _sanitize_svg_for_epub(directory):
         root = tree.getroot()
         svg_namespace = "http://www.w3.org/2000/svg"
         xlink_namespace = "http://www.w3.org/1999/xlink"
-        # fragments referenced within the image, so an (empty) target
-        # is never removed out from under a "use" reference
         referenced = set()
         for element in root.iter():
             for key in ["{{{}}}href".format(xlink_namespace), "href"]:
@@ -3106,97 +2189,55 @@ def _sanitize_svg_for_epub(directory):
         for path in root.iter("{{{}}}path".format(svg_namespace)):
             if not path.get("d"):
                 if path.get("id") in referenced:
-                    # an empty-but-referenced path is a legitimate
-                    # no-op (a font's space glyph, say) but the
-                    # attribute is required, so draw nothing, validly
                     path.set("d", "M0 0")
                 else:
                     parent = path.getparent()
                     if parent is not None:
                         parent.remove(path)
-        # a "name" attribute is not valid on any SVG element
-        # (mermaid decorates shapes with them)
         for element in root.iter("{{{}}}*".format(svg_namespace)):
             if element.get("name") is not None:
                 del element.attrib["name"]
         if root.get("role") and root.get("role") not in ["application", "document", "img"]:
             root.set("role", "img")
-        # serializing the root element omits the document type
-        # declaration; serializing the whole document would write
-        # back the declaration lxml recorded when reading the file
         with open(svg_file, "wb") as handle:
             handle.write(ET.tostring(root, xml_declaration=True, encoding="utf-8"))
 
 
 def epub(xml_source, pub_file, out_file, dest_dir, file_format, math_format, stringparams):
-    """Produce complete document in an EPUB container"""
 
-    # to ensure provided stringparams aren't mutated unintentionally
     stringparams = stringparams.copy()
 
-    # math_format is a string that parameterizes this process
-    #   'svg': mathematics as SVG
-    #   'mml': mathematics as MathML
     import fileinput
 
-    # for building a cover image
-    # modules from the PIL package
-    import PIL.Image  # new()
-    import PIL.ImageDraw  # Draw()
-    import PIL.ImageFont  # truetype(), load_default()
+    import PIL.Image
+    import PIL.ImageDraw
+    import PIL.ImageFont
 
-    # general message for this entire procedure
     log.info("converting {} into EPUB in {} with math as {}".format(xml_source, dest_dir, math_format))
 
-    # Build into a scratch directory
     tmp_dir = common.get_temporary_directory()
     log.debug("EPUB manufacture in temporary directory: {}".format(tmp_dir))
-
-    # Before making a zip file, the temporary directory should look
-    # like the unzipped version of an EPUB file.  For us, that goes:
-
-    # mimetype
-    # EPUB
-    #   package.opf
-    #   css
-    #   xhtml
-    #     generated images (customizable)
-    #     external images (customizable)
-    # META-INF
 
     source_dir = common.get_source_path(xml_source)
     epub_xslt = os.path.join(common.get_ptx_xsl_path(), "pretext-epub.xsl")
     math_representations = os.path.join(tmp_dir, "math-representations-{}.xml".format(math_format))
-    # speech representations are just for SVG images, but we define the filename always anyway
     speech_representations = os.path.join(tmp_dir, "math-representations-{}.xml".format("speech"))
     packaging_file = os.path.join(tmp_dir, "packaging.xml")
     xhtml_dir = os.path.join(tmp_dir, "EPUB", "xhtml")
 
-    # ripping out LaTeX as math representations
     msg = "converting raw LaTeX from {} into clean {} format placed into {}"
     log.debug(msg.format(xml_source, math_format, math_representations))
     mathjax_latex(xml_source, pub_file, math_representations, None, math_format, False)
-    # optionally, build a file of speech versions of the math
     if math_format == "svg":
         log.debug(msg.format(xml_source, "speech", speech_representations))
         mathjax_latex(xml_source, pub_file, speech_representations, None, "speech", False)
 
-    # Build necessary content and infrastructure EPUB files,
-    # using SVG images of math.  Most output goes into the
-    # EPUB/xhtml directory via exsl:document templates in
-    # the EPUB XSL conversion.  The stylesheet does record,
-    # and produce some information needed for the packaging here.
     log.info(
         "converting source ({}) and clean representations ({}) into EPUB files".format(xml_source, math_representations)
     )
     params = {}
 
-    # the EPUB production is parmameterized by how math is produced
     params["mathfile"] = math_representations.replace(os.sep, "/")
-    # It is convenient for the subsequent XSL to always get a 'speechfile'
-    # string parameter.  An empty string seems to not provoke an error,
-    # though perhaps the resulting variable is crazy.  We'll just be
-    # sure not to access the variable unless making SVG images.
     if math_format == "svg":
         params["speechfile"] = speech_representations.replace(os.sep, "/")
     else:
@@ -3207,42 +2248,21 @@ def epub(xml_source, pub_file, out_file, dest_dir, file_format, math_format, str
         params["publisher"] = pub_file
     common.xsltproc(epub_xslt, xml_source, packaging_file, tmp_dir, {**params, **stringparams})
 
-    # XHTML files lack an overall namespace,
-    # while EPUB validation expects it
-    # Kindle needs an encoding declaration to avoid assuming ASCII
-    # regex inplace to end up with:
-    #   <?xml version="1.0" encoding="UTF-8"?>
-    #   <html xmlns="http://www.w3.org/1999/xhtml">
     orig = "<html"
     repl = __xml_header + '<html xmlns="http://www.w3.org/1999/xhtml"'
     with common.working_directory(xhtml_dir):
         html_elt = re.compile(orig)
         for root, dirs, files in os.walk(xhtml_dir):
             for fn in files:
-                # fileinput's in-place mode rewrites each file line by line: print() writes
-                # back onto the file, and end="" suppresses the extra newline it would add
-                # (the line already carries its own).  Two Windows pitfalls handled here:
-                #   - the "with" context manager closes the handle before the file is
-                #     reopened/replaced, which otherwise raises a PermissionError (PR #1779)
-                #   - encoding="utf-8" reads/writes UTF-8 rather than the locale default,
-                #     which would mis-decode UTF-8 math/HTML on a cp1252 locale (PR #3003)
                 with fileinput.FileInput(fn, inplace=True, encoding="utf-8") as file:
                     for line in file:
                         print(html_elt.sub(repl, line), end="")
 
-    # EPUB stylesheet writes an XHTML file with
-    # bits of info necessary for packaging
     packaging_tree = ET.parse(packaging_file)
 
-    # Stage CSS files in EPUB/css, coordinate
-    # with names in manifest and *.xhtml via XSL.
-    # CSS files live in distribution in "css" directory,
-    # which is a peer of the "xsl" directory
-    # EPUB exists from above xsltproc call
     css_dir = os.path.join(tmp_dir, "EPUB", "css")
     os.mkdir(css_dir)
 
-    # All styles are baked into one of these two files
     if math_format == "kindle":
         css = os.path.join(common.get_ptx_xsl_path(), "..", "css", "dist", "kindle.css")
         shutil.copy2(css, css_dir)
@@ -3250,37 +2270,19 @@ def epub(xml_source, pub_file, out_file, dest_dir, file_format, math_format, str
         css = os.path.join(common.get_ptx_xsl_path(), "..", "css", "dist", "epub.css")
         shutil.copy2(css, css_dir)
 
-    # EPUB Cover File
-
-    # The /packaging/cover/ entry has the (relative) paths for the author's
-    # provided cover image file and where it should land in the XHTML directory
-    # of files, consistent with the manifest, etc.
     #
-    # @authored-cover is 'yes' or 'no'.  In the latter case most of the
-    # action happens here in the Python
 
     is_cover_authored = packaging_tree.xpath("/packaging/cover/@authored-cover")[0] == "yes"
     if is_cover_authored:
-        # Build absolute paths and mirror directory structure, except for the
-        # transition from authors name for "external" to the actual use of
-        # "external" in the XHTML.  These details were handled in the creation
-        # of the relevant publisher variables, which then migrated to the
-        # packaging file, and then here
         cover_source_file = packaging_tree.xpath("/packaging/cover/@source")[0]
         cover_dest_file = packaging_tree.xpath("/packaging/cover/@dest")[0]
         cover_source = os.path.join(source_dir, str(cover_source_file))
         cover_dest = os.path.join(xhtml_dir, str(cover_dest_file))
-        # https://stackoverflow.com/questions/2793789, Python 3.2
         os.makedirs(os.path.dirname(cover_dest), exist_ok=True)
         shutil.copy2(cover_source, cover_dest)
     else:
-        # When an author does not provide an image, we try to manufacture one.
-        # The file will be named "cover.png" and will be a top-level file in
-        # the XHTML directory.  A publisher variable maintains consistency as
-        # to what land in the XHTML files themselves (and manifest, etc.)
         cover_source = os.path.join(tmp_dir, "cover.png")
         cover_dest = os.path.join(xhtml_dir, "cover.png")
-        # Get some useful things from the packaging file
         title = packaging_tree.xpath("/packaging/title")[0].xpath("string()").__str__()
         subtitle = packaging_tree.xpath("/packaging/subtitle")[0].xpath("string()").__str__()
         author = packaging_tree.xpath("/packaging/author")[0].xpath("string()").__str__()
@@ -3289,7 +2291,6 @@ def epub(xml_source, pub_file, out_file, dest_dir, file_format, math_format, str
         author_ASCII = "".join([x if ord(x) < 128 else "?" for x in author])
         log.info("attempting to construct cover image using LaTeX and ImageMagick")
         try:
-            # process with the  xelatex  engine (better Unicode support)
             latex_key = common.get_deprecated_tex_fallback("xelatex")
             tex_executable_cmd = common.get_executable_cmd(latex_key)
             cover_tex_template = "\\documentclass[20pt]{{scrartcl}}\\begin{{document}}\\title{{ {} }}\\subtitle{{ {} }}\\author{{ {} }}\\date{{}}\\maketitle\\thispagestyle{{empty}}\\end{{document}}"
@@ -3302,7 +2303,6 @@ def epub(xml_source, pub_file, out_file, dest_dir, file_format, math_format, str
                 tex.write(cover_tex)
             latex_cmd = tex_executable_cmd + ["-interaction=batchmode", cover_tex_file]
             cover_pdf_file = os.path.join(tmp_dir, "cover.pdf")
-            # Presume ImageMagick's "convert" executable is on the path
             pdfpng_executable_cmd = ["convert"]
             png_cmd = pdfpng_executable_cmd + [
                 "-quiet",
@@ -3343,7 +2343,6 @@ def epub(xml_source, pub_file, out_file, dest_dir, file_format, math_format, str
                 author_names = [x.strip() for x in author.split(",")]
                 png_width = 1280
                 png_height = int(png_width * 1.6)
-                # build an array of lines for the title (and subtitle), each line fitting within 80% of png_width
                 title_lines = [""]
                 for word in title_words:
                     last_line = title_lines[-1]
@@ -3362,9 +2361,7 @@ def epub(xml_source, pub_file, out_file, dest_dir, file_format, math_format, str
                     else:
                         subtitle_lines.append(word)
                 multiline_subtitle = "\n".join(subtitle_lines).strip()
-                # each author on own line
                 multiline_author = "\n".join(author_names).strip()
-                # create new image
                 cover_png = PIL.Image.new(mode="RGB", size=(png_width, png_height), color="white")
                 draw = PIL.ImageDraw.Draw(cover_png)
                 title_depth = int(png_height // 4)
@@ -3409,7 +2406,6 @@ def epub(xml_source, pub_file, out_file, dest_dir, file_format, math_format, str
                         y += 10
                     cover_png.save(cover_source)
                 except:
-                    # We failed to build a cover.png so we remove all references to cover.png
                     log.warning("failed to construct a cover image")
         try:
             shutil.copy2(cover_source, cover_dest)
@@ -3429,7 +2425,6 @@ def epub(xml_source, pub_file, out_file, dest_dir, file_format, math_format, str
                 item.getparent().remove(item)
             package_opf_tree.write(package_opf)
 
-    # position image files
     images = packaging_tree.xpath("/packaging/images/image[@filename]")
     for im in images:
         sourcename = str(im.get("sourcename"))
@@ -3445,41 +2440,11 @@ def epub(xml_source, pub_file, out_file, dest_dir, file_format, math_format, str
             log.warning(msg.format(sourcename, filename))
             log.warning(traceback.format_exc())
 
-    # staged SVG images arrive as generated, or as an author provides
-    # them; neither is guaranteed to satisfy EPUB's restrictions
     _sanitize_svg_for_epub(xhtml_dir)
 
-    # The build/temp directory has a lot of cruft
-    # Leave it for the nozip option (debugging)
-    # Remove it before zipping
     #
-    # cover manufacture (cover.log, cover.aux, etc)
     # os.remove(packaging_file)
     # os.remove(math_representations)
-
-    ##########################################
-    # Notes on packaging an EPUB as a ZIP file
-    ##########################################
-
-    # mimetype parameters: -0Xq
-    # -0 no compression
-    # -X no extra fields, eg uid/gid on Unix
-    # -q quiet (not relevant)
-
-    # remainder parameters: -Xr9Dq
-    # -X no extra fields, eg uid/gid on Unix
-    # -r recursive travel
-    # -9 maximum compression
-    # -D no directory entries
-    # -q quiet (not relevant)
-
-    # https://www.w3.org/publishing/epub3/epub-ocf.html#sec-container-zip
-    # Spec says only "deflated compression"
-
-    # recursize walking
-    # https://www.tutorialspoint.com/How-to-zip-a-folder-recursively-using-Python
-
-    # Python 3.7 - compress level 0 to 9
 
     if file_format == "epub":
         title_file_element = packaging_tree.xpath("/packaging/filename")[0]
@@ -3507,59 +2472,31 @@ def epub(xml_source, pub_file, out_file, dest_dir, file_format, math_format, str
         log.warning(msg.format(file_format))
 
 
-#######################
-# Conversion to Jupyter
-#######################
-
-
 def jupyter(xml_source, pub_file, stringparams, file_format, out_file, dest_dir):
-    """Produce a collection of Jupyter notebooks, one per chunk
 
-    file_format - 'collection' deposits the files in dest_dir;
-                  'zip' bundles them as a single zip file, deposited
-                  as out_file, else with a name derived from the
-                  source filename
-    """
-
-    # The XSL stylesheet writes one XML *description* of a notebook
-    # for each chunk of the document: a flat list of "cell" elements
-    # holding strings.  Here each description becomes the JSON of a
-    # Jupyter notebook via the "nbformat" package, which owns string
-    # escaping, cell boilerplate, and conformance with the notebook
-    # schema.  Every notebook is validated before it is written.
-
-    # to ensure provided stringparams aren't mutated unintentionally
     stringparams = stringparams.copy()
 
     try:
         import nbformat
     except ImportError:
         raise ImportError(__module_warning.format("nbformat"))
-    # filename globbing for the notebook descriptions
     import glob
 
     log.info("converting {} into Jupyter notebooks in {}".format(xml_source, dest_dir))
 
     tmp_dir = common.get_temporary_directory()
     log.debug("Jupyter notebook manufacture in temporary directory: {}".format(tmp_dir))
-    # The notebook descriptions are moved here once converted: out of
-    # the shipped product, but preserved for inspection (a temporary
-    # directory survives when verbosity is at the debug level)
     description_dir = common.get_temporary_directory()
     log.info("notebook descriptions are retained in {}".format(description_dir))
 
     if pub_file:
         stringparams["publisher"] = pub_file
     extraction_xslt = os.path.join(common.get_ptx_xsl_path(), "pretext-jupyter.xsl")
-    # stylesheet writes "*.ipynb.xml" notebook descriptions, one per
-    # chunk, into the scratch directory; the result tree is empty
     common.xsltproc(extraction_xslt, xml_source, None, tmp_dir, stringparams)
 
-    # notebooks reference images relative to their own location
     generated_abs, external_abs = common.get_managed_directories(xml_source, pub_file)
     common.copy_managed_directories(tmp_dir, external_abs=external_abs, generated_abs=generated_abs)
 
-    # display names a reader sees in the Jupyter kernel menu
     kernel_display = {"sagemath": "SageMath", "python3": "Python 3"}
 
     invalid = []
@@ -3577,12 +2514,7 @@ def jupyter(xml_source, pub_file, stringparams, file_format, out_file, dest_dir)
         }
         for cell in root.iter("cell"):
             source = cell.text if cell.text else ""
-            # attributes beyond the cell type are structure recorded
-            # by the stylesheet (containing element, its identifier,
-            # fragment position); preserve them for tools and themes
             structure = {k: v for k, v in cell.attrib.items() if k != "type"}
-            # a special purpose is instruction to this routine,
-            # not structure worth preserving in the metadata
             purpose = structure.pop("purpose", None)
             if cell.get("type") == "code":
                 new_cell = nbformat.v4.new_code_cell(source)
@@ -3591,18 +2523,11 @@ def jupyter(xml_source, pub_file, stringparams, file_format, out_file, dest_dir)
             if structure:
                 new_cell.metadata["pretext"] = structure
             if purpose == "styling":
-                # collapse the input in JupyterLab and Notebook (v7+),
-                # and hide it entirely in a Jupyter Book build
                 new_cell.metadata["jupyter"] = {"source_hidden": True}
                 new_cell.metadata["tags"] = ["hide-input"]
-                # ship the cell's effect as a pre-rendered output, so
-                # a *trusted* notebook is styled on opening, with no
-                # execution; the notebook's own security model decides,
-                # and an untrusted notebook just offers the cell to run
                 html = source.split("\n", 1)[1] if source.startswith("%%html") else source
                 new_cell.outputs.append(nbformat.v4.new_output("display_data", data={"text/html": html}))
             notebook.cells.append(new_cell)
-        # the final filename is the description's, less the "xml" suffix
         notebook_file = os.path.splitext(description)[0]
         try:
             nbformat.validate(notebook)
@@ -3613,7 +2538,6 @@ def jupyter(xml_source, pub_file, stringparams, file_format, out_file, dest_dir)
             )
             log.error(traceback.format_exc())
         nbformat.write(notebook, notebook_file)
-        # the description does not ship, but is retained for inspection
         shutil.move(description, description_dir)
     log.info("converted {} notebook descriptions, {} failed validation".format(len(descriptions), len(invalid)))
 
@@ -3621,15 +2545,12 @@ def jupyter(xml_source, pub_file, stringparams, file_format, out_file, dest_dir)
         common.copy_build_directory(tmp_dir, dest_dir)
         log.info("Jupyter notebooks deposited in {}".format(dest_dir))
     elif file_format == "zip":
-        # working in the temporary directory gets simple paths in the
-        # zip file; the model is the HTML bundle above
         with common.working_directory(tmp_dir):
             zip_file = "jupyter-output.zip"
             log.info("packaging a zip file temporarily as {}".format(os.path.join(tmp_dir, zip_file)))
             with zipfile.ZipFile(zip_file, mode="w", compression=zipfile.ZIP_DEFLATED) as bundle:
                 for root, dirs, files in os.walk("."):
                     for name in files:
-                        # avoid recursively zipping the zip file
                         if name != zip_file:
                             bundle.write(os.path.join(root, name))
             derivedname = common.get_output_filename(xml_source, out_file, dest_dir, ".zip")
@@ -3640,70 +2561,33 @@ def jupyter(xml_source, pub_file, stringparams, file_format, out_file, dest_dir)
         log.warning(msg.format(file_format))
 
 
-####################
-# Conversion to HTML
-####################
-
-# Leads with various helper functions, see
-# also the dynamic_subsitutions() function
-
-
 def _parse_runestone_services(et):
-    # Unpack contents into format for XSL string parameters
-    # This mirrors the XML file format, including multiple "item"
     #
-    # creates PreTeXt-specific format for passing to XSL to unpack
 
-    # colon-delimited string of the JS files
     rs_js = ""
     for js in et.xpath("/all/js/item"):
         rs_js = rs_js + js.text + ":"
     rs_js = rs_js[:-1]
-    # colon-delimited string of the CSS files
     rs_css = ""
     for css in et.xpath("/all/css/item"):
         rs_css = rs_css + css.text + ":"
     rs_css = rs_css[:-1]
-    # single CDN URL
     rs_cdn_url = et.xpath("/all/cdn-url")[0].text
-    # single Runestone Services version
     rs_version = et.xpath("/all/version")[0].text
 
     return (rs_js, rs_css, rs_cdn_url, rs_version)
 
 
-# Update stringparams with Runestone Services information
 def _set_runestone_stringparams(stringparams, rs_js, rs_css, rs_version):
     stringparams["rs-js"] = rs_js
     stringparams["rs-css"] = rs_css
     stringparams["rs-version"] = rs_version
 
 
-# A helper function to query the latest Runestone
-# Services file, while failing gracefully
-
-
 def _runestone_services(stringparams, ext_rs_methods):
-    """Query the very latest Runestone Services file from the RS CDN"""
 
-    # stringparams - string parameter dictionary, this gains three
-    #                new keys which are passed on to the XSL eventually
-    # ext_rs_methods - an optional function that can replace the querying
-    #                   of the Runestone Services file
-    # Result - returns five pieces of discovered or set information,
-    #          see *two* return statements, one is intermediate.
-    #          Failure is an option, if a network request fails
-
-    # Canonical location of file of redirections to absolute-latest
-    # released version of Runestone Services when parameterized by
-    # "latest", otherwise will get a specific previous version
     services_url_template = "https://runestone.academy/cdn/runestone/{}/webpack_static_imports.xml"
 
-    # First, set the URL to hit on Runestone servers to initiate discovery
-    # 1. debugging with a specific (old) version, set a URL and warn
-    # 2. The generic  debug.rs.dev  requires developer to populate _static
-    # 3. The "usual" case is provided by Runestone's "latest" directory, set a URL
-    # (2) always succeeds, (1) and (3) can fail due to network errors
     if "debug.rs.version" in stringparams:
         rs_debug_version = stringparams["debug.rs.version"]
         services_url = services_url_template.format(rs_debug_version)
@@ -3714,54 +2598,34 @@ def _runestone_services(stringparams, ext_rs_methods):
             "Subsequent diagnostic messages may be inaccurate.  Verify your HTML output is as intended.",
         ])
         log.info(msg.format(rs_debug_version))
-        # could remove the  debug.rs.version  key here,
-        # no longer necessary to distinguish this case
     elif "debug.rs.dev" in stringparams:
-        # basically a "pass"
         log.info(
             "Building for local developmental Runestone Services. Make sure to build Runestone Services to _static in the output directory."
         )
     else:
         services_url = services_url_template.format("latest")
 
-    # Predictable and convenient debugging situation
-    # Developer is responsible for placement of the right files in _static
-    # ** Simply return early with stock values (or None) **
     if "debug.rs.dev" in stringparams:
         rs_js, rs_css, rs_cdn_url, rs_version, services_xml = _runestone_debug_service_info()
         _set_runestone_stringparams(stringparams, rs_js, rs_css, rs_version)
         return (rs_js, rs_css, rs_cdn_url, rs_version, services_xml)
 
-    # Otherwise, we have a URL pointing to the Runestone server/CDN
-    # which may be successful and may not.
     try:
         if ext_rs_methods and "debug.rs.version" not in stringparams:
-            # ext_rs_methods can be passed by the calling function.
-            # It should only accept keyword arguments, including `format` to
-            # distinguish between different types of requests.  Here we use
-            # format="xml" to indicate we are getting the small XML file containing
-            # data about the services and returning it as a string.
             services_xml = ext_rs_methods(url=services_url, format="xml")
         else:
-            # Network failure is fatal.  query_runestone_services() will raise an exception
-            # if it cannot get the Runestone Services file
             services_xml = query_runestone_services(services_url)
     except Exception as e:
         raise Exception(e)
 
-    # Now services_xml should be meaningful since we haven't raised an exception.
-
     services = ET.fromstring(services_xml)
-    # Interrogate the services XML
     rs_js, rs_css, rs_cdn_url, rs_version = _parse_runestone_services(services)
 
-    # Return, plus side-effect
     _set_runestone_stringparams(stringparams, rs_js, rs_css, rs_version)
     return (rs_js, rs_css, rs_cdn_url, rs_version, services_xml)
 
 
 def _runestone_debug_service_info():
-    """Return hardcoded values used for debugging Runestone Services (debug.rs.dev)"""
     rs_js = "prefix-runtime.bundle.js:prefix-runtime-libs.bundle.js:prefix-runestone.bundle.js"
     rs_css = "prefix-runtime-libs.css:prefix-runestone.css"
     rs_cdn_url = None
@@ -3771,19 +2635,9 @@ def _runestone_debug_service_info():
 
 
 def _cdn_runestone_services(stringparams, ext_rs_methods):
-    """Version of _runestone_services function to query the Runestone Services file from the PreTeXt html-static CDN"""
 
-    # stringparams - string parameter dictionary, this gains three
-    #                new keys which are passed on to the XSL eventually
-    # ext_rs_methods - an optional function that can replace the querying
-    #                   of the Runestone Services file
-    # Result - returns None, but updates stringparams dictionary with relevant rs values.
-
-    # CDN url for runestone services xml file
     services_url_template = "https://cdn.jsdelivr.net/gh/pretextbook/html-static@{}/dist/_static/runestone_services.xml"
 
-    # When builing portable html using the pretext CDN, it doesn't make sense to
-    # use the rs.version or rs.dev stringparams.  We warn if either of these are set.
     if "debug.rs.version" in stringparams:
         log.warning("Building portable html so ignoring the debug.rs.version string param")
         stringparams.pop("debug.rs.version")
@@ -3791,34 +2645,21 @@ def _cdn_runestone_services(stringparams, ext_rs_methods):
         log.warning("Building portable html so ignoring the debug.rs.dev string param")
         stringparams.pop("debug.rs.dev")
 
-    # set version to "latest" unless cli set cdn version
     rs_version = stringparams.get("cli.version") or "latest"
     log.info("Using rs services version {} from the PreTeXt CDN".format(rs_version))
     services_url = services_url_template.format(rs_version)
 
-    # Otherwise, we have a URL pointing to the Runestone server/CDN
-    # which may be successful and may not.
     try:
         if ext_rs_methods:
-            # ext_rs_methods can be passed by the calling function.
-            # It should only accept keyword arguments, including `format` to
-            # distinguish between different types of requests.  Here we use
-            # format="xml" to indicate we are getting the small XML file containing
-            # data about the services and returning it as a string.
             services_xml = ext_rs_methods(url=services_url, format="xml")
         else:
-            # Network failure is fatal.  query_runestone_services() will raise an exception
-            # if it cannot get the Runestone Services file
             services_xml = query_runestone_services(services_url)
     except Exception as e:
         raise Exception(e)
 
-    # Now services_xml should be meaningful since we haven't raised an exception.
     services = ET.fromstring(services_xml)
-    # Interrogate the services XML
     rs_js, rs_css, rs_cdn_url, rs_version = _parse_runestone_services(services)
 
-    # Set rs stringparams
     stringparams["rs-js"] = rs_js
     stringparams["rs-css"] = rs_css
     stringparams["rs-version"] = rs_version
@@ -3826,12 +2667,9 @@ def _cdn_runestone_services(stringparams, ext_rs_methods):
 
 
 def query_runestone_services(services_url):
-    """Query the Runestone Services file from the Runestone CDN.  Returns the response object's text (xml) or raises an exception if the network request fails."""
 
-    # We assume an online query is a success, until we learn otherwise
     online_success = True
 
-    # Test if (optional) requests module is installed
     try:
         import requests
     except ImportError:
@@ -3839,10 +2677,9 @@ def query_runestone_services(services_url):
         log.debug(msg)
         online_success = False
 
-    # Make a request with requests, which could fail if offline
     if online_success:
         try:
-            services_response = requests.get(services_url, timeout=(1, 10))  # 1 second connect, 10 second read
+            services_response = requests.get(services_url, timeout=(1, 10))
         except requests.exceptions.RequestException as e:
             msg = "\n".join([
                 'there was a network problem while trying to retrieve "{}"',
@@ -3852,7 +2689,6 @@ def query_runestone_services(services_url):
             log.debug(msg.format(services_url, e))
             online_success = False
 
-    # Check that an online request was "OK", HTTP response code 200
     if online_success:
         response_status_code = services_response.status_code
         if response_status_code != 200:
@@ -3867,50 +2703,25 @@ def query_runestone_services(services_url):
             "Unable to proceed and build useful HTML output without this.",
         ])
         log.debug(msg)
-        # fatal error here, a URL is not doing the job
         raise Exception(msg)
-    # Return the XML from the services response
     return services_response.text
 
 
 def _place_runestone_services(tmp_dir, stringparams, ext_rs_methods):
-    """Obtain Runestone Services and place in _static directory of build"""
 
-    # stringparams - this will be changed, receives Runestone Services information
-    #                also contains potential debugging switches to influence behavior
-    # ext_rs_methods - an optional function that can replace the querying and
-    #                  downloading of the Runestone Services file
-
-    # See if we can get Runestone Services, or interpret debugging selections
-    # This call will always change  stringparams (absent network failures)
-    # These get communicated eventually to the XSL to formulate the HTML #head
     rs_js, rs_css, rs_cdn_url, rs_version, services_xml = _runestone_services(stringparams, ext_rs_methods)
-    # A URL to the Runestone servers will have been successful
-    # in the "usual" and  debug.rs.version  cases
     if "debug.rs.dev" not in stringparams:
-        # Previous line will raise a fatal error if the Runestone servers
-        # do not cooperate, so we assume we have good information for
-        # locating the most recent version of Runestone Services
         msg = "Runestone Services via online CDN query: version {}"
         log.info(msg.format(rs_version))
 
-        # Get all the Runestone files and place in _static
-        # We "build" in tmp_dir, place "output" in dest_dir
         build_dir = os.path.join(tmp_dir, "_static")
         services_file_name = "dist-{}.tgz".format(rs_version)
         services_build_path = os.path.join(build_dir, services_file_name)
-        # services_record is copy of services xml file
-        # predictable name, contains version information
         services_record_build_path = os.path.join(build_dir, "_runestone-services.xml")
         try:
             msg = "Downloading Runestone Services, version {}"
             log.info(msg.format(rs_version))
             if ext_rs_methods:
-                # ext_rs_methods can be passed by the calling function.
-                # It should only accept keyword arguments, including `format` to
-                # distinguish between different types of requests.  Here we use
-                # the format "tgz" to indicate that we are finding the full
-                # tgz archive of Runestone Services.
                 ext_rs_methods(url=rs_cdn_url + services_file_name, out_path=services_build_path, format="tgz")
             else:
                 common.download_file(rs_cdn_url + services_file_name, services_build_path)
@@ -3920,10 +2731,7 @@ def _place_runestone_services(tmp_dir, stringparams, ext_rs_methods):
             services_file = tarfile.open(services_build_path)
             services_file.extractall(build_dir)
             services_file.close()
-            # once unpacked, archive no longer necessary
             os.remove(services_build_path)
-            # write the services_record XML file for potential
-            # version checking with a caching implementation
             services_record = open(services_record_build_path, "w", encoding="utf-8")
             services_record.write(services_xml)
             services_record.close()
@@ -3932,7 +2740,6 @@ def _place_runestone_services(tmp_dir, stringparams, ext_rs_methods):
             log.warning("Failed to download all Runestone Services files")
 
 
-# Helper to move a prebuilt css theme into the build directory as theme.css
 def _move_prebuilt_theme(theme_name, theme_opts, tmp_dir):
     css_src = os.path.join(common.get_ptx_path(), "css", "dist")
     css_dest = os.path.join(tmp_dir, "_static", "pretext", "css")
@@ -3940,8 +2747,6 @@ def _move_prebuilt_theme(theme_name, theme_opts, tmp_dir):
     src = os.path.join(common.get_ptx_path(), "css", "dist", "theme-{}.css".format(theme_name))
     dest = os.path.join(common.get_ptx_path(), os.path.join(css_dest, "theme.css"))
 
-    # ugly to have this here - it exists for more general use in _palette-dual.scss,
-    # but to support prebuilt default theme we need to look up its colors here
     color_schemes = {
         "blue-red": {
             "primary-color": "#195684",
@@ -3984,15 +2789,11 @@ def _move_prebuilt_theme(theme_name, theme_opts, tmp_dir):
 
     log.info("Using prebuilt CSS theme: " + theme_name + " with options: " + str(theme_opts))
 
-    # copy src -> dest with modifications
     with open(src, "r", encoding="utf-8") as theme_file:
         filedata = theme_file.read()
 
-        # modify file so that it points to the map file theme.css.map
         filedata = re.sub(r"sourceMappingURL=[^\s]*", r"sourceMappingURL=theme.css.map", filedata)
 
-        # append some css variables to the file so that colors can be customized
-        # without rebuilding the theme
         regular_vars = {k: v for k, v in theme_opts["options"].items() if "-dark" not in k}
         if regular_vars:
             filedata += "\n/* generated from pub variables */\n:root:not(.dark-mode) {"
@@ -4011,11 +2812,9 @@ def _move_prebuilt_theme(theme_name, theme_opts, tmp_dir):
         with open(dest, "w+", encoding="utf-8") as file:
             file.write(filedata)
 
-    # map file copied to theme.css.map
     if os.path.exists(src + ".map"):
         shutil.copy(src + ".map", dest + ".map")
 
-    # print-worksheet
     for file in ["print-worksheet.css", "print-worksheet.css.map"]:
         src = os.path.join(css_src, file)
         dest = os.path.join(css_dest, file)
@@ -4023,25 +2822,21 @@ def _move_prebuilt_theme(theme_name, theme_opts, tmp_dir):
             shutil.copy(src, dest)
 
 
-# Helper to build a custom version of a theme
 def _build_custom_theme(xml, theme_name, theme_opts, tmp_dir):
     ptx_path = common.get_ptx_path()
     script = os.path.join(ptx_path, "script", "cssbuilder", "cssbuilder.mjs")
     css_dest = os.path.join(tmp_dir, "_static", "pretext", "css")
 
-    # if doing building a completely custom theme, update entry-point to include full path as string
     if theme_name == "custom":
         theme_opts["options"]["entry-point"] = os.path.join(
             common.get_source_path(xml), theme_opts["options"]["entry-point"]
         )
 
-    # attempt build
     error_message = "Node.js is required to build themes other than default-modern. Make sure it is installed and in your PATH. Then do 'npm install' in the pretext/script/cssbuilder directory. https://pretextbook.org/doc/guide/html/node-and-npm.html"
     try:
         import subprocess, json
 
         node_exec_cmd = common.get_executable_cmd("node")
-        # theme name is prefixed with "theme-" in the cssbuilder script output
         full_name = "theme-{}".format(theme_name)
         log.info("Building custom css theme: " + full_name)
         log.debug("Theme options:" + json.dumps(theme_opts))
@@ -4088,12 +2883,10 @@ def build_or_copy_theme(xml, pub_var_dict, tmp_dir):
 
     theme_opts = json.loads(theme_opts_json)
 
-    # attempt basic sanity check of colors
     for var, check_color in theme_opts["contrast-checks"].items():
         if var in theme_opts["options"]:
             check_color_contrast(theme_opts["options"][var], check_color)
 
-    # use prerolled theme if legacy or default-modern and no node available
     use_prerolled = False
     if "-legacy" in theme_name:
         use_prerolled = True
@@ -4115,7 +2908,6 @@ def build_or_copy_theme(xml, pub_var_dict, tmp_dir):
         _build_custom_theme(xml, theme_name, theme_opts, tmp_dir)
 
 
-# entry point for pretext script to only build the theme
 def update_theme(xml_source, publication_file, stringparams, dest_dir):
     tmp_dir = common.get_temporary_directory()
     pub_vars = common.get_publisher_variable_report(xml_source, publication_file, stringparams)
@@ -4124,69 +2916,47 @@ def update_theme(xml_source, publication_file, stringparams, dest_dir):
 
 
 def html(xml, pub_file, stringparams, xmlid_root, file_format, extra_xsl, out_file, dest_dir, ext_rs_methods):
-    """Convert XML source to HTML files, in destination directory or as zip file"""
 
-    # to ensure provided stringparams aren't mutated unintentionally
     stringparams = stringparams.copy()
 
     log_time_info = stringparams.get("debug.profile", False) == "yes"
     time_logger = Stopwatch("html()", log_time_info)
 
-    # Consult publisher file for locations of images
     generated_abs, external_abs = common.get_managed_directories(xml, pub_file)
-    # Consult source for additional files
     data_dir = common.get_source_directories(xml)
 
-    # names for scratch directories
     tmp_dir = common.get_temporary_directory()
 
-    # Two variants of limiting the files produced for HTML: CDN resources are
-    # used for portable HTML as well as resources/@host="cdn", either of which
-    # set b-cdn-resources to "true" in the publisher file.  Some generated
-    # assets are inlined for the portable HTML (but not for CDN resources),
-    # which is indicated by portable-html="yes"
     pub_vars = common.get_publisher_variable_report(xml, pub_file, stringparams)
     include_static_files = common.get_publisher_variable(pub_vars, "b-cdn-resources") != "true"
     include_generated_svgs = common.get_publisher_variable(pub_vars, "portable-html") != "yes"
     time_logger.log("pubvars loaded")
 
     if include_static_files:
-        # interrogate Runestone server (or debugging switches) and populate
-        # NB: stringparams is augmented with Runestone Services information
         _place_runestone_services(tmp_dir, stringparams, ext_rs_methods)
     else:
-        # even if we don't need static files, we need to set stringparams for
-        # Runestone Services information.
         _cdn_runestone_services(stringparams, ext_rs_methods)
     time_logger.log("runestone placed")
 
-    # support publisher file, and subtree argument
     if pub_file:
         stringparams["publisher"] = pub_file
     if xmlid_root:
         stringparams["subtree"] = xmlid_root
-    # Build SCORM manifest if requested
     if file_format == "scorm":
         stringparams["html.scorm"] = "yes"
-    # Optional extra XSL could be None, or sanitized full filename
     if extra_xsl:
         extraction_xslt = extra_xsl
     else:
         extraction_xslt = os.path.join(common.get_ptx_xsl_path(), "pretext-html.xsl")
 
-    # place managed directories - some of these (Asymptote HTML) are
-    # consulted during the XSL run and so need to be placed beforehand
     common.copy_managed_directories(tmp_dir, external_abs=external_abs, generated_abs=generated_abs, data_abs=data_dir)
     time_logger.log("managed directories copied")
 
     if include_static_files:
-        # Copy js and css, but only if not building portable html
-        # place JS in scratch directory
         copy_html_js(tmp_dir)
         build_or_copy_theme(xml, pub_vars, tmp_dir)
         time_logger.log("css/js copied")
 
-    # Write output into temporary directory
     log.info("converting {} to HTML in {}".format(xml, tmp_dir))
     common.xsltproc(extraction_xslt, xml, None, tmp_dir, stringparams)
     time_logger.log("xsltproc complete")
@@ -4198,27 +2968,17 @@ def html(xml, pub_file, stringparams, xmlid_root, file_format, extra_xsl, out_fi
         time_logger.log("runestone page template extraction complete")
 
     if not (include_generated_svgs):
-        # remove latex-image generated directories for portable builds
         shutil.rmtree(os.path.join(tmp_dir, "generated", "latex-image"), ignore_errors=True)
 
     if file_format == "html":
-        # with multiple files, we need to copy a tree
-        # see comments at  copy_build_directory()
-        # before replacing with  shutil.copytree()
         common.copy_build_directory(tmp_dir, dest_dir)
     elif file_format == "zip" or file_format == "scorm":
-        # working in temporary directory gets simple paths in zip file
         with common.working_directory(tmp_dir):
             zip_file = "html-output.zip"
             log.info("packaging a zip file temporarily as {}".format(os.path.join(tmp_dir, zip_file)))
             with zipfile.ZipFile(zip_file, mode="w", compression=zipfile.ZIP_DEFLATED) as epub:
                 for root, dirs, files in os.walk("."):
                     for name in files:
-                        # Avoid recursively zipping the zip file
-                        # Small chance we might be clobbering an existing
-                        # "html-output.zip" that could be part of a project.
-                        # TODO: zip directly into the derivedname below?
-                        #       Or, zip into some new temporary directory?
                         if name != zip_file:
                             epub.write(os.path.join(root, name))
             derivedname = common.get_output_filename(xml, out_file, dest_dir, ".zip")
@@ -4231,21 +2991,8 @@ def html(xml, pub_file, stringparams, xmlid_root, file_format, extra_xsl, out_fi
 
 
 def _inline_reveal_resources(html_file, local_dir, reveal_root):
-    """Inline CSS/JS resources so a slideshow is a single HTML file"""
 
-    # The slideshow references reveal.js files at a CDN (the
-    # "reveal_root" prefix) plus local stylesheets (PreTeXt's own, and
-    # any publisher custom CSS).  Each stylesheet "link" becomes a
-    # "style" element, each reveal.js "script" reference becomes an
-    # inline "script", and font files referenced from within a
-    # stylesheet become data: URIs.  Online services (Sage cells, say)
-    # are left alone.  Requires a network connection at build time.
     #
-    # The replacements are textual, on machine-generated tags of known
-    # shape.  A parse-and-reserialize of the whole document damages
-    # everything the serializer normalizes (the banner comments ahead
-    # of the "html" element, a synthesized Content-Type "meta", the
-    # final newline), so the surgery must touch nothing but the tags.
 
     import base64
     import mimetypes
@@ -4254,7 +3001,6 @@ def _inline_reveal_resources(html_file, local_dir, reveal_root):
 
     import requests
 
-    # mimetypes may not know modern font types
     font_types = {
         ".woff2": "font/woff2",
         ".woff": "font/woff",
@@ -4263,7 +3009,6 @@ def _inline_reveal_resources(html_file, local_dir, reveal_root):
     }
 
     def fetch(url):
-        # prefer the minified variant the CDN generates on demand
         base, dot, extension = url.rpartition(".")
         candidates = ["{}.min.{}".format(base, extension), url] if dot else [url]
         for candidate in candidates:
@@ -4273,9 +3018,6 @@ def _inline_reveal_resources(html_file, local_dir, reveal_root):
         raise OSError("failed to retrieve {} while embedding slideshow resources".format(url))
 
     def embed_css_urls(css_text, css_url):
-        # a url(...) reference relative to its stylesheet (a font,
-        # typically) becomes a data: URI; absolute references and
-        # existing data: URIs are left alone
         def replacement(match):
             reference = match.group(1).strip("'\" ")
             if reference.startswith(("data:", "http:", "https:", "//", "#")):
@@ -4293,9 +3035,6 @@ def _inline_reveal_resources(html_file, local_dir, reveal_root):
         return re.sub(r"url\(([^)]+)\)", replacement, css_text)
 
     def guard(text, element):
-        # inside a raw-text element only the closing tag terminates
-        # early; escape the sequence should it ever occur (inside a
-        # string literal, in practice, where the escape is equivalent)
         sequence = "</{}".format(element)
         if sequence in text.lower():
             log.warning("escaping a premature closing sequence while embedding a {} element".format(element))
@@ -4305,7 +3044,6 @@ def _inline_reveal_resources(html_file, local_dir, reveal_root):
     with open(html_file, "r", encoding="utf-8") as page_file:
         page = page_file.read()
 
-    # every stylesheet "link", whatever its attribute order
     for tag in re.findall(r'<link[^>]*rel="stylesheet"[^>]*>', page):
         href_match = re.search(r'href="([^"]*)"', tag)
         if not href_match:
@@ -4315,25 +3053,20 @@ def _inline_reveal_resources(html_file, local_dir, reveal_root):
             response = fetch(href)
             css = embed_css_urls(response.text, response.url)
         elif href.startswith(("http:", "https:", "//")):
-            # publisher custom CSS hosted remotely
             response = requests.get(href, timeout=30)
             if response.status_code != 200:
                 log.warning("could not retrieve {} for embedding".format(href))
                 continue
             css = embed_css_urls(response.text, response.url)
         else:
-            # local stylesheet, staged in the build directory
             with open(os.path.join(local_dir, href), "r", encoding="utf-8") as css_file:
                 css = css_file.read()
         page = page.replace(tag, "<style>\n{}\n</style>".format(guard(css, "style")))
 
-    # a "script" loaded by reference and nothing more; online services
-    # (never at the reveal.js location) stay untouched
     for tag, src in re.findall(r'(<script src="([^"]*)"></script>)', page):
         if src.startswith(reveal_root):
             js = fetch(src).text
         elif not src.startswith(("http:", "https:", "//")):
-            # local script, staged in the build directory
             with open(os.path.join(local_dir, src), "r", encoding="utf-8") as js_file:
                 js = js_file.read()
         else:
@@ -4345,37 +3078,26 @@ def _inline_reveal_resources(html_file, local_dir, reveal_root):
 
 
 def revealjs(xml, pub_file, stringparams, xmlid_root, file_format, extra_xsl, out_file, dest_dir):
-    """Convert XML source "slideshow" to reveal.js HTML file"""
 
-    # to ensure provided stringparams aren't mutated unintentionally
     stringparams = stringparams.copy()
 
-    # Consult publisher file for locations of images
     generated_abs, external_abs = common.get_managed_directories(xml, pub_file)
 
-    # names for scratch directories
     tmp_dir = common.get_temporary_directory()
 
-    # support publisher file, and subtree argument
     if pub_file:
         stringparams["publisher"] = pub_file
     if xmlid_root:
         stringparams["subtree"] = xmlid_root
-    # Optional extra XSL could be None, or sanitized full filename
     if extra_xsl:
         extraction_xslt = extra_xsl
     else:
         extraction_xslt = os.path.join(common.get_ptx_xsl_path(), "pretext-revealjs.xsl")
 
-    # place managed directories - some of these (Asymptote HTML) are
-    # consulted during the XSL run and so need to be placed beforehand
     common.copy_managed_directories(tmp_dir, external_abs=external_abs, generated_abs=generated_abs)
 
-    # place JS in scratch directory
-    # TODO: audit what JS is really needed/used
     copy_html_js(tmp_dir)
 
-    # copy CSS
     css_src = os.path.join(common.get_ptx_path(), "css", "dist", "pretext-reveal.css")
     css_dest = os.path.join(tmp_dir, "_static", "pretext", "css", "pretext-reveal.css")
     with open(css_src, "r", encoding="utf-8") as theme_file:
@@ -4384,14 +3106,9 @@ def revealjs(xml, pub_file, stringparams, xmlid_root, file_format, extra_xsl, ou
         with open(css_dest, "w+", encoding="utf-8") as file:
             file.write(filedata)
 
-    # The publication file may elect embedded mathematics: every "m"
-    # and "md" is replaced by an SVG image with a speech string, both
-    # manufactured here, and the slideshow does not load MathJax
     pub_vars = common.get_publisher_variable_report(xml, pub_file, stringparams)
     math_source = common.get_publisher_variable(pub_vars, "reveal-math-source")
     if math_source == "embedded":
-        # a separate scratch directory: the whole of  tmp_dir  is copied
-        # to the output, and these files should not ride along
         math_tmp_dir = common.get_temporary_directory()
         math_representations = os.path.join(math_tmp_dir, "math-representations-svg.xml")
         speech_representations = os.path.join(math_tmp_dir, "math-representations-speech.xml")
@@ -4403,44 +3120,23 @@ def revealjs(xml, pub_file, stringparams, xmlid_root, file_format, extra_xsl, ou
         stringparams["mathfile"] = math_representations.replace(os.sep, "/")
         stringparams["speechfile"] = speech_representations.replace(os.sep, "/")
 
-    # Write output into temporary directory
     log.info("converting {} to HTML in {}".format(xml, tmp_dir))
     derivedname = common.get_output_filename(xml, out_file, dest_dir, ".html")
     common.xsltproc(extraction_xslt, xml, derivedname, tmp_dir, stringparams)
-    # The publication file may elect embedded resources: the reveal.js
-    # files, and all stylesheets, are folded into the one HTML file
     resources_host = common.get_publisher_variable(pub_vars, "reveal-resources-host")
     if resources_host == "embedded":
         reveal_root = common.get_publisher_variable(pub_vars, "reveal-root")
         log.info("embedding reveal.js resources for a single-file slideshow")
         _inline_reveal_resources(derivedname, tmp_dir, reveal_root)
-    # with multiple files, we need to copy a tree
-    # see comments at  copy_build_directory()
-    # before replacing with  shutil.copytree()
     common.copy_build_directory(tmp_dir, dest_dir)
 
 
-##################
-# Assembled Source
-##################
-
-# AKA the aftermath of the pre-processor
-# Parameterized by static v. dynamic exercises
-
-# N.B. Keep this in-sync with the `assembly_internal` method
-
-
 def assembly(xml, pub_file, stringparams, out_file, dest_dir, method):
-    """Convert XML source to pre-processed PreTeXt in destination directory"""
 
-    # to ensure provided stringparams aren't mutated unintentionally
     stringparams = stringparams.copy()
 
-    # support publisher file, not subtree argument
     if pub_file:
         stringparams["publisher"] = pub_file
-    # method dictates which type of exercises are produced
-    # parameter is exclusive to utility styleheet below
     if method in ["static", "dynamic", "pg-problems"]:
         stringparams["debug.assembly.exercise"] = method
     elif method == "version":
@@ -4449,29 +3145,16 @@ def assembly(xml, pub_file, stringparams, out_file, dest_dir, method):
         stringparams["assembly.assembly-id-only"] = "yes"
     else:
         log.error("assembly method {} not recognized".format(method))
-    # "extra_xsl" would be silly in this context (?)
     extraction_xslt = os.path.join(common.get_ptx_xsl_path(), "utilities", "pretext-enhanced-source.xsl")
-    # form output filename based on source filename,
-    # unless an  out_file  has been specified
     derivedname = common.get_output_filename(xml, out_file, dest_dir, ".xml")
-    # Write output into working directory, no scratch space needed
     log.info("converting {} to enhanced (pre-processed) PreTeXt source as {}".format(xml, derivedname))
     common.xsltproc(extraction_xslt, xml, derivedname, None, stringparams)
 
 
-# lxml element tree as return value. for use internally
-
-# N.B. Keep this in-sync with the `assembly` method
-
-
 def assembly_internal(xml, pub_file, stringparams, method):
-    """Assembled source as an lxml element tree, provided as a return value"""
-    # to ensure provided stringparams aren't mutated unintentionally
     stringparams = stringparams.copy()
-    # support publisher file
     if pub_file:
         stringparams["publisher"] = pub_file
-    # method dictates which type of exercises are produced
     if method in ["static", "dynamic", "pg-problems"]:
         stringparams["debug.assembly.exercise"] = method
     elif method == "version":
@@ -4480,27 +3163,12 @@ def assembly_internal(xml, pub_file, stringparams, method):
         stringparams["assembly.assembly-id-only"] = "yes"
     else:
         log.error("assembly method {} not recognized".format(method))
-    # use the right xsl template
     extraction_xslt = os.path.join(common.get_ptx_xsl_path(), "utilities", "pretext-enhanced-source.xsl")
     log.debug("converting {} to enhanced (pre-processed) PreTeXt source for internal use".format(xml))
     return common.xsltproc(extraction_xslt, xml, None, None, stringparams)
 
 
-#####################
-# Conversion to LaTeX
-#####################
-
-
 def get_latex_style(xml, pub_file, stringparams):
-    """
-    Returns the name of a latex_style to be used for processing to latex.
-      - Checks the value of the publisher variable 'journal-name'.
-      - If it finds a journal name, tries to resolve that using the list of
-        journals, returning the corresponding latex-style entry for that journal.
-        Also adds the texstyle file name to the string params
-      - If there is no journal-name publisher variable, or the variable is not in the
-        list of journals, checks for the publisher variable 'latex-style' and returns this.
-    """
     pub_vars = common.get_publisher_variable_report(xml, pub_file, stringparams)
     journal_name = common.get_publisher_variable(pub_vars, "journal-name")
     pub_latex_style = common.get_publisher_variable(pub_vars, "latex-style")
@@ -4522,16 +3190,10 @@ def get_latex_style(xml, pub_file, stringparams):
 
 
 def latex_package(xml, pub_file, stringparams, dest_dir):
-    """
-    Fetch latex packages (.sty/.cls files) required for building a
-    latex document in a particular journal's style (as specified by
-    a texstyle file).  This always downloads a fresh version of the files.
-    """
     pub_vars = common.get_publisher_variable_report(xml, pub_file, stringparams)
     journal_name = common.get_publisher_variable(pub_vars, "journal-name")
     if journal_name:
         tmp_dir = common.get_temporary_directory()
-        # place_latex_package_files checks if tmp_dir already has the files, which it won't, so new files will always be downloaded.
         dest_dir = os.path.join(dest_dir, journal_name)
         place_latex_package_files(dest_dir, journal_name, tmp_dir)
         log.info("latex package files downloaded to " + dest_dir)
@@ -4539,51 +3201,20 @@ def latex_package(xml, pub_file, stringparams, dest_dir):
         log.warning("No journal name found in publication file, so no latex package files downloaded.")
 
 
-# This is not a build target, there is no such thing as a "latex build."
-# Instead, this is a conveience for developers who want to compare
-# different versions of this file during development and testing.
 def latex(xml, pub_file, stringparams, extra_xsl, out_file, dest_dir, latex_format):
-    """
-    Convert XML source to LaTeX in destination directory.
 
-    Args:
-        xml (str): Path to the XML source file.
-        pub_file (str or None): Path to the publisher configuration file, or None if not used.
-        stringparams (dict): Dictionary of string parameters to control the transformation.
-        extra_xsl (str or None): Path to an additional XSL stylesheet, or None if not used.
-        out_file (str or None): Path to the output LaTeX file. If None, the file is copied to dest_dir.
-        dest_dir (str): Directory where the output LaTeX file should be placed if out_file is not specified.
-        latex_format (str): The LaTeX-family output format (e.g. 'latex' or 'beamer'), naming the base stylesheet.
-
-    Returns:
-        None
-
-    Side Effects:
-        - Generates a LaTeX file in the specified destination directory.
-    """
-
-    # to ensure provided stringparams aren't mutated unintentionally
     stringparams = stringparams.copy()
 
-    # support publisher file, not subtree argument
     if pub_file:
         stringparams["publisher"] = pub_file
 
-    # Get potential extra XSL for LaTeX style from publication file
     latex_style = get_latex_style(xml, pub_file, stringparams)
 
-    # The base stylesheet for each LaTeX-family output format.  For "latex"
-    # a publisher's "latex-style" (a styled variant) or an author's extra XSL
-    # can still override this (below).
     latex_format_stylesheets = {
         "latex": "pretext-latex.xsl",
         "beamer": "pretext-beamer.xsl",
     }
 
-    # Choose the stylesheet in priority order: an author's extra XSL (from
-    # the command line) overrides everything; then a publisher's latex-style
-    # variant of the regular LaTeX; otherwise the base stylesheet for the
-    # requested LaTeX-family format.
     if extra_xsl:
         extraction_xslt = extra_xsl
         if latex_style:
@@ -4593,54 +3224,26 @@ def latex(xml, pub_file, stringparams, extra_xsl, out_file, dest_dir, latex_form
         extraction_xslt = os.path.join(common.get_ptx_xsl_path(), "latex", f"pretext-latex-{latex_style}.xsl")
     else:
         extraction_xslt = os.path.join(common.get_ptx_xsl_path(), latex_format_stylesheets[latex_format])
-    # form output filename based on source filename,
-    # unless an  out_file  has been specified
     derivedname = common.get_output_filename(xml, out_file, dest_dir, ".tex")
-    # Write output into working directory, no scratch space needed
     log.info("converting {} to LaTeX as {}".format(xml, derivedname))
     common.xsltproc(extraction_xslt, xml, derivedname, None, stringparams)
 
 
-# Like latex() above, this is mostly a convenience for developers:
-# the XSL-FO file is an intermediate format on the way to a PDF,
-# though it does stand alone as the input to any XSL-FO formatter.
 def fo(xml, pub_file, stringparams, out_file, dest_dir):
-    """Convert XML source to XSL-FO in destination directory"""
 
-    # to ensure provided stringparams aren't mutated unintentionally
     stringparams = stringparams.copy()
 
-    # support publisher file, not subtree argument
     if pub_file:
         stringparams["publisher"] = pub_file
 
     extraction_xslt = os.path.join(common.get_ptx_xsl_path(), "pretext-fo.xsl")
-    # form output filename based on source filename,
-    # unless an  out_file  has been specified
     derivedname = common.get_output_filename(xml, out_file, dest_dir, ".fo")
-    # The stylesheet may write companion files (e.g. a publisher's
-    # watermark image) via exsl:document, which resolve against the
-    # current working directory; aim them beside the FO file, where
-    # relative references resolve when Apache FOP renders it
     companion_dir = os.path.dirname(os.path.abspath(derivedname))
     log.info("converting {} to XSL-FO as {}".format(xml, derivedname))
     common.xsltproc(extraction_xslt, xml, derivedname, companion_dir, stringparams)
 
 
-###################
-# Conversion to PDF
-###################
-
-
 def _latex_compile(latex_cmd, log_file, source_name, max_passes=10, capture_output=False):
-    """Compile a LaTeX file, rerunning until cross-references settle.
-
-    Runs the initial pass, then reruns while the log file requests
-    "Rerun to get" and the pass limit has not been reached.
-
-    Returns the CompletedProcess from the final pass.  Sets returncode
-    to 1 if the pass limit is reached without convergence.
-    """
     run_kwargs = {"stdout": subprocess.PIPE, "encoding": "utf-8"} if capture_output else {}
     result = subprocess.run(latex_cmd, **run_kwargs)
     pass_count = 1
@@ -4662,27 +3265,6 @@ def _latex_compile(latex_cmd, log_file, source_name, max_passes=10, capture_outp
 
 
 def pdf(xml, pub_file, stringparams, extra_xsl, out_file, dest_dir, method, outputs, latex_format):
-    """
-    Generate a PDF from an XML source using LaTeX as an intermediate format.
-
-    Args:
-        xml (str): Path to the XML source file.
-        pub_file (str or None): Path to the publisher configuration file, or None if not used.
-        stringparams (dict): Dictionary of string parameters to control the transformation.
-        extra_xsl (str or None): Path to an additional XSL stylesheet, or None if not used.
-        out_file (str or None): Path to the output PDF file. If None, the PDF is copied to      dest_dir.
-        dest_dir (str): Directory where the output PDF should be placed if out_file is not specified.
-        method (str): The LaTeX engine or processing method to use (e.g., 'pdflatex', 'xelatex').
-        outputs (str or None): Specify which files should be copied to dest_dir.  Possible values are pdf-only (default), all (.tex, assets, pdf, and *.log, *.aux, etc), all-clean (same as all but no *.log, *.aux, etc), or prebuild (same as all-clean but no pdf).
-        latex_format (str): The LaTeX-family output format (e.g. 'latex' or 'beamer'), naming the base stylesheet.
-
-    Returns:
-        None
-
-    Side Effects:
-        - Copies the generated PDF to the specified output location.
-    """
-    # Warn if outputs variable is something other than expected options
     outputs_options = ["pdf-only", "prebuild", "all", "all-clean"]
     if outputs not in outputs_options:
         log.warning(
@@ -4690,69 +3272,39 @@ def pdf(xml, pub_file, stringparams, extra_xsl, out_file, dest_dir, method, outp
                 outputs
             )
         )
-    # to ensure provided stringparams aren't mutated unintentionally
     stringparams = stringparams.copy()
 
     generated_abs, external_abs = common.get_managed_directories(xml, pub_file)
-    # Consult source for additional files
     data_dir = common.get_source_directories(xml)
 
-    # perhaps necessary (so drop "if"), but maybe not; needs to be supported
     if pub_file:
         stringparams["publisher"] = pub_file
-    # names for scratch directories
     tmp_dir = common.get_temporary_directory()
 
-    # make the LaTeX source file in scratch directory
-    # (1) pass None as out_file to derive from XML source filename
-    # (2) pass tmp_dir (scratch) as destination directory
     latex(xml, pub_file, stringparams, extra_xsl, None, tmp_dir, latex_format)
 
-    # Create localized filenames for pdflatex conversion step
-    # sourcename  needs to match behavior of latex() with above arguments
     basename = os.path.splitext(os.path.split(xml)[1])[0]
     sourcename = basename + ".tex"
     pdfname = basename + ".pdf"
 
-    # Copy directories as indicated in publisher file
-    # A "None" value will indicate there was no information
-    # (an empty string is impossible due to a slash always being present?)
-
-    # Make data files available, such as for TikZ images
     common.copy_managed_directories(tmp_dir, external_abs=external_abs, generated_abs=generated_abs, data_abs=data_dir)
 
-    # If we are building for a journal, we might need extra files
     pub_vars = common.get_publisher_variable_report(xml, pub_file, stringparams)
     journal_name = common.get_publisher_variable(pub_vars, "journal-name")
     if journal_name:
         place_latex_package_files(tmp_dir, journal_name, os.path.join(generated_abs, "latex-packages"))
 
-    # If requested, copy the LaTeX source and asset folders to dest_dir.
-    # Note that outputs == "all" needs to wait until after the build to copy build_dir.
     if outputs == "all-clean" or outputs == "prebuild":
         common.copy_build_directory(tmp_dir, dest_dir)
-        # prebuild means no pdf, so stop here.
         if outputs == "prebuild":
             return
 
-    # now work in temporary directory since LaTeX is a bit incapable
-    # of working outside of the current working directory
     with common.working_directory(tmp_dir):
-        # process with a  latex  engine
         latex_key = common.get_deprecated_tex_fallback(method)
         latex_exec_cmd = common.get_executable_cmd(latex_key)
-        # -halt-on-error will give an exit code to examine
-        # First pass always needed, second resolves cross-references.
-        # Additional passes may be required by packages like nicematrix
-        # (which uses TikZ "remember picture" for cell coloring) or
-        # tcolorbox.  We check the .log for "Rerun to get" requests,
-        # matching the strategy used for standalone latex-image compilation.
         latex_cmd = latex_exec_cmd + ["-halt-on-error", sourcename]
         logname = basename + ".log"
         result = _latex_compile(latex_cmd, logname, sourcename)
-        # A failed compilation leaves no PDF behind, so say so here.  Copying
-        # the absent file would raise instead, and the author would read a
-        # Python traceback rather than a sentence naming the log to consult.
         if result.returncode != 0:
             raise OSError(
                 "the LaTeX compilation of {} failed, so no PDF was produced.  Consult {} for the errors reported by the LaTeX engine".format(
@@ -4760,14 +3312,9 @@ def pdf(xml, pub_file, stringparams, extra_xsl, out_file, dest_dir, method, outp
                 )
             )
 
-        # If we want all outputs, we copy the entire build directory now that the PDF is built
-        # so we can get the *.log, *.aux, etc build files.
         if outputs == "all":
             common.copy_build_directory(tmp_dir, dest_dir)
         else:
-            # Copy just the PDF output
-            # out_file: not(None) only if provided in CLI
-            # dest_dir: always defined, if only current directory of CLI invocation
             if out_file:
                 shutil.copy2(pdfname, out_file)
             else:
@@ -4775,44 +3322,8 @@ def pdf(xml, pub_file, stringparams, extra_xsl, out_file, dest_dir, method, outp
 
 
 def _pdf_fo_accessibility_repairs(pdfname):
-    """
-    Post-process a FOP-rendered PDF to repair two PDF/UA conformance
-    gaps that Apache FOP (observed with version 2.8) cannot fill from
-    the XSL-FO side.  PyMuPDF performs the (small, incremental)
-    repairs; it is already a dependency of this script, used for
-    image format conversions.
-
-    Repair one, link descriptions:
-
-    PDF/UA-1 (ISO 14289-1, Clause 7.18.5) requires each link
-    annotation to provide an alternate description in the /Contents
-    key of its annotation dictionary (per ISO 32000-1, 14.9.3); this
-    is what assistive technology announces for the link, and what a
-    validator such as veraPDF inspects.  The XSL-FO conversion
-    decorates every "fo:basic-link" with a description, via the
-    "fox:alt-text" extension attribute, but FOP records it only as
-    the /Alt entry of the link's *structure element*, in the
-    structure tree -- it has no mechanism at all for writing the
-    /Contents key of the Link *annotation*.  So walk the structure
-    tree's /ParentTree to recover each annotation's intended
-    description from its structure element (falling back to the
-    link's URI, or generic text) and write it into /Contents.
-
-    Repair two, footnote identifiers:
-
-    PDF/UA-1 (Clause 7.9) requires each /Note structure element
-    (FOP's tag for the body of a footnote) to carry a unique /ID
-    entry, which FOP never writes.  Manufacture one from the
-    object number.
-
-    N.B. Remove this routine (and its one call, in pdf_fo()) the day
-    FOP handles both itself.  The test: render with a newer FOP,
-    skip this pass, and check the report of
-        verapdf --flavour ua1 <the-pdf>
-    for Clauses 7.18.5 and 7.9.
-    """
     try:
-        import fitz  # pyMuPDF
+        import fitz
     except ImportError:
         log.warning(
             "the 'pyMuPDF' module is not installed, so PDF link annotations lack the alternate descriptions PDF/UA requires"
@@ -4822,12 +3333,6 @@ def _pdf_fo_accessibility_repairs(pdfname):
     import re
 
     doc = fitz.open(pdfname)
-    # Map a /StructParent index to the /Alt of its structure element by
-    # walking the /ParentTree number tree, whose nodes are inline
-    # dictionaries or indirect objects, with /Kids subtrees or /Nums
-    # leaf arrays.  Entries mapping an index to an *array* (the marked
-    # content of a page) do not concern us, and do not match the pair
-    # pattern.  Any miss just engages the fallback below.
     alternate_text = {}
 
     def harvest(node_type, node_value):
@@ -4868,23 +3373,11 @@ def _pdf_fo_accessibility_repairs(pdfname):
                 description = link.get("uri") or "internal cross-reference"
             doc.xref_set_key(xref, "Contents", fitz.get_pdf_str(description))
             additions += 1
-    # repair two: a unique /ID for each /Note structure element
     for xref in range(1, doc.xref_length()):
         if doc.xref_get_key(xref, "S")[1] == "/Note" and doc.xref_get_key(xref, "ID")[0] == "null":
             doc.xref_set_key(xref, "ID", "(Note-{})".format(xref))
             additions += 1
 
-    # repair three: tag the link annotations FOP leaves untagged.  Apache
-    # Batik turns the SVG "a" that MathJax emits for a cross-reference
-    # inside display mathematics into a Link annotation, but -- unlike
-    # FOP's own "fo:basic-link" -- does not nest it in a Link structure
-    # element, which PDF/UA-1 (Clause 7.18.5) requires.  Wrap each such
-    # annotation (a Link with no /StructParent) in a new Link structure
-    # element under the document's structure element, with an /OBJR back
-    # to the annotation, and register its /StructParent in the number
-    # tree.  Nesting under the math's own figure would read better, but
-    # needs per-figure geometry that FOP and PyMuPDF do not expose; this
-    # keeps the PDF conformant.
     struct_root = doc.xref_get_key(doc.pdf_catalog(), "StructTreeRoot")
     if struct_root[0] == "xref":
         root_xref = int(struct_root[1].split()[0])
@@ -4897,9 +3390,6 @@ def _pdf_fo_accessibility_repairs(pdfname):
         else:
             document_element = None
 
-        # The /ParentTree is a number tree, given inline on the structure
-        # root or as an indirect object.  Read a node's /Nums and /Kids
-        # whichever way it is stored.
         def tree_node(node_type, node_value):
             if node_type == "xref":
                 node = int(node_value.split()[0])
@@ -4910,9 +3400,6 @@ def _pdf_fo_accessibility_repairs(pdfname):
             kids = re.search(r"/Kids\s*(\[[^\]]*\])", node_value)
             return (nums.group(1) if nums else None, kids.group(1) if kids else None)
 
-        # an indirect leaf to extend (follow /Kids to its last child), the
-        # highest key already in the tree (a page's /StructParents or an
-        # annotation's /StructParent), so new keys sit above it
         def resolve_leaf(node_type, node_value):
             nums, kids = tree_node(node_type, node_value)
             if kids:
@@ -4957,7 +3444,6 @@ def _pdf_fo_accessibility_repairs(pdfname):
                     additions += 1
 
             if new_links:
-                # the new Link elements become children of the document
                 new_refs = " ".join("{} 0 R".format(x) for _, x in new_links)
                 k_entry = doc.xref_get_key(document_element, "K")
                 if k_entry[0] == "array":
@@ -4967,9 +3453,6 @@ def _pdf_fo_accessibility_repairs(pdfname):
                 else:
                     document_kids = "[{}]".format(new_refs)
                 doc.xref_set_key(document_element, "K", document_kids)
-                # map each annotation's /StructParent to its Link element,
-                # extending the leaf's /Nums (kept sorted, as the new keys
-                # are all above the existing ones) and its /Limits
                 nums = " ".join("{} {} 0 R".format(k, x) for k, x in new_links)
                 leaf_nums = doc.xref_get_key(leaf, "Nums")
                 existing = leaf_nums[1].strip()[1:-1].strip() if leaf_nums[0] == "array" else ""
@@ -4990,27 +3473,6 @@ def _pdf_fo_accessibility_repairs(pdfname):
 
 
 def _downgrade_svg2_for_batik(directory):
-    """Rewrite SVG 2 constructs that Apache Batik (via FOP) cannot render.
-
-    * context-stroke / context-fill in marker content: for each referencing
-      element a resolved copy is created using that element's concrete
-      stroke / fill; copies with the same colour pair are shared.
-    * orient="auto-start-reverse": changed to "auto"; elements that use
-      the marker as marker-start get a rotated (180°) copy (id suffix
-      "-start").
-    * Plain href on any SVG element: migrated to xlink:href.
-    * fill="transparent" → fill="none"; hsl()/rgb() colour functions and
-      CSS filter functions in <style> blocks rewritten to values Batik
-      accepts.
-    * dominant-baseline="central/middle" and alignment-baseline on <text>:
-      converted to an explicit numeric y coordinate (alphabetic baseline),
-      with all dy attributes removed to avoid Batik dy/tspan quirks.
-    * <foreignObject> containing XHTML spans (mermaid class diagrams):
-      replaced by SVG <text> elements with equivalent content and position.
-    """
-    # TODO (2026-07-03) This function may modify SVG 1.1 files coming
-    # from PreFigure that are known to be good for Batik to ingest.
-    # With access to source, we can determine filenames to avoid.
 
     import glob, copy, re, colorsys
     import lxml.etree as ET
@@ -5129,8 +3591,6 @@ def _downgrade_svg2_for_batik(directory):
                 del el.attrib["href"]
                 changed = True
 
-        # "transparent" is a CSS3 colour keyword, not SVG 1.1;
-        # hsl()/rgb() in presentation attributes are also rewritten here.
         for el in root.iter():
             if el.get("fill") == "transparent":
                 el.set("fill", "none")
@@ -5154,13 +3614,6 @@ def _downgrade_svg2_for_batik(directory):
                 el.text = t
                 changed = True
 
-        # alignment-baseline is not valid on <text> in SVG 1.1 and
-        # dominant-baseline is not reliably supported by Batik on <text>.
-        # For centering values, compute the intended visual centre from
-        # y + dy (resolving em to px), add a fixed 0.35em baseline offset
-        # for centering, write the result as a plain numeric y on the
-        # <text>, and strip all dy attributes.  Using explicit px avoids
-        # all the Batik dy/tspan interaction quirks.
         def _em_px(val, font_px):
             try:
                 if (val or "").endswith("em"):
@@ -5195,17 +3648,11 @@ def _downgrade_svg2_for_batik(directory):
                 del el.attrib["dominant-baseline"]
                 changed = True
 
-        # Mermaid git diagrams position branch labels via
-        #   <text><tspan dy="1em">label</tspan></text>
-        # (no y attribute on the <text> element).  Batik ignores the tspan's
-        # dy in this case and places the text at y=0 in the parent g's space.
-        # Fix: promote the first tspan's dy to an explicit y on the <text>
-        # element, so Batik picks up the correct baseline.
         for el in root.iter(tag("text")):
             if el.get("y") is not None:
                 continue
             if el.get("dominant-baseline") or el.get("alignment-baseline"):
-                continue  # already handled above
+                continue
             tspans = [c for c in el if c.tag == tag("tspan")]
             if not tspans:
                 continue
@@ -5217,19 +3664,12 @@ def _downgrade_svg2_for_batik(directory):
             del ts.attrib["dy"]
             changed = True
 
-        # Convert <foreignObject> elements used by mermaid class diagrams to
-        # SVG <text> elements that Batik can render.  Each foreignObject holds
-        # an XHTML div/span whose text content needs to become an SVG text
-        # node.  The foreignObject's transform gives its (tx, ty) offset within
-        # the parent <g>, and its width/height determine the text position.
-        # classTitle elements are horizontally centred; all others are left-
-        # aligned from the foreignObject's left edge.
         fo_tag = tag("foreignObject")
         xspan = f"{{{XHTML}}}span"
         for fo in list(root.iter(fo_tag)):
             text = "".join((el.text or "") for el in fo.iter(xspan)).strip()
             if not text:
-                continue  # leave empty foreignObjects in place; Batik ignores them
+                continue
             t = fo.get("transform", "")
             m = _TRANS_RE.search(t)
             tx = float(m.group(1)) if m else 0.0
@@ -5240,7 +3680,7 @@ def _downgrade_svg2_for_batik(directory):
                 x, anchor = tx + w / 2, "middle"
             else:
                 x, anchor = tx, "start"
-            y = ty + h - 3  # approximate SVG alphabetic baseline
+            y = ty + h - 3
             tel = ET.Element(tag("text"))
             tel.set("x", f"{x:.4g}")
             tel.set("y", f"{y:.4g}")
@@ -5258,8 +3698,8 @@ def _downgrade_svg2_for_batik(directory):
             defs = root.find(tag("defs"))
             if defs is None:
                 defs = ET.SubElement(root, tag("defs"))
-            key_map = {}  # (orig_id, stroke, fill, rotate) → new_id
-            new_mkrs = {}  # new_id → marker element
+            key_map = {}
+            new_mkrs = {}
             used_ids = set()
 
             for el in root.iter():
@@ -5296,15 +3736,6 @@ def _downgrade_svg2_for_batik(directory):
 
 
 def _math_links_for_batik(math_file):
-    """Make a cross-reference inside mathematics a live link in the PDF.
-
-    When asked for cross-reference links, MathJax wraps the reference in
-    an SVG "a" element carrying a plain SVG 2 "href".  Apache Batik (the
-    SVG engine inside FOP) honors only the SVG 1.1 "xlink:href", so the
-    link is present but dead until the value is moved over -- exactly the
-    fix  _downgrade_svg2_for_batik  applies to a "use".  Operates on the
-    math representations file, where these "a" elements live.
-    """
     import lxml.etree as ET
 
     svg_namespace = "http://www.w3.org/2000/svg"
@@ -5329,145 +3760,66 @@ def _math_links_for_batik(math_file):
 
 
 def pdf_fo(xml, pub_file, stringparams, out_file, dest_dir):
-    """
-    Generate a PDF from an XML source using XSL-FO as an intermediate
-    format, rendered by Apache FOP.  This is a LaTeX-free route to a
-    PDF, experimental and very incomplete.
-
-    Args:
-        xml (str): Path to the XML source file.
-        pub_file (str or None): Path to the publisher configuration file, or None if not used.
-        stringparams (dict): Dictionary of string parameters to control the transformation.
-        out_file (str or None): Path to the output PDF file. If None, the PDF is copied to dest_dir.
-        dest_dir (str): Directory where the output PDF should be placed if out_file is not specified.
-
-    Returns:
-        None
-
-    Side Effects:
-        - Copies the generated PDF to the specified output location.
-    """
-    # to ensure provided stringparams aren't mutated unintentionally
     stringparams = stringparams.copy()
 
     generated_abs, external_abs = common.get_managed_directories(xml, pub_file)
-    # Consult source for additional files
     data_dir = common.get_source_directories(xml)
 
     if pub_file:
         stringparams["publisher"] = pub_file
-    # name for scratch directory
     tmp_dir = common.get_temporary_directory()
 
-    # Mathematics as SVG images, produced by MathJax, and passed to
-    # the FO stylesheet as the  $mathfile  string parameter, which
-    # melds each image into the page (the model is  epub()  above)
     math_representations = os.path.join(tmp_dir, "math-representations-svg.xml")
-    # The final argument requests live cross-reference links inside the
-    # mathematics.  This (single-file) PDF is the only conversion that
-    # asks for them: a link is a bare "#id" fragment, which resolves
-    # only within one file, and FOP renders it from the SVG that MathJax
-    # emits.  Chunked conversions (HTML, EPUB) would need real filenames,
-    # and not every reader honors an SVG link, so they pass False.
     mathjax_latex(xml, pub_file, math_representations, None, "svg", True)
-    # let Batik honor the cross-reference links MathJax placed in the math
     _math_links_for_batik(math_representations)
     stringparams["mathfile"] = math_representations.replace(os.sep, "/")
 
-    # Speech versions of the mathematics become the alternate text
-    # of the SVG images, as PDF/UA requires; again the model is epub()
     speech_representations = os.path.join(tmp_dir, "math-representations-speech.xml")
     mathjax_latex(xml, pub_file, speech_representations, None, "speech", False)
     stringparams["speechfile"] = speech_representations.replace(os.sep, "/")
 
-    # make the XSL-FO file in scratch directory
-    # (1) pass None as out_file to derive from XML source filename
-    # (2) pass tmp_dir (scratch) as destination directory
     fo(xml, pub_file, stringparams, None, tmp_dir)
 
-    # Create localized filenames for the FOP rendering step
-    # foname  needs to match behavior of fo() with above arguments
     basename = os.path.splitext(os.path.split(xml)[1])[0]
     foname = os.path.join(tmp_dir, basename + ".fo")
     pdfname = os.path.join(tmp_dir, basename + ".pdf")
 
-    # Make image files available, relative to the FO file
     common.copy_managed_directories(tmp_dir, external_abs=external_abs, generated_abs=generated_abs, data_abs=data_dir)
 
-    # Bundled fonts (the symbol fallback face) are named by a relative
-    # path in  fop.xconf , so they must sit in the scratch directory
-    # where FOP runs, beside the FO file and the image directories.
     fonts_src = os.path.join(common.get_ptx_path(), "fonts")
     shutil.copytree(fonts_src, os.path.join(tmp_dir, "fonts"))
 
-    # FOP renders SVG through Batik (SVG 1.1); downgrade the SVG 2
-    # constructs in the staged images so the diagrams render
     _downgrade_svg2_for_batik(tmp_dir)
 
-    # render the FO file as a PDF with Apache FOP, configured
-    # by the  fop.xconf  file maintained in this distribution
     fop_exec_cmd = common.get_executable_cmd("fop")
     fop_xconf = os.path.join(common.get_ptx_path(), "pretext", "fop.xconf")
     fop_cmd = fop_exec_cmd + ["-c", fop_xconf, "-fo", foname, "-pdf", pdfname]
     log.info("rendering {} as {} with Apache FOP".format(foname, pdfname))
     log.debug("FOP command: {}".format(" ".join(fop_cmd)))
-    # run FOP in the scratch directory, where the managed directories
-    # were just copied, so relative image paths in the FO file resolve
     result = subprocess.run(fop_cmd, cwd=tmp_dir)
     if result.returncode != 0:
         raise OSError("Apache FOP rendering of {} failed".format(foname))
 
-    # post-process: repair PDF/UA conformance gaps FOP leaves behind
     _pdf_fo_accessibility_repairs(pdfname)
 
-    # Copy just the PDF output
-    # out_file: not(None) only if provided in CLI
-    # dest_dir: always defined, if only current directory of CLI invocation
     if out_file:
         shutil.copy2(pdfname, out_file)
     else:
         shutil.copy2(pdfname, dest_dir)
 
 
-#################
-# XSLT Processing
-#################
-
-
-########################
 #
-# JaaS
-# Jing as a Service
-# (Validation with Jing)
 #
-########################
 
-# the "pi" namespace attribute recording an element's originating file
 PI_SOURCE_URI = "{http://pretextbook.org/2020/pretext/internal}source-uri"
 
 
 def validate(xml_source, pub_file, stringparams, out_file, dest_dir, method, report_form):
-    """Validate source against both RELAX-NG schemas, locally or via a server"""
 
-    # Validation consults both grammars.  The development schema is a
-    # purely additive overlay of the production schema, so its language
-    # is a strict superset: a message from the development run is a
-    # genuine problem, while a message arising only under the production
-    # schema locates an experimental construct -- one whose markup may
-    # change without a formal deprecation cycle.  The method says where
-    # the "jing" runs happen: "server" delegates both to a remote
-    # service; the consolidated report is identical.  The report form
-    # "full" is meant for an author, while "terse" is machine-readable
-    # output, one tab-separated message per line, meant for a program.
-    # The report's filename is returned, so a caller can say where it
-    # is; None means no report was written (the server method failed).
     terse = report_form == "terse"
     server = method == "server"
-    # to ensure provided stringparams aren't mutated unintentionally
     stringparams = stringparams.copy()
 
-    # the consolidated report, and the assembled source deposited
-    # alongside it (wherever the report lands)
     reportname = common.get_output_filename(xml_source, out_file, dest_dir, "-validation.txt")
     assembled_source = os.path.join(
         os.path.dirname(os.path.abspath(reportname)),
@@ -5476,10 +3828,6 @@ def validate(xml_source, pub_file, stringparams, out_file, dest_dir, method, rep
 
     tmp_dir = common.get_temporary_directory()
 
-    # Modular source files are knitted together here, rather than
-    # during assembly, so each included file can be recorded on its
-    # root element (as a @pi:source-uri attribute) and problems can
-    # then be attributed to the file where they lie
     source_dir = os.path.dirname(os.path.abspath(xml_source))
     main_file = os.path.basename(xml_source)
 
@@ -5501,26 +3849,13 @@ def validate(xml_source, pub_file, stringparams, out_file, dest_dir, method, rep
         log.warning("file attribution of validation problems unavailable ({})".format(e))
         source_tree = ET.parse(xml_source)
         source_tree.xinclude()
-    # The temporary merged file must resolve relative references (a
-    # customizations file, say) as the original source would, which is
-    # exactly the job of an @xml:base (assembly drops it from output)
     source_tree.getroot().set("{http://www.w3.org/XML/1998/namespace}base", os.path.abspath(xml_source))
     source_tree.write(merged_source, encoding="utf-8", xml_declaration=True)
 
-    # Validation is performed on the "version" tree: the merged source
-    # reduced by any "version" support elected in a publication file.
-    # The paths of any messages refer to this assembled source, so it
-    # is deposited next to the report, for cross-referencing, rather
-    # than evaporating with a temporary directory.
     stringparams["assembly.file-attribution"] = "yes"
     attributed_source = os.path.join(tmp_dir, "assembled-attributed.xml")
     assembly(merged_source, pub_file, stringparams, attributed_source, None, "version")
 
-    # Tree "A" retains the file attributions, which are stripped to
-    # make the deposited assembled source (what "jing" examines, since
-    # the schema knows nothing of the attribute).  Tree "B" is that
-    # deposited file re-parsed, so line numbers agree with what "jing"
-    # reports; elements of the two trees correspond in document order.
     tree_a = ET.parse(attributed_source)
     file_of_a = {}
     current_files = {tree_a.getroot(): main_file}
@@ -5539,57 +3874,36 @@ def validate(xml_source, pub_file, stringparams, out_file, dest_dir, method, rep
     a_elements = [e for e in tree_a.iter() if isinstance(e.tag, str)]
     b_elements = [e for e in tree_b.iter() if isinstance(e.tag, str)]
     file_of = {b: file_of_a[a] for a, b in zip(a_elements, b_elements)}
-    # the last element to *begin* on each line, in document order
     opening = {}
     for elt in b_elements:
         opening[elt.sourceline] = elt
     with open(assembled_source, encoding="utf-8") as f:
         source_lines = f.readlines()
 
-    # fresh schemas from the PreTeXt distribution, in XML syntax
     schema_dir = os.path.join(common.get_ptx_path(), "schema")
     development_schema = os.path.join(schema_dir, "pretext-dev.rng")
     production_schema = os.path.join(schema_dir, "pretext.rng")
-    # the survey below is sound only while the development schema stays
-    # a purely additive overlay; a departure has drawn warnings already
     if not _development_schema_additive(development_schema, production_schema):
         log.warning("the survey of experimental constructs may misclassify until the overlay is repaired")
 
-    # The RELAX-NG checks run "jing" twice against the assembled source,
-    # once per schema, and yield each raw report as a list of lines.  A
-    # local run uses an installed "jing"; the "server" method sends the
-    # same assembled source to a remote "jing" service.  Either way the
-    # lines below feed an identical consolidated report.
     def _jing_run(schema_filename):
         if server:
             return _jing_server(schema_filename, assembled_source)
-        # "jing" is a Java program, so a configuration can be simply the
-        # name of an executable ("jing", from a system package), or a
-        # command with options ("java -jar /usr/share/java/jing.jar")
         jing_exec_cmd = common.get_executable_cmd("jing")
         full_cmd = jing_exec_cmd + [schema_filename, assembled_source]
         log.debug("jing command: {}".format(" ".join(full_cmd)))
         result = subprocess.run(full_cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
-        # jing exits 0 when the document is valid, 1 when messages result
         if result.returncode > 1:
             log.warning('the "jing" program failed (code {})'.format(result.returncode))
         return result.stdout.splitlines()
 
     jing_messages = _jing_run(development_schema)
     if jing_messages is None:
-        # the server could not be reached; a clear error was logged
         return None
     if not jing_messages:
         log.info("the source validates with no schema errors")
-    # None here means the server fell over between the two runs; the
-    # experimental survey is then reported as unavailable, not empty
     production_messages = _jing_run(production_schema)
 
-    # The "validation-plus" stylesheet performs checks the RELAX-NG
-    # schema cannot express, and provides extra advice and explanation
-    # besides.  Applied to the same assembled source, so locations are
-    # consistent with the schema messages.  Single-line output, one
-    # message per line.
     plus_xsl = os.path.join(common.get_ptx_path(), "schema", "pretext-validation-plus.xsl")
     plus_scratch = os.path.join(tmp_dir, "validation-plus.txt")
     params = {"single.line.output": "yes"}
@@ -5597,13 +3911,7 @@ def validate(xml_source, pub_file, stringparams, out_file, dest_dir, method, rep
     with open(plus_scratch, "r", encoding="utf-8") as f:
         plus_messages = [line.strip() for line in f if line.startswith("PTX:")]
 
-    # helpers for locating a message's element in tree "B"
-
     def _numbered_path(elt, squelch):
-        # With "squelch" the path is presented for a human: a count is
-        # only informative among like-named siblings, so the count of
-        # an only child is omitted.  Without, every element carries
-        # its count, for uniform consumption by a program.
         parts = []
         while elt is not None and isinstance(elt.tag, str):
             name = ET.QName(elt).localname
@@ -5623,9 +3931,6 @@ def validate(xml_source, pub_file, stringparams, out_file, dest_dir, method, rep
         return "/" + "/".join(reversed(parts))
 
     def _element_at_path(path):
-        # follow a numbered path (as validation-plus produces); a
-        # segment without a bracketed count means the only element
-        # of that name at its location, so a count of one
         elt = tree_b.getroot()
         segments = path.strip("/").split("/")
         segment_pattern = re.compile(r"([^\[\]]+)(?:\[(\d+)\])?$")
@@ -5659,17 +3964,8 @@ def validate(xml_source, pub_file, stringparams, out_file, dest_dir, method, rep
             return text
         return None
 
-    # "jing" messages lead with filename:line:column
     location = re.compile(r"^.*?:(\d+):(\d+): (.*)$")
 
-    # Survey the experimental constructs.  A message from the production
-    # run whose position also carries a message from the development run
-    # is a genuine problem, already reported; the remainder locate
-    # experimental constructs.  One such construct commonly raises a
-    # cascade of messages (the element itself, then each part of its
-    # interior), so the messages are clustered: an element subsumes the
-    # messages located at its descendants, and one entry represents the
-    # whole construct.
     experimental_clusters = []
     if production_messages is not None:
         genuine_positions = set()
@@ -5700,28 +3996,17 @@ def validate(xml_source, pub_file, stringparams, out_file, dest_dir, method, rep
             members_of.setdefault(top, []).append(elt)
         for top in sorted(members_of, key=lambda e: e.sourceline):
             folded = sum(len(located[member]) for member in members_of[top]) - 1
-            # "jing" labels each message an error, but in this survey it
-            # is evidence of an experimental construct, not a defect
             headline = located[top][0]
             if headline.startswith("error: "):
                 headline = headline[len("error: ") :]
             experimental_clusters.append((top, headline, folded))
 
-    # assemble the consolidated report
     report = []
     banner = "=" * 70
 
     if not terse:
         report.extend(_validation_report_preamble(development_schema, production_schema, assembled_source))
         report.extend([banner, 'Messages: RELAX-NG schema validation, from "jing"', banner, ""])
-    # The line number of a "jing" message refers to the assembled source
-    # (which is deposited alongside the report), so it is reported as
-    # such, supplemented by the originating file, a path into the
-    # assembled source, and an excerpt of the offending text.  An
-    # element's extent is not available, so for a message about a line
-    # where no element begins, the location is the closest element
-    # beginning on an earlier line: very often the container, and always
-    # a good place to start looking.
     for message in jing_messages:
         match = location.match(message)
         if not match:
@@ -5732,7 +4017,6 @@ def validate(xml_source, pub_file, stringparams, out_file, dest_dir, method, rep
         near = max((n for n in opening if n <= line_number), default=None)
         elt = opening[near] if near is not None else None
         filename = file_of.get(elt, main_file)
-        # every schema message is one check, named "schema"
         if terse:
             path = _numbered_path(elt, False) if elt is not None else ""
             report.append("{}\t{}\t{}\tschema\t{}".format(filename, path, line_number, body))
@@ -5787,9 +4071,6 @@ def validate(xml_source, pub_file, stringparams, out_file, dest_dir, method, rep
             excerpt = _excerpt(line_number)
             if excerpt:
                 report.append("    text: {}".format(excerpt))
-            # advice keyed by the located element, else by the element
-            # the message itself names (location is the nearest element
-            # to *open* on the line, which can be a neighbor)
             paragraphs = advice_for.get(ET.QName(elt).localname)
             if paragraphs is None:
                 named = re.match(r'element "([^"]+)"', headline)
@@ -5814,7 +4095,6 @@ def validate(xml_source, pub_file, stringparams, out_file, dest_dir, method, rep
     if not terse:
         report.extend([banner, 'Messages: PreTeXt "validation-plus" stylesheet', banner, ""])
     plus_form = re.compile(r"^(PTX:[A-Z]+): (/\S+) (.*)$")
-    # the message id trails the message text, set off in brackets
     id_form = re.compile(r"^(.*) \[([a-z0-9-]+)\]$")
     for message in plus_messages:
         match = plus_form.match(message)
@@ -5833,7 +4113,6 @@ def validate(xml_source, pub_file, stringparams, out_file, dest_dir, method, rep
         if terse:
             report.append("{}\t{}\t{}\t{}\t{}: {}".format(filename, path, line_number, check_id, severity, body))
         else:
-            # for a human, squelch the counts of only children
             if elt is not None:
                 path = _numbered_path(elt, True)
             report.append("{}: {}".format(severity, body))
@@ -5869,7 +4148,6 @@ def validate(xml_source, pub_file, stringparams, out_file, dest_dir, method, rep
 
 
 def _validation_report_preamble(development_schema, production_schema, assembled_source):
-    """The fixed introductory text of a validation report"""
 
     return [
         "Validation Report",
@@ -5932,14 +4210,6 @@ def _validation_report_preamble(development_schema, production_schema, assembled
 
 
 def _experimental_advice():
-    """Advisory prose for experimental constructs, keyed by name
-
-    The registry at schema/experimental-features.xml only decorates the
-    survey of experimental constructs: whether a construct is flagged
-    is decided by comparing the two grammars, so a stale or missing
-    entry costs nothing but prose.  Returns a dictionary keyed by
-    element name, of lists of paragraphs.
-    """
     registry = os.path.join(common.get_ptx_path(), "schema", "experimental-features.xml")
     advice = {}
     try:
@@ -5955,17 +4225,6 @@ def _experimental_advice():
 
 
 def _development_schema_additive(development_schema, production_schema):
-    """Confirm the development schema only extends the production schema
-
-    The survey of experimental constructs is sound because the
-    development language is a strict superset of the production
-    language, and the overlay guarantees that by construction: a bare
-    "include" of the production schema, wholly new named patterns, and
-    additions to production patterns only by combine="choice".  Anything
-    else could restrict the language instead, and the survey would then
-    silently misclassify, so each departure draws a warning.  Returns
-    True when the overlay honors the invariant.
-    """
     relaxng_namespace = "http://relaxng.org/ns/structure/1.0"
     overlay = ET.parse(development_schema).getroot()
     production = ET.parse(production_schema).getroot()
@@ -5988,7 +4247,6 @@ def _development_schema_additive(development_schema, production_schema):
 
 
 def _experimental_section_preface():
-    """The fixed introductory text of the experimental-constructs section"""
 
     return [
         "Constructs reported here are part of the development schema, but",
@@ -6010,31 +4268,15 @@ def _experimental_section_preface():
 
 
 def _jing_server(schema_filename, assembled_source):
-    """Validate the assembled source with a remote "jing" service.
-
-    Returns the raw "jing" report as a list of lines -- a drop-in for the
-    output of a local "jing" run on the same file -- or None if the server
-    could not be reached (a clear error is logged in that case).
-    """
     try:
-        import requests  # post()
+        import requests
     except ImportError:
         raise ImportError(__module_warning.format("requests"))
 
-    # A future move to a server more closely tied to the project need only
-    # change this URL (and, if the reply format changes, the parsing below).
     server_url = "https://mathgenealogy.org:9000/validate"
 
-    # The service expects "assembled_source" and "schema" plus the PreFigure
-    # companions of the schema.  Here the "assembled_source" is the
-    # single, already-assembled file, so the locations in the report line
-    # up with the deposited assembled source, exactly as a local run does.
     tmp_dir = common.get_temporary_directory()
 
-    # The service resolves the schema's includes from these companion
-    # files, so they travel alongside the schema (see PR #3036).
-    # The service expects all keys other than "assembled_source" and "schema"
-    # to be the basename of any auxiliary schema files.
     schema_dir = os.path.join(common.get_ptx_path(), "schema")
     field_paths = {
         "assembled_source": assembled_source,
@@ -6044,20 +4286,11 @@ def _jing_server(schema_filename, assembled_source):
         "pf-preamble-adapter.rng": os.path.join(schema_dir, "pf-preamble-adapter.rng"),
     }
     log.info("communicating with validation server at {}".format(server_url))
-    # The service is expecting to receive the files as strings in form fields,
-    # so read files into strings stored in the data dictionary.
-    # Use with so files are automatically closed after reading.
     data = dict()
     for field, path in field_paths.items():
         with open(path, "r", encoding="utf-8") as file:
             data[field] = file.read()
 
-    # The development schema is an overlay: its "include" pulls in the
-    # production schema, which must travel too.  Sent under its own
-    # name, the production schema displaces the overlay and the service
-    # validates with the production grammar alone (observed 2026-08-18),
-    # so the companion travels -- and the overlay's "include" points --
-    # under a name free of any collision.
     if os.path.basename(schema_filename) == "pretext-dev.rng":
         relaxng_namespace = "http://relaxng.org/ns/structure/1.0"
         overlay = ET.parse(schema_filename)
@@ -6079,10 +4312,6 @@ def _jing_server(schema_filename, assembled_source):
         log.error("the validation server reported an error (code {}): {}".format(r.status_code, r.text.strip()))
         return None
 
-    # Reduce the reply to the raw "jing" lines.  This service prefaces a
-    # report with a fixed sentence, and answers with a success sentence
-    # when there are no messages; a future service might return "jing"
-    # output verbatim.  Handle all three.
     body = r.text
     if "Report from jing follows:" in body:
         body = body.split("Report from jing follows:", 1)[1]
@@ -6092,30 +4321,19 @@ def _jing_server(schema_filename, assembled_source):
     return body.strip("\n").splitlines()
 
 
-###################
 #
-# Utility Functions
 #
-###################
 
 
 def python_version():
-    """Return 'major.minor' version number as string/info"""
 
     return "{}.{}".format(sys.version_info[0], sys.version_info[1])
 
 
 def python_module_versions():
-    """Report installed versions of the Python packages PreTeXt depends on"""
 
-    # Package names come from the distribution's "requirements.txt", so the
-    # report tracks the actual dependency list.  Versions come from the
-    # installed package metadata, not the version specifiers in the file, so
-    # the report shows what is really in use.  Intended for the debugging log,
-    # to aid in diagnosing an author's or publisher's setup.
-    import importlib.metadata  # version(), PackageNotFoundError
+    import importlib.metadata
 
-    # "requirements.txt" sits alongside this module's package directory
     requirements = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "requirements.txt")
     try:
         with open(requirements, "r", encoding="utf-8") as requirements_file:
@@ -6128,8 +4346,6 @@ def python_module_versions():
         line = line.strip()
         if (line == "") or line.startswith("#"):
             continue
-        # a requirement is a package name followed by an optional version
-        # specifier, extras, or environment marker; keep the leading name
         name = re.split(r"[<>=!~;\[\s]", line, maxsplit=1)[0]
         try:
             reports.append("{} {}".format(name, importlib.metadata.version(name)))
@@ -6139,10 +4355,7 @@ def python_module_versions():
 
 
 def check_python_version():
-    """Raise an error for Python 2 (or less); warn for Python 3 before 3.10"""
 
-    # This test could be more precise,
-    # but only handling 2to3 switch when introduced
     msg = "".join([
         "PreTeXt script/module expects Python 3.10, not Python 2 or older\n",
         "You have Python {}\n",
@@ -6150,8 +4363,6 @@ def check_python_version():
     ])
     if sys.version_info[0] <= 2:
         raise (OSError(msg.format(python_version())))
-    # Warn, but do not error, for Python 3 older than the minimum below
-    #   2026-07-06: Python 3.10 or newer
     if sys.version_info[:2] < (3, 10):
         log.warning(
             "PreTeXt expects Python 3.10 or newer\nYou have Python {}, and some operations may fail".format(
@@ -6161,60 +4372,43 @@ def check_python_version():
 
 
 def copy_html_js(work_dir):
-    """Copy all necessary CSS and JS into working directory"""
 
-    # Place support files where expected.
-    # We are not careful about placing only modules that are needed, all are copied.
     js_src = os.path.join(common.get_ptx_path(), "js")
     js_dest = os.path.join(work_dir, "_static", "pretext", "js")
     shutil.copytree(js_src, js_dest)
 
 
 def get_journal_info(journal_name):
-    """
-    Returns a dictionary of data for a journal based on
-    a master list of journals in journals/journals.xml.
-
-    Arguments:
-    journal_name: The code name of the journal to look up, such as bull-amer-math-soc. This is the <code> element of the journals.xml file, and will usually agree with the name of the texstyle file.
-    """
     journal_xml = os.path.join(common.get_ptx_path(), "journals", "journals.xml")
     log.debug("Reading list of journals in {}".format(journal_xml))
     journals_tree = ET.parse(journal_xml)
     journals_tree.xinclude()
 
-    # Find the node with <code> value journal_name:
     try:
         journal = journals_tree.xpath(f"//journal[code='{journal_name.lower()}']")[0]
     except Exception as e:
         log.warning("The journal name {} specified in the publication file is not supported.".format(journal_name))
         return {"latex-style": ""}
 
-    # name, code, and publisher are nodes containing text
     keys = ["name", "code", "publisher"]
     journal_info = {}
     for key in keys:
         element = journal.find(key)
         journal_info[key] = element.text if element is not None else None
-    # get the attribute values of the optional 'method' element.  Possible attributes are @latex-style, @texstyle, and @dependent
     if journal.find("method") is not None:
         for attr in ["latex-style", "texstyle", "dependent"]:
             if attr in journal.find("method").attrib:
                 journal_info[attr] = journal.find("method").attrib[attr]
 
-    # If any of these are not yet set (or are None), set them to the default values
     journal_info["latex-style"] = journal_info.get("latex-style", "texstyle")
     journal_info["texstyle"] = journal_info.get("texstyle", journal_info.get("code"))
     journal_info["dependent"] = journal_info.get("dependent", "no")
     log.debug("Using the journal code {} as the texstyle value.".format(journal_info.get("texstyle")))
 
-    # If the latex-style is "texstyle", then find a filename for the texstyle file (as a relative path inside journals/texstyles).  What this is depends on whether dependent is "yes"
     if journal_info["latex-style"] == "texstyle":
-        # If dependent is "yes", then we need to set the texstyle-file to the filename of the texstyle file, which is the code value.
         if journal_info["dependent"] == "yes":
             journal_info["texstyle-file"] = "dependents/" + journal_info.get("texstyle") + ".xml"
             log.debug("Using texstyle-file {}.".format(journal_info["texstyle-file"]))
-        # If dependent is "no", then we need to set the texstyle-file to the filename of the texstyle file, which is the code value.
         else:
             journal_info["texstyle-file"] = journal_info.get("texstyle") + ".xml"
             log.debug("Using texstyle-file {}.".format(journal_info["texstyle-file"]))
@@ -6223,34 +4417,23 @@ def get_journal_info(journal_name):
 
 
 def place_latex_package_files(dest_dir, journal_name, cache_dir):
-    """
-    Check whether the latex requires additional files specified in a texstyle file.
-    If so, either copy them from cache_dir or download them from the internet (and also store a copy in the cache_dir).
-    """
-    # Get the texstyle file for the journal name
     texstyle_file = get_journal_info(journal_name).get("texstyle-file")
-    # Double check that there is a texstyle file
     if texstyle_file is None:
         return
-    # Otherwise, parse this file and check for any <file> elements.
     texstyle_tree = ET.parse(os.path.join(common.get_ptx_path(), "journals", "texstyles", texstyle_file))
     texstyle_file_elements = texstyle_tree.xpath("//required-files/file")
     if not texstyle_file_elements:
         log.debug("No required files found in the texstyle file.")
         return
-    # Check whether the journal code is present in the metadata element of the texstyle file
     journal_code = texstyle_tree.xpath("//metadata/code")[0].text
     cache_dir = os.path.join(cache_dir, journal_code)
-    # Create the cache_dir if it doesn't exist
     os.makedirs(cache_dir, exist_ok=True)
 
     for file in texstyle_file_elements:
         file_path = os.path.join(cache_dir, file.attrib["name"])
         if not os.path.exists(file_path):
-            # download the file if it is not already in the cache_dir
             log.debug("Downloading required file {} from {}".format(file.attrib["name"], file.attrib["href"]))
             url = file.attrib["href"]
-            # The url might be to the file, or to a compressed archive.  We do slightly different things in each case.  TODO: other archive formats.
             if url.endswith(".zip"):
                 tmp_zip = os.path.join(cache_dir, "tmp.zip")
                 common.download_file(url, tmp_zip)
@@ -6263,16 +4446,10 @@ def place_latex_package_files(dest_dir, journal_name, cache_dir):
             log.debug("Saved file {} to {}".format(file.attrib["name"], file_path))
         else:
             log.debug("File {} already exists in the generated assets directory.".format(file.attrib["name"]))
-        # Copy required resource to the destination directory
         shutil.copy2(file_path, dest_dir)
 
 
 class Stopwatch:
-    """A simple stopwatch class for measuring elapsed time.
-
-    print_log controls whether log messages are printed when the log() is called
-    """
-
     def __init__(self, name: str = "", print_log: bool = True):
         self.name = name
         self.print_log = print_log
@@ -6280,11 +4457,9 @@ class Stopwatch:
         self.last_log_time = self.start_time
 
     def reset(self):
-        """Reset the log timer to the current time."""
         self.last_log_time = time.time()
 
     def log(self, timepoint_description: str = ""):
-        """Print a log message with the elapsed time since the last log event."""
         if self.print_log:
             cur_time = time.time()
             elapsed_time = cur_time - self.start_time
@@ -6295,41 +4470,19 @@ class Stopwatch:
             )
 
 
-###########################
 #
-#  Module-level definitions
 #
-###########################
 
-# One-time set-up for global use in the module
-# Module provides, and depends on these variables,
-# whose scope is the module, so must be declared
-# by employing routines as non-local ("global")
 #
-#  __xml_header - standard first line of an XML file.
-#                 a convenience here
 #
-#  __ptx_path - root directory of installed PreTeXt distribution
-#              necessary to locate stylesheets and other support
 #
-#  __config - parsed values from an INI-style configuration file
 #
-#  __temps - created temporary directories, to report or release
 #
-#  __module_warning - stock import-failure warning message
 
-# NB: some uses of this module last for longer than processing
-# just one document, for example, on Runestone Academy when
-# building many books at once with the CLI.  These variables
-# then also have a long life, and so some care needs to be
-# exercised that they do not contain document-specific information.
 
-# Convenience
 __xml_header = '<?xml version="1.0" encoding="UTF-8"?>\n'
 
 
-# Re-export helpers relocated to "common.py" so the public ptx.NAME
-# interface used by the driver script is unchanged.
 PreTeXtFatal = common.PreTeXtFatal
 build_info_message = common.build_info_message
 download_file = common.download_file
@@ -6346,11 +4499,9 @@ verify_input_directory = common.verify_input_directory
 xsltproc = common.xsltproc
 
 
-# Re-export webwork routines so the public ptx.NAME interface is unchanged.
 webwork_to_xml = webwork.webwork_to_xml
 webwork_sets = webwork.webwork_sets
 pg_macros = webwork.pg_macros
 
 
-# Re-export stack routines so the public ptx.NAME interface is unchanged.
 stack_extraction = stack.stack_extraction

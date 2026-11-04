@@ -73,7 +73,6 @@ class _SearchPanel(_ScrollablePanel):
         self.itemSelected.emit(text)
 
     def show_below(self, widget, min_width=0):
-        """Show widgets."""
         self._search.clear()
         self._filter("")
         super().show_below(widget, min_width)
@@ -83,7 +82,6 @@ class _SearchPanel(_ScrollablePanel):
     addItems = set_items
 
     def _make_row_click_handler(self, text: str) -> ty.Callable[[bool], None]:
-        """Create a click handler for a specific item label."""
 
         def _handle_row_click(_checked: bool = False) -> None:
             self._pick(text)
@@ -98,7 +96,6 @@ class _SearchComboBtn(_BaseButton):
         self._placeholder = placeholder
 
     def set_text(self, t: str):
-        """Set text to be displayed."""
         self._text = t
         self.update()
 
@@ -124,8 +121,6 @@ class _SearchComboBtn(_BaseButton):
 
 
 class QtSearchComboBox(QWidget):
-    """Combobox with a live-filter search field in the dropdown."""
-
     currentTextChanged = Signal(str)
 
     def __init__(self, items: list[str] | None = None, placeholder: str = "Select…", parent=None):
@@ -159,27 +154,21 @@ class QtSearchComboBox(QWidget):
         self.currentTextChanged.emit(text)
 
     def set_items(self, items: list[str]):
-        """Set items to be displayed."""
         self._panel.set_items(items)
 
     def current_text(self) -> str:
-        """Return current text displayed."""
         return self._text
 
     def set_current_text(self, t: str):
-        """Set current text to be displayed."""
         self._on_select(t)
 
     addItems = set_items
 
     def _close_panel(self) -> None:
-        """Reset the button state when the popup closes."""
         self._btn.set_open(False)
 
 
 class QtSearchableComboBox(QComboBox):
-    """Searchable combobox."""
-
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.setEditable(True)
@@ -199,7 +188,6 @@ class QtSearchableComboBox(QComboBox):
             line_edit.installEventFilter(self)
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:
-        """Open the dropdown when the editable text field is clicked."""
         if watched is self.lineEdit() and self._is_left_mouse_release(event):
             QTimer.singleShot(0, self._show_completer_popup)
         elif watched is self.completer_object.popup() and self._is_left_mouse_release(event):
@@ -207,16 +195,13 @@ class QtSearchableComboBox(QComboBox):
         return super().eventFilter(watched, event)
 
     def showPopup(self) -> None:
-        """Show the completer popup for both editor and chevron interactions."""
         self._show_completer_popup()
 
     def hidePopup(self) -> None:
-        """Hide the completer popup when the combobox popup is dismissed."""
         self.completer_object.popup().hide()
         super().hidePopup()
 
     def _show_completer_popup(self) -> None:
-        """Show matching choices while keeping keyboard focus in the editor."""
         with suppress(RuntimeError):
             line_edit = self.lineEdit()
             if line_edit is None:
@@ -227,12 +212,10 @@ class QtSearchableComboBox(QComboBox):
             QTimer.singleShot(0, self._defer_line_edit_focus)
 
     def _defer_line_edit_focus(self) -> None:
-        """Queue editor focus after the completer popup finishes opening."""
         with suppress(RuntimeError):
             QTimer.singleShot(0, self._focus_line_edit)
 
     def _focus_line_edit(self) -> None:
-        """Restore keyboard focus to the editor after showing the popup."""
         with suppress(RuntimeError):
             line_edit = self.lineEdit()
             if line_edit is not None:
@@ -240,7 +223,6 @@ class QtSearchableComboBox(QComboBox):
 
     @staticmethod
     def _is_left_mouse_release(event: QEvent) -> bool:
-        """Return whether an event is a left mouse release."""
         return (
             event.type() == QEvent.Type.MouseButtonRelease
             and isinstance(event, QMouseEvent)
@@ -251,27 +233,22 @@ class QtSearchableComboBox(QComboBox):
         self.textActivated.emit(self.currentText())
 
     def on_activated(self, value: str) -> None:
-        """On activated."""
         self.currentIndexChanged.emit(self.currentIndex())
         self.currentTextChanged.emit(self.currentText())
 
     def addItem(self, *args) -> None:
-        """Add item."""
         super().addItem(*args)
         self.completer_object.setModel(self.model())
 
     def addItems(self, items: ty.Sequence[str]) -> None:
-        """Add items."""
         super().addItems(items)
         self.completer_object.setModel(self.model())
 
     def removeItem(self, index: int) -> None:
-        """Remove item."""
         super().removeItem(index)
         self.completer_object.setModel(self.model())
 
     def _get_model_for_updates(self):
-        """Return the writable model backing the choice combobox."""
         model = self.model()
         if isinstance(model, QSortFilterProxyModel):
             source_model = model.sourceModel()
@@ -280,7 +257,6 @@ class QtSearchableComboBox(QComboBox):
         return model
 
     def set_data(self, data: dict[ty.Any, str], current_item: ty.Any = None) -> None:
-        """Replace combobox data using a bulk model update."""
         from qtextra.helpers import qt_signals_blocked
 
         current_index = -1
@@ -316,7 +292,6 @@ class QtSearchableComboBox(QComboBox):
 
 
 def _style_search_popup(popup: QAbstractItemView) -> None:
-    """Apply the active qtextra theme to a search popup view."""
     background = QtStyler.foreground()
     highlight = QtStyler.highlight()
     hover = QtStyler.highlight().lighter(120)
@@ -350,7 +325,6 @@ def _style_search_popup(popup: QAbstractItemView) -> None:
 
 
 def _search_popup_palette(background: QColor, highlight: QColor, text: QColor) -> QPalette:
-    """Return the palette used by a search popup view."""
     palette = QPalette()
     palette.setColor(QPalette.ColorRole.Base, background)
     palette.setColor(QPalette.ColorRole.Window, background)
@@ -362,7 +336,6 @@ def _search_popup_palette(background: QColor, highlight: QColor, text: QColor) -
 
 
 def add_search_to_combobox(combobox: QComboBox) -> None:
-    """Add search to combobox."""
     combobox.setEditable(True)
     completer_object = QCompleter()
     completer_object.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
@@ -378,7 +351,6 @@ def add_search_to_combobox(combobox: QComboBox) -> None:
 
 
 def _make_text_activated_handler(combobox: QComboBox) -> ty.Callable[[], None]:
-    """Return a handler that emits the combobox current text."""
 
     def _emit_current_text() -> None:
         combobox.textActivated.emit(combobox.currentText())

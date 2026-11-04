@@ -9,8 +9,6 @@ from qtextra.config import THEMES
 
 
 class QtQtaAction(QAction):
-    """Icon."""
-
     _qta_data = None
 
     def __init__(self, *args: ty.Any, **kwargs: ty.Any):
@@ -19,7 +17,6 @@ class QtQtaAction(QAction):
             THEMES.evt_theme_icon_changed.connect(self._update_qta)
 
     def set_qta(self, name: str, **kwargs: ty.Any):
-        """Set QtAwesome icon."""
         name, kwargs_ = get_icon(name)
         kwargs.update(kwargs_)
         self._qta_data = (name, kwargs)
@@ -28,7 +25,6 @@ class QtQtaAction(QAction):
             self.setIcon(icon)
 
     def _update_qta(self):
-        """Update qta icon."""
         if self._qta_data:
             name, kwargs = self._qta_data
             self.set_qta(name, **kwargs)

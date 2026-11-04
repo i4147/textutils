@@ -20,7 +20,6 @@ _app_ref = None
 
 
 def set_app_id(app_id):
-    """Set app ID."""
     if os.name == "nt" and app_id and not getattr(sys, "frozen", False):
         import ctypes
 
@@ -45,47 +44,6 @@ def get_app(
     org_domain: str | None = None,
     app_id: str | None = None,
 ) -> QApplication:
-    """Get or create the Qt QApplication.
-
-    There is only one global QApplication instance, which can be retrieved by
-    calling get_app again, (or by using QApplication.instance())
-
-    Parameters
-    ----------
-    app_name : str, optional
-        Set app name (if creating for the first time), by default 'qtextra'
-    app_version : str, optional
-        Set app version (if creating for the first time), by default __version__
-    icon : str, optional
-        Set app icon (if creating for the first time), by default
-        ICON_PNG
-    org_name : str, optional
-        Set organization name (if creating for the first time), by default
-        'qtextra'
-    org_domain : str, optional
-        Set organization domain (if creating for the first time), by default
-        'qtextra.org'
-    app_id : str, optional
-        Set organization domain (if creating for the first time).  Will be
-        passed to set_app_id (which may also be called independently), by
-        default APP_ID
-
-    Returns
-    -------
-    QApplication
-        [description]
-
-    Notes
-    -----
-    Substitutes QApplicationWithTracing when the QTEXTRA_PERFMON env variable
-    is set.
-
-    If the QApplication already exists, we call convert_app_for_tracing() which
-    deletes the QApplication and creates a new one. However here with get_app
-    we need to create the correct QApplication up front, or we will crash
-    because we'd be deleting the QApplication after we created QWidgets with
-    it, such as we do for the splash screen.
-    """
     set_values = {k for k, v in locals().items() if v}
     kwargs = locals() if set_values else _defaults
     global _app_ref
@@ -142,13 +100,6 @@ def get_app(
 
 
 def _ipython_has_eventloop() -> bool:
-    """Return True if IPython %gui qt is active.
-
-    Using this is better than checking ``QApp.thread().loopLevel() > 0``,
-    because IPython starts and stops the event loop continuously to accept code
-    at the prompt.  So it will likely "appear" like there is no event loop
-    running, but we still don't need to start one.
-    """
     try:
         from IPython import get_ipython
 
@@ -158,30 +109,6 @@ def _ipython_has_eventloop() -> bool:
 
 
 def run(*, force=False, max_loop_level=1, _func_name="run"):
-    """Start the Qt Event Loop.
-
-    Parameters
-    ----------
-    force : bool, optional
-        Force the application event_loop to start, even if there are no top
-        level widgets to show.
-    max_loop_level : int, optional
-        The maximum allowable "loop level" for the execution thread.  Every
-        time `QApplication.exec_()` is called, Qt enters the event loop,
-        increments app.thread().loopLevel(), and waits until exit() is called.
-        This function will prevent calling `exec_()` if the application already
-        has at least ``max_loop_level`` event loops running.  By default, 1.
-    _func_name : str, optional
-        name of calling function, by default 'run'.  This is only here to
-        provide functions like `gui_qt` a way to inject their name into the
-        warning message.
-
-    Raises
-    ------
-    RuntimeError
-        (To avoid confusion) if no widgets would be shown upon starting the
-        event loop.
-    """
     # from ionglow.utils.notifications import NOTIFICATION_MANAGER
 
     from qtextra.dialogs.sentry import install_error_monitor

@@ -30,7 +30,6 @@ def quick_min_max(
     arr: npt.NDArray,
     down_sample_to: int = 1048576,
 ) -> tuple[float, float]:
-    """Quickly compute the min and max of an array."""
     if arr.dtype.kind == "b":
         return 0.0, 1.0
     down_sample_factor = arr.size / down_sample_to
@@ -42,8 +41,6 @@ def quick_min_max(
 
 
 class QHistogramView(QBaseGraphicsView):
-    """Graphics view for displaying histograms and setting contrast limits."""
-
     evt_clim_changed = Signal(tuple)
 
     _pos_drag_start: QPoint | None = None
@@ -70,16 +67,13 @@ class QHistogramView(QBaseGraphicsView):
         self.evt_clim_changed.emit(clim)
 
     def clim(self) -> tuple[float, float]:
-        """The current contrast limits."""
         return tuple(sorted([self._line_low.value(), self._line_high.value()]))
 
     def set_clim(self, clim: tuple[float, float]):
-        """Set the contrast limits."""
         self._line_low.setValue(max(clim[0], self._minmax[0]))
         self._line_high.setValue(min(clim[1], self._minmax[1]))
 
     def set_minmax(self, minmax: tuple[float, float]):
-        """Set the minimum and maximum values that the contrast limits can take."""
         self._minmax = minmax
         self._line_low.setRange(*minmax)
         self._line_high.setRange(*minmax)
@@ -92,7 +86,6 @@ class QHistogramView(QBaseGraphicsView):
         color: QColor | None = None,
         minmax: tuple[float, float] | None = None,
     ):
-        """Set the histogram for an array."""
         color = color or DEFAULT_HISTOGRAM_COLOR
         n_hist = 3 if is_rgb else 1
         for _ in range(n_hist, len(self._hist_items)):
@@ -126,19 +119,16 @@ class QHistogramView(QBaseGraphicsView):
             self._view_range = clim
 
     def setValueFormat(self, fmt: str):
-        """Set the value format for the contrast limits."""
         self._line_low.setValueFormat(fmt)
         self._line_high.setValueFormat(fmt)
 
     def viewRect(self, width: float | None = None) -> QRectF:
-        """The current view range as a QRectF."""
         x0, x1 = self._view_range
         if width is None:
             width = x1 - x0
         return QRectF(x0 - width * 0.03, 0, width * 1.06, 1)
 
     def set_view_range(self, x0: float, x1: float):
-        """Set the view range."""
         if (x0, x1) == self._view_range:
             return
         self._view_range = (x0, x1)
@@ -201,8 +191,6 @@ class QHistogramView(QBaseGraphicsView):
 
 
 class QClimLineItem(QGraphicsRectItem):
-    """The line item for one of the contrast limits."""
-
     evt_value_changed = PySignal(float)
     _Y_LOW = -1
     _Y_HIGH = 2
@@ -296,11 +284,9 @@ class QClimLineItem(QGraphicsRectItem):
         painter.drawLine(line)
 
     def value(self) -> float:
-        """The x value of the line (the contrast limit)."""
         return self._value
 
     def setValue(self, x: float):
-        """Set the x value of the line (the contrast limit)."""
         old_bbox = self.boundingRect()
         old_value = self._value
         new_value = min(max(x, self._range[0]), self._range[1])
@@ -313,7 +299,6 @@ class QClimLineItem(QGraphicsRectItem):
             scene.update(self.mapRectToScene(old_bbox.united(new_bbox)))
 
     def setRange(self, low: float, high: float):
-        """Set the min/max range of the line x value."""
         self._range = (low, high)
         if not low <= self.value() <= high:
             self.setValue(self.value())
@@ -334,8 +319,6 @@ class QClimLineItem(QGraphicsRectItem):
 
 
 class QHistogramItem(QGraphicsPathItem):
-    """The histogram item."""
-
     def __init__(self):
         super().__init__()
         self._hist_path = QPainterPath()
@@ -343,12 +326,10 @@ class QHistogramItem(QGraphicsPathItem):
         self.setPen(QPen(QColor(0, 0, 0, 0)))
 
     def with_brush(self, brush: QBrush) -> QHistogramItem:
-        """Set the brush for the histogram."""
         self._hist_brush = brush
         return self
 
     def set_histogram_from_array(self, arr: npt.NDArray) -> tuple[float, float]:
-        """Set the histogram from an array."""
         _min, _max = quick_min_max(arr)
         _nbin = 64 if arr.dtype in ("uint8", "uint8") else 256
         _nbin = min(_nbin, int(np.prod(arr.shape[-2:])) // 2)
@@ -382,8 +363,6 @@ class QHistogramItem(QGraphicsPathItem):
 
 
 class QClimMenu(QMenu):
-    """Menu."""
-
     def __init__(self, parent: QHistogramView, item: QClimLineItem):
         super().__init__(parent)
         self._hist_view = parent
@@ -397,7 +376,6 @@ class QClimMenu(QMenu):
         self.addAction(widget_action)
 
     def _on_value_changed(self):
-        """Value changed."""
         value = self._edit.text()
         if value:
             value = float(value)

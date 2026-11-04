@@ -2,10 +2,13 @@ import re
 import random
 from artext import utils
 from artext.utils import log
-class WordNoiser():
+
+
+class WordNoiser:
     def __init__(self):
-        self.vowel_pairs = re.compile(r'([aeiou][aeiou])')
-        self.consonant_pairs = re.compile(r'(gh)|(ng)|(gn)|(th)|(ou)|(sc)')
+        self.vowel_pairs = re.compile(r"([aeiou][aeiou])")
+        self.consonant_pairs = re.compile(r"(gh)|(ng)|(gn)|(th)|(ou)|(sc)")
+
     def noise_word(self, word):
         rand = random.random()
         wlen = len(word)
@@ -40,24 +43,28 @@ class WordNoiser():
         if word == uword:
             return self.noise_word(word)
         return uword
+
     def drop_char(self, word):
         pos = utils.rand_index(word)
         if pos == 0:
             pos += 1
-        uword = word[:pos] + word[pos+1:]
+        uword = word[:pos] + word[pos + 1 :]
         log.debug("[drop char] {} -> {}: %s".format(word, uword))
         return uword
+
     def add_char(self, word):
         pos = utils.rand_index(word)
-        addition = random.choice(list(word+'aeiou'))
+        addition = random.choice(list(word + "aeiou"))
         uword = word[:pos] + addition + word[pos:]
         log.debug("[add char] {} -> {}: %s".format(word, uword))
         return uword
+
     def repeat_char(self, word):
         pos = utils.rand_index(word)
         uword = word[:pos] + word[pos] + word[pos:]
         log.debug("[repeat char] {} -> {}: %s".format(word, uword))
         return uword
+
     def flip_chars(self, word):
         uword = self.flip_vowel_pairs(word)
         if not uword:
@@ -66,6 +73,7 @@ class WordNoiser():
                 uword = self.flip_rand_pairs(word)
         log.debug("[flip char] {} -> {}: %s".format(word, uword))
         return uword
+
     def flip_vowel_pairs(self, word):
         vowels = self.vowel_pairs.findall(word)
         if not len(vowels):
@@ -75,6 +83,7 @@ class WordNoiser():
         pair = vowels[0]
         uword = word.replace(pair, pair[::-1], 1)
         return uword
+
     def flip_consonant_pairs(self, word):
         idxs = [m.start() for m in self.consonant_pairs.finditer(word)]
         if not len(idxs):
@@ -82,18 +91,19 @@ class WordNoiser():
         if len(idxs) > 1:
             idxs = random.sample(idxs, 1)
         idx = idxs[0]
-        uword = word[:idx] + word[idx+1] + word[idx] + \
-            (word[idx+2:] if len(word) > idx+1 else '')
+        uword = word[:idx] + word[idx + 1] + word[idx] + (word[idx + 2 :] if len(word) > idx + 1 else "")
         return uword
+
     def flip_rand_pairs(self, word):
         pos = utils.rand_index(word)
         i, j = (pos - 1, pos) if pos > 0 else (pos, pos + 1)
-        uword = word[:i] + word[j] + word[i] + word[j + 1:]
+        uword = word[:i] + word[j] + word[i] + word[j + 1 :]
         return uword
+
     def swap_chars(self, word):
         i, j = utils.rand_index(word), utils.rand_index(word)
         if i > j:
             i, j = j, i
-        uword = word[:i] + word[j] + word[i + 1:j] + word[i] + word[j + 1:]
+        uword = word[:i] + word[j] + word[i + 1 : j] + word[i] + word[j + 1 :]
         log.debug("[swap char] {} -> {}: %s".format(word, uword))
         return uword

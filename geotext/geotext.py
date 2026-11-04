@@ -14,35 +14,6 @@ def get_data_path(path):
 
 
 def read_table(filename, usecols=(0, 1), sep="\t", comment="#", encoding="utf-8", skip=0):
-    """Parse data files from the data directory
-
-    Parameters
-    ----------
-    filename: string
-        Full path to file
-
-    usecols: list, default [0, 1]
-        A list of two elements representing the columns to be parsed into a dictionary.
-        The first element will be used as keys and the second as values. Defaults to
-        the first two columns of `filename`.
-
-    sep : string, default '\t'
-        Field delimiter.
-
-    comment : str, default '#'
-        Indicates remainder of line should not be parsed. If found at the beginning of a line,
-        the line will be ignored altogether. This parameter must be a single character.
-
-    encoding : string, default 'utf-8'
-        Encoding to use for UTF when reading/writing (ex. `utf-8`)
-
-    skip: int, default 0
-        Number of lines to skip at the beginning of the file
-
-    Returns
-    -------
-    A dictionary with the same length as the number of lines in `filename`
-    """
 
     with io.open(filename, "r", encoding=encoding) as f:
         for _ in range(skip):
@@ -60,12 +31,6 @@ def read_table(filename, usecols=(0, 1), sep="\t", comment="#", encoding="utf-8"
 
 
 def build_index():
-    """Load information from the data directory
-
-    Returns
-    -------
-    A namedtuple with three fields: nationalities cities countries
-    """
 
     nationalities = read_table(get_data_path("nationalities.txt"), sep=":")
 
@@ -81,20 +46,6 @@ def build_index():
 
 
 class GeoText(object):
-    """Extract cities and countries from a text
-
-    Examples
-    --------
-
-    >>> places = GeoText("London is a great city")
-    >>> places.cities
-    "London"
-
-    >>> GeoText("New York, Texas, and also China").country_mentions
-    OrderedDict([(u'US', 2), (u'CN', 1)])
-
-    """
-
     index = build_index()
 
     def __init__(self, text, country=None):

@@ -1,10 +1,8 @@
 from typing import Dict
-
 import bioc
 import pandas as pd
 import tqdm
 from radtext.models.constants import NEGATION, UNCERTAINTY
-
 
 NOTE_NLP_TABLE_HEADERS = [
     "note_nlp_id",
@@ -21,7 +19,6 @@ NOTE_NLP_TABLE_HEADERS = [
     "term_temporal",
     "term_modifiers",
 ]
-
 NOTE_TABLE_HEADERS = [
     "note_id",
     "person_id",
@@ -53,7 +50,6 @@ def convert_ann_to_row(ann: bioc.BioCAnnotation) -> Dict:
         row["note_nlp_concept_id"] = ann.infons["lemma"]
     if "section_concept" in ann.infons:
         row["section_concept_id"] = ann.infons["section_concept"]
-
     new_row = {}
     for k in NOTE_NLP_TABLE_HEADERS:
         if k in row:
@@ -90,15 +86,10 @@ def convert_bioc_to_note_nlp(collection: bioc.BioCCollection) -> pd.DataFrame:
             row["note_id"] = note_id
             rows.append(row)
     df = pd.DataFrame(rows)
-    # df = df[NOTE_NLP_TABLE_HEADERS]
     return df
 
 
 def convert_note_nlp_table_to_bioc(df: pd.DataFrame) -> bioc.BioCCollection:
-    """
-    Convert from CDM NOTE table to bioc collection.
-    https://www.ohdsi.org/web/wiki/doku.php?id=documentation:cdm:note
-    """
     collection = bioc.BioCCollection()
     for _, row in df.iterrows():
         doc = bioc.BioCDocument.of_text(row["note_text"])

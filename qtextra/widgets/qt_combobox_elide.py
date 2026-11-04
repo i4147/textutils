@@ -6,8 +6,6 @@ from qtpy.QtWidgets import QApplication, QComboBox, QStyle, QStyleOptionComboBox
 
 
 class QtElideComboBox(QComboBox):
-    """A QComboBox that elides (truncates) long text with '...'."""
-
     def paintEvent(self, event):
         painter = QStylePainter(self)
         option = QStyleOptionComboBox()

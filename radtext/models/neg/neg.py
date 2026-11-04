@@ -24,7 +24,6 @@ class BioCNeg(BioCProcessor):
                 ann.infons["nlp_date_time"] += ";" + self.nlp_date_time
             else:
                 ann.infons["nlp_date_time"] = self.nlp_date_time
-
             regex_assertion = self.regex_actor.assert_(passage, ann)
             if regex_assertion.assert_uncertainty_pre_neg():
                 continue
@@ -34,7 +33,6 @@ class BioCNeg(BioCProcessor):
                 continue
             if regex_assertion.assert_uncertainty_post_neg():
                 continue
-
             ngrex_assertion = self.ngrex_actor.assert_(passage, ann, docid)
             if ngrex_assertion.assert_uncertainty_pre_neg():
                 continue
@@ -44,5 +42,4 @@ class BioCNeg(BioCProcessor):
                 continue
             if ngrex_assertion.assert_uncertainty_post_neg():
                 continue
-
         return passage

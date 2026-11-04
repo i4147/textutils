@@ -19,26 +19,6 @@ from qtextra.widgets.qt_dialog import QtDialog
 
 
 class WhatsNewPage(BaseModel):
-    """Data model for a single What's New carousel slide.
-
-    Parameters
-    ----------
-    title : str
-        Slide heading.
-    html : str
-        Rich body text (HTML subset).
-    bullets : list[str]
-        Numbered callout lines displayed below the body.
-    image_path : str | None
-        Path to an image file shown on the right side.
-    icon_char : str | None
-        Fallback emoji/character used when no image is provided.
-    gradient_start : str
-        CSS colour for the top-left corner of the slide background gradient.
-    gradient_end : str
-        CSS colour for the bottom-right corner of the slide background gradient.
-    """
-
     title: str = ""
     html: str = ""
     bullets: list[str] = Field(default_factory=list)
@@ -49,15 +29,12 @@ class WhatsNewPage(BaseModel):
 
 
 class _GradientBackground(QWidget):
-    """Paints a diagonal linear gradient background."""
-
     def __init__(self, start: str, end: str, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._top = QColor(start)
         self._bottom = QColor(end)
 
     def set_colors(self, start: str, end: str) -> None:
-        """Update gradient colours and repaint."""
         self._top = QColor(start)
         self._bottom = QColor(end)
         self.update()
@@ -72,11 +49,6 @@ class _GradientBackground(QWidget):
 
 
 class _DotIndicator(QWidget):
-    """Row of navigation dots — active one is hollow, idle ones are filled.
-
-    Emits ``evt_clicked(int)`` when the user clicks a dot.
-    """
-
     evt_clicked = Signal(int)
 
     _DOT_R = 5
@@ -93,12 +65,10 @@ class _DotIndicator(QWidget):
         self.setMinimumWidth(count * self._SPACING + self._DOT_BIG * 2)
 
     def set_current(self, idx: int) -> None:
-        """Update which dot is highlighted."""
         self._current = idx
         self.update()
 
     def _dot_index_at(self, x: int) -> int | None:
-        """Return the dot index under pixel *x*, or ``None`` if no hit."""
         total_w = (self._count - 1) * self._SPACING + self._DOT_BIG * 2
         x0 = (self.width() - total_w) // 2
         for i in range(self._count):
@@ -108,7 +78,6 @@ class _DotIndicator(QWidget):
         return None
 
     def mousePressEvent(self, event) -> None:
-        """Emit ``evt_clicked`` with the index of the clicked dot."""
         if event.button() == Qt.MouseButton.LeftButton:
             idx = self._dot_index_at(event.x())
             if idx is not None:
@@ -133,8 +102,6 @@ class _DotIndicator(QWidget):
 
 
 class _CalloutBadge(QWidget):
-    """Filled circle with a number inside, used for bullet callouts."""
-
     _SIZE = 28
 
     def __init__(self, number: int, parent: QWidget | None = None) -> None:
@@ -157,8 +124,6 @@ class _CalloutBadge(QWidget):
 
 
 class _PageCard(QWidget):
-    """One carousel slide: title + HTML body + optional bullets + optional image."""
-
     _IMG_W, _IMG_H = 300, 260
 
     def __init__(self, page: WhatsNewPage, parent: QWidget | None = None) -> None:
@@ -206,17 +171,6 @@ class _PageCard(QWidget):
 
 
 class QtWhatsNewDialog(QtDialog):
-    """Drop-in "What's New" carousel dialog.
-
-    Parameters
-    ----------
-    pages : list[WhatsNewPage]
-        Slide data; each item describes one page of the carousel.
-    version : str
-        Shown in the window title.
-    parent : QWidget | None
-    """
-
     CARD_W, CARD_H = 760, 500
 
     def __init__(
@@ -233,7 +187,6 @@ class QtWhatsNewDialog(QtDialog):
         self._go_to(0, animate=False)
 
     def make_panel(self):
-        """Build and return the dialog layout."""
         first = self._pages[0] if self._pages else WhatsNewPage()
 
         self._bg = _GradientBackground(first.gradient_start, first.gradient_end)
@@ -311,11 +264,6 @@ class QtWhatsNewDialog(QtDialog):
         last_seen_key: str = "",
         parent: QWidget | None = None,
     ) -> bool:
-        """Show the dialog only when *version* differs from the stored value.
-
-        Stores the acknowledged version in QSettings under *last_seen_key*.
-        Returns ``True`` when the user accepts, ``False`` on skip/close.
-        """
         from qtpy.QtCore import QSettings
 
         settings = QSettings()

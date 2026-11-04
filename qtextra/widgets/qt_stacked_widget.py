@@ -3,8 +3,6 @@ from qtpy.QtWidgets import QGraphicsOpacityEffect, QStackedWidget, QWidget
 
 
 class OpacityAniStackedWidget(QStackedWidget):
-    """Stacked widget with fade in and fade out animation."""
-
     def __init__(self, parent=None):
         super().__init__(parent=parent)
         self.__nextIndex = 0
@@ -50,8 +48,6 @@ class OpacityAniStackedWidget(QStackedWidget):
 
 
 class PopUpAniInfo:
-    """Pop up ani info."""
-
     def __init__(self, widget: QWidget, deltaX: int, deltaY, ani: QPropertyAnimation):
         self.widget = widget
         self.deltaX = deltaX
@@ -60,8 +56,6 @@ class PopUpAniInfo:
 
 
 class PopUpAniStackedWidget(QStackedWidget):
-    """Stacked widget with pop up animation."""
-
     aniFinished = pyqtSignal()
     aniStart = pyqtSignal()
 
@@ -72,19 +66,6 @@ class PopUpAniStackedWidget(QStackedWidget):
         self._ani = None
 
     def addWidget(self, widget, deltaX=0, deltaY=76):
-        """Add widget to window.
-
-        Parameters
-        ----------
-        widget:
-            widget to be added
-
-        deltaX: int
-            the x-axis offset from the beginning to the end of animation
-
-        deltaY: int
-            the y-axis offset from the beginning to the end of animation
-        """
         super().addWidget(widget)
 
         self.aniInfos.append(
@@ -112,25 +93,6 @@ class PopUpAniStackedWidget(QStackedWidget):
         duration: int = 250,
         easingCurve=QEasingCurve.OutQuad,
     ):
-        """Set current window to display.
-
-        Parameters
-        ----------
-        index: int
-            the index of widget to display
-
-        isNeedPopOut: bool
-            need pop up animation or not
-
-        showNextWidgetDirectly: bool
-            whether to show next widget directly when animation started
-
-        duration: int
-            animation duration
-
-        easingCurve: QEasingCurve
-            the interpolation mode of animation
-        """
         if index < 0 or index >= self.count():
             raise ValueError(f"The index `{index}` is illegal")
 
@@ -174,36 +136,15 @@ class PopUpAniStackedWidget(QStackedWidget):
         duration: int = 250,
         easingCurve=QEasingCurve.OutQuad,
     ):
-        """Set currect widget.
-
-        Parameters
-        ----------
-        widget:
-            the widget to be displayed
-
-        isNeedPopOut: bool
-            need pop up animation or not
-
-        showNextWidgetDirectly: bool
-            whether to show next widget directly when animation started
-
-        duration: int
-            animation duration
-
-        easingCurve: QEasingCurve
-            the interpolation mode of animation
-        """
         self.setCurrentIndex(self.indexOf(widget), needPopOut, showNextWidgetDirectly, duration, easingCurve)
 
     def __setAnimation(self, ani, startValue, endValue, duration, easingCurve=QEasingCurve.Linear):
-        """Set the config of animation."""
         ani.setEasingCurve(easingCurve)
         ani.setStartValue(startValue)
         ani.setEndValue(endValue)
         ani.setDuration(duration)
 
     def __onAniFinished(self):
-        """Animation finished slot."""
         self._ani.disconnect()
         super().setCurrentIndex(self._nextIndex)
         self.aniFinished.emit()

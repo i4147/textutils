@@ -13,30 +13,14 @@ WarningObjName = "warning_path"
 
 
 class DirectoryMessages:
-    """Directory messages."""
-
     EXISTS = "This directory already exists and it should not."
     WILL_BE_CREATED = "This directory does not exist and will be created."
 
 
 class QtDirectoryWidget(QFrame):
-    """Directory widget."""
-
     evt_checked = Signal(Path, bool)
 
     def __init__(self, path: PathLike, exist_obj_name: str = SuccessObjName, parent: QWidget | None = None):
-        """Directory widget where the path is displayed alongside a couple of helpful icons/buttons.
-
-        Parameters
-        ----------
-        path : PathLike
-            Path to the directory.
-        exist_obj_name : str
-            Specifies how the text should be displayed in case the path exists or not. For instance, it can be used to
-            highlight when a path exists and it should not (e.g. `warning`) or vice-versa (e.g. `success`).
-        parent : QWidget, optional
-            Specifies the parent of the widget.
-        """
         super().__init__(parent=parent)
         self.setMinimumHeight(25)
 
@@ -87,12 +71,10 @@ class QtDirectoryWidget(QFrame):
 
     @property
     def is_checked(self) -> bool:
-        """Flag to indicate if its checked."""
         return self.checkbox.isChecked()
 
     @property
     def path(self) -> Path:
-        """Return path."""
         return self._path
 
     @path.setter
@@ -108,36 +90,29 @@ class QtDirectoryWidget(QFrame):
 
     @property
     def is_new(self) -> bool:
-        """Check whether the specified path will be new."""
         return not self.path.exists()
 
     def set_style(self, object_name: str) -> None:
-        """Set a new style."""
         hp.update_widget_style(self.path_label, object_name)
         self.warning_icon.setVisible(object_name == WarningObjName)
 
     def set_new(self, visible: bool) -> None:
-        """Set visible icon."""
         self.new_icon.setVisible(visible)
 
     def show_as_path(self, show_full: bool) -> None:
-        """Show basename without the full path."""
         path = self._path if show_full else Path(self._path).name
         self.path_label.setText(str(path))
 
     def _on_check(self) -> None:
-        """Checked/unchecked event."""
         self.evt_checked.emit(self.path, self.checkbox.isChecked())
         hp.disable_widgets(self.path_label, disabled=not self.checkbox.isChecked())
 
     def _on_edit(self) -> None:
-        """Edit value."""
         new_path = hp.get_text(self, "Modify the current path...", "Modify the current path", str(self.path))
         if new_path is not None:
             self.path = new_path
 
     def _on_open(self) -> None:
-        """Open the directory."""
         from koyo.path import open_directory_universal
 
         if Path(self._path):
@@ -145,23 +120,11 @@ class QtDirectoryWidget(QFrame):
 
 
 class QtDirectoryManager(QScrollArea):
-    """Directory manager."""
-
     evt_added = Signal(Path)
     evt_update = Signal(Path)
     evt_removed = Signal(Path)
 
     def __init__(self, parent: QWidget | None = None, exist_obj_name: str = SuccessObjName):
-        """Directory manager.
-
-        Parameters
-        ----------
-        parent : QWidget
-            parent object
-        exist_obj_name : str
-            name of the object if the path exists. If value is `success`, then the it will be green and in case it does
-            not exist, then the path will be set to `warning` and it will be rendered in red.
-        """
         super().__init__(parent=parent)
         self.widgets: dict[Path, QtDirectoryWidget] = {}
         self._exist_obj_name = exist_obj_name
@@ -181,35 +144,22 @@ class QtDirectoryManager(QScrollArea):
 
     @property
     def paths(self) -> list[Path]:
-        """Return list of paths."""
         return list(self.widgets.keys())
 
     @property
     def checked_paths(self) -> list[Path]:
-        """Return the list of paths that are checked."""
         return [widget.path for widget in self.widgets.values() if widget.is_checked]
 
     @property
     def n_new(self) -> int:
-        """Return the total count of new directories."""
         return sum([widget.is_new for widget in self.widgets.values()])
 
     def clear(self) -> None:
-        """Remove all directories."""
         paths = self.paths
         for path in paths:
             self.remove_path(path)
 
     def add_path(self, path: PathLike, checked: bool = True) -> None:
-        """Add the path widget.
-
-        Parameters
-        ----------
-        path : str
-            path to be added to the widget
-        checked : bool
-            State of the checkbox.
-        """
         widget = QtDirectoryWidget(path, exist_obj_name=self._exist_obj_name, parent=self)
         widget.checkbox.setChecked(checked)
         self.widgets[widget.path] = widget
@@ -217,7 +167,6 @@ class QtDirectoryManager(QScrollArea):
         self.evt_added.emit(widget.path)
 
     def update_path(self, old_path: PathLike, new_path: PathLike) -> None:
-        """Update path widget."""
         old_path = Path(old_path)
         widget = self.widgets.pop(old_path, None)
         if widget:
@@ -226,7 +175,6 @@ class QtDirectoryManager(QScrollArea):
             self.evt_update.emit(widget.path)
 
     def remove_path(self, path: PathLike) -> None:
-        """Remove the widget."""
         path = Path(path)
         widget = self.widgets.pop(path, None)
         if widget:
@@ -235,26 +183,22 @@ class QtDirectoryManager(QScrollArea):
             self.evt_removed.emit(path)
 
     def validate(self, path: PathLike, object_name: str) -> None:
-        """Update the style of the directory by setting its object name."""
         path = Path(path)
         widget = self.widgets.get(path, None)
         if widget:
             widget.set_style(object_name)
 
     def set_new(self, path: PathLike, visible: bool) -> None:
-        """Update the state of the directory."""
         path = Path(path)
         widget = self.widgets.get(path, None)
         if widget:
             widget.set_new(visible)
 
     def show_as_path(self, show_full: bool) -> None:
-        """Show the basename of each widget."""
         for widget in self.widgets.values():
             widget.show_as_path(show_full)
 
     def is_checked(self, path: PathLike) -> bool:
-        """Check whether the directory is checked."""
         path = Path(path)
         widget = self.widgets.get(path, None)
         if widget:

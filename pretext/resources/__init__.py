@@ -58,7 +58,6 @@ def install(reinstall: bool = False, npm_install: bool = False) -> None:
 
     if npm_install:
         log.info("Installing npm packages")
-        # Look for node_modules and install if we can.  This is a simplified version of the more robust utils.css_node_modules_install, which we cannot use here due to circular imports.
         os.chdir(_RESOURCE_BASE_PATH / "core" / "script" / "cssbuilder")
         try:
             npm_cmd = shutil.which("npm")
@@ -70,7 +69,6 @@ def install(reinstall: bool = False, npm_install: bool = False) -> None:
             log.warning(f"Unable to install npm packages for theme building: {e}")
             log.debug(e, exc_info=True)
             return
-        # Dynamic substitution script requires node versions > 22.10
         os.chdir(_RESOURCE_BASE_PATH / "core" / "script" / "dynsub")
         try:
             npm_cmd = shutil.which("npm")

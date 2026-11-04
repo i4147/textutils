@@ -77,8 +77,6 @@ assert len(MAZE) == ROWS, "MAZE row count mismatch"
 
 
 class Direction(Enum):
-    """Cardinal movement direction."""
-
     UP = (0, -1)
     DOWN = (0, 1)
     LEFT = (-1, 0)
@@ -86,19 +84,15 @@ class Direction(Enum):
 
     @property
     def delta(self) -> tuple[int, int]:
-        """Return the (dcol, drow) step for this direction."""
         return self.value
 
     @property
     def opposite(self) -> Direction:
-        """Return the 180-degree opposite direction."""
         dc, dr = self.value
         return Direction((-dc, -dr))
 
 
 class GhostMode(Enum):
-    """Ghost behaviour mode."""
-
     SCATTER = "SCATTER"
     CHASE = "CHASE"
     FRIGHTENED = "FRIGHTENED"
@@ -106,8 +100,6 @@ class GhostMode(Enum):
 
 
 class GhostName(Enum):
-    """Ghost identity with start position and scatter corner."""
-
     BLINKY = "BLINKY"
     PINKY = "PINKY"
     INKY = "INKY"
@@ -115,7 +107,6 @@ class GhostName(Enum):
 
     @property
     def scatter_target(self) -> tuple[int, int]:
-        """Return the (col, row) scatter corner for this ghost."""
         corners: dict[GhostName, tuple[int, int]] = {
             GhostName.BLINKY: (COLS - 2, 1),
             GhostName.PINKY: (1, 1),
@@ -126,7 +117,6 @@ class GhostName(Enum):
 
     @property
     def start_col(self) -> int:
-        """Starting column in the maze."""
         cols: dict[GhostName, int] = {
             GhostName.BLINKY: 10,
             GhostName.PINKY: 9,
@@ -137,7 +127,6 @@ class GhostName(Enum):
 
     @property
     def start_row(self) -> int:
-        """Starting row in the maze."""
         rows: dict[GhostName, int] = {
             GhostName.BLINKY: 8,
             GhostName.PINKY: 10,
@@ -148,7 +137,6 @@ class GhostName(Enum):
 
     @property
     def color(self) -> QColor:
-        """Characteristic display colour."""
         colors: dict[GhostName, QColor] = {
             GhostName.BLINKY: QColor(231, 76, 60),
             GhostName.PINKY: QColor(255, 105, 180),
@@ -160,8 +148,6 @@ class GhostName(Enum):
 
 @dataclass(frozen=True, slots=True)
 class Ghost:
-    """Immutable state for one ghost."""
-
     name: GhostName
     col: int
     row: int
@@ -175,8 +161,6 @@ class Ghost:
 
 @dataclass(frozen=True, slots=True)
 class PacmanGameState:
-    """Immutable full Pac-Man game state."""
-
     dots: frozenset[tuple[int, int]]
     power_pellets: frozenset[tuple[int, int]]
     player_col: int
@@ -198,18 +182,12 @@ class PacmanGameState:
 
 
 def _cell(col: int, row: int, maze: tuple[str, ...]) -> str:
-    """Return the maze character at (col, row), or '#' if out of bounds."""
     if 0 <= row < ROWS and 0 <= col < COLS:
         return maze[row][col]
     return "#"
 
 
 def _passable(col: int, row: int, *, can_use_door: bool, maze: tuple[str, ...]) -> bool:
-    """Return True if an entity can move to (col, row).
-
-    Normal entities (player and ghosts in the maze) use can_use_door=False.
-    Ghosts entering/exiting the house use can_use_door=True.
-    """
     ch = _cell(col, row, maze)
     if ch == "#":
         return False
@@ -219,7 +197,6 @@ def _passable(col: int, row: int, *, can_use_door: bool, maze: tuple[str, ...]) 
 
 
 def _is_house_interior(col: int, row: int, maze: tuple[str, ...]) -> bool:
-    """Return True only for ghost-house interior cells (' ')."""
     return _cell(col, row, maze) == " "
 
 
@@ -233,10 +210,6 @@ def _bfs_next_dir(
     forbidden_dir: Direction | None,
     maze: tuple[str, ...],
 ) -> Direction | None:
-    """Return the first direction to take on the shortest path to the target.
-
-    Returns None when already at the target or no path exists.
-    """
     if from_col == target_col and from_row == target_row:
         return None
 
@@ -284,7 +257,6 @@ def _valid_dirs(
     forbidden_dir: Direction | None,
     maze: tuple[str, ...],
 ) -> list[Direction]:
-    """Return all passable directions from (col, row), excluding forbidden_dir."""
     result = []
     for direction in Direction:
         if forbidden_dir is not None and direction == forbidden_dir:
@@ -296,7 +268,6 @@ def _valid_dirs(
 
 
 def _ghost_chase_target(ghost: Ghost, state: PacmanGameState) -> tuple[int, int]:
-    """Return the (col, row) chase target for a ghost."""
     pc, pr = state.player_col, state.player_row
 
     if ghost.name == GhostName.BLINKY:
@@ -321,7 +292,6 @@ def _ghost_chase_target(ghost: Ghost, state: PacmanGameState) -> tuple[int, int]
 
 
 def _move_ghost(ghost: Ghost, state: PacmanGameState, rng: random.Random) -> Ghost:
-    """Advance a ghost by one step and return the updated ghost."""
     maze = state.maze
 
     if ghost.in_house:
@@ -441,17 +411,14 @@ def _move_ghost(ghost: Ghost, state: PacmanGameState, rng: random.Random) -> Gho
 
 
 def _initial_dots(maze: tuple[str, ...]) -> frozenset[tuple[int, int]]:
-    """Extract all dot positions from the maze."""
     return frozenset((col, row) for row in range(ROWS) for col in range(COLS) if maze[row][col] == ".")
 
 
 def _initial_pellets(maze: tuple[str, ...]) -> frozenset[tuple[int, int]]:
-    """Extract all power-pellet positions from the maze."""
     return frozenset((col, row) for row in range(ROWS) for col in range(COLS) if maze[row][col] == "o")
 
 
 def _is_fully_connected(grid: list[list[str]]) -> bool:
-    """Return True if all dot/pellet cells are reachable from the player start via walkable cells."""
     walkable = {(row, col) for row in range(ROWS) for col in range(COLS) if grid[row][col] in (".", "o")}
     if not walkable:
         return False
@@ -473,12 +440,6 @@ def _is_fully_connected(grid: list[list[str]]) -> bool:
 
 
 def generate_maze(rng: random.Random) -> tuple[str, ...]:
-    """Generate a random Pac-Man maze with mirrored wall pillars.
-
-    The ghost house, outer border, power pellets and player area are fixed.
-    Random wall clusters are placed in the left half and mirrored to the right.
-    Connectivity is verified after each placement; invalid placements are reverted.
-    """
     grid: list[list[str]] = [["." for _ in range(COLS)] for _ in range(ROWS)]
 
     for c in range(COLS):
@@ -573,7 +534,6 @@ def generate_maze(rng: random.Random) -> tuple[str, ...]:
 
 
 def _make_ghosts(global_mode: GhostMode) -> tuple[Ghost, ...]:
-    """Create the four ghosts in their starting configuration."""
     return (
         Ghost(
             name=GhostName.BLINKY,
@@ -619,11 +579,6 @@ def _make_ghosts(global_mode: GhostMode) -> tuple[Ghost, ...]:
 
 
 def create_initial_state(rng: random.Random | None = None) -> PacmanGameState:
-    """Create a fresh Pac-Man game state.
-
-    If ``rng`` is provided a random maze is generated; otherwise the fixed
-    default ``MAZE`` is used.
-    """
     maze = generate_maze(rng) if rng is not None else MAZE
     phase_ticks, phase_mode_str = _MODE_SCHEDULE[0]
     global_mode = GhostMode[phase_mode_str]
@@ -650,14 +605,12 @@ def create_initial_state(rng: random.Random | None = None) -> PacmanGameState:
 
 
 def queue_direction(state: PacmanGameState, direction: Direction) -> PacmanGameState:
-    """Queue the player's next turn direction."""
     if state.is_game_over or state.level_complete:
         return state
     return replace(state, player_queued_dir=direction, has_started=True)
 
 
 def advance_state(state: PacmanGameState, rng: random.Random) -> PacmanGameState:
-    """Advance the game by one tick and return the new state."""
     if state.is_game_over or state.level_complete:
         return state
 
@@ -837,21 +790,16 @@ _EATEN_PEN_COLOR = QColor(180, 180, 180)
 
 
 class PacmanBoardWidget(GameBoardWidget):
-    """Paint the Pac-Man game board."""
-
     _state: PacmanGameState | None
 
     def __init__(self, parent: QWidget | None = None) -> None:
-        """Initialize the board widget."""
         super().__init__(parent)
         self.setMinimumSize(380, 380)
 
     def sizeHint(self) -> QSize:
-        """Return the preferred board size."""
         return QSize(480, 480)
 
     def paintEvent(self, event: QPaintEvent) -> None:
-        """Paint the current board state."""
         super().paintEvent(event)
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, False)
@@ -919,15 +867,12 @@ class PacmanBoardWidget(GameBoardWidget):
 
 
 class PacmanDialog(GameDialogMixin, QtDialog):
-    """Standalone dialog that hosts the Pac-Man game."""
-
     def __init__(
         self,
         parent: QWidget | None,
         *,
         rng: random.Random | None = None,
     ) -> None:
-        """Initialize the Pac-Man dialog."""
         self._rng = rng if rng is not None else random.Random()
         self._first_game = True
         self._state = create_initial_state()
@@ -939,15 +884,12 @@ class PacmanDialog(GameDialogMixin, QtDialog):
         self.restart_game()
 
     def _create_board_widget(self) -> PacmanBoardWidget:
-        """Return the Pac-Man board widget."""
         return PacmanBoardWidget(self)
 
     def _instructions_text(self) -> str:
-        """Return keyboard instructions."""
         return "Arrow keys or WASD to move. Space pauses. R restarts."
 
     def _do_restart(self) -> None:
-        """Reset game state, using the fixed maze for the very first game."""
         if self._first_game:
             self._state = create_initial_state()
             self._first_game = False
@@ -955,15 +897,12 @@ class PacmanDialog(GameDialogMixin, QtDialog):
             self._state = create_initial_state(self._rng)
 
     def _do_advance_state(self) -> None:
-        """Advance the Pac-Man simulation by one tick."""
         self._state = advance_state(self._state, self._rng)
 
     def _is_terminal_state(self) -> bool:
-        """Return True when the game has ended (game over or level complete)."""
         return self._state.is_game_over or self._state.level_complete
 
     def _status_text(self) -> str:
-        """Return the full status string for the current Pac-Man state."""
         if self._state.is_game_over:
             return "Game over"
         if self._state.level_complete:
@@ -975,17 +914,14 @@ class PacmanDialog(GameDialogMixin, QtDialog):
         return "Running"
 
     def _setup_extra_header_widgets(self, header_layout: QHBoxLayout) -> None:
-        """Add the lives label between score and status."""
         self.lives_label = hp.make_label(self, "", alignment=Qt.AlignmentFlag.AlignHCenter)
         header_layout.addStretch(1)
         header_layout.addWidget(self.lives_label)
 
     def _refresh_extra_labels(self) -> None:
-        """Update the lives label."""
         self.lives_label.setText(f"Lives: {self._state.lives}")
 
     def keyPressEvent(self, event: QKeyEvent | None) -> None:
-        """Handle keyboard controls."""
         if event is None:
             return
 

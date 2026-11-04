@@ -7,8 +7,6 @@ from qtextra import helpers as hp
 
 
 class MessageWidget(QWidget):
-    """Widget that displays a message at the center of the page."""
-
     def __init__(self, message: str, parent: QWidget | None = None, icon: str = ""):
         super().__init__(parent)
 
@@ -30,10 +28,8 @@ class MessageWidget(QWidget):
 
     @property
     def message(self) -> str:
-        """Return current message."""
         return self.label.text()
 
     @message.setter
     def message(self, value: str) -> None:
-        """Set message."""
         self.label.setText(value)

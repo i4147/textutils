@@ -11,13 +11,10 @@ from qtextra.widgets.qt_dict_tag_editor import DictTagValue
 
 
 def _option_summary_sort_key(item: tuple[str, list[str]]) -> str:
-    """Sort summary options case-insensitively by option label."""
     return item[0].casefold()
 
 
 class _SummaryCard(QFrame):
-    """Small summary card for one key."""
-
     def __init__(self, parent: QWidget | None, key: str, summary: dict) -> None:
         super().__init__(parent)
         self.setObjectName("multiDictSummaryCard")
@@ -57,8 +54,6 @@ class _SummaryCard(QFrame):
 
 
 class QtMultiDictSummaryWidget(QWidget):
-    """Summary panel for nested dictionary data."""
-
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._summary_data: dict = {"sample_count": 0, "key_count": 0, "keys": {}}
@@ -113,16 +108,13 @@ class QtMultiDictSummaryWidget(QWidget):
         self._refresh_ui()
 
     def summary_data(self) -> dict:
-        """Return the computed summary structure."""
         return self._summary_data
 
     def set_items(self, items: Mapping[str, Mapping[str, DictTagValue]]) -> None:
-        """Compute summaries from nested dictionaries."""
         self._summary_data = self.build_summary(items)
         self._refresh_ui()
 
     def clear_items(self) -> None:
-        """Clear all summaries."""
         self._summary_data = {"sample_count": 0, "key_count": 0, "keys": {}}
         self._refresh_ui()
 
@@ -132,7 +124,6 @@ class QtMultiDictSummaryWidget(QWidget):
 
     @classmethod
     def build_summary(cls, items: Mapping[str, Mapping[str, DictTagValue]]) -> dict:
-        """Build structured summary data for nested dictionaries."""
         samples = list(items)
         key_summary: dict[str, dict[str, list[str]]] = {}
 

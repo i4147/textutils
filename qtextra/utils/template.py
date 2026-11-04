@@ -41,32 +41,24 @@ def _get_color(color: ty.Union[str, Color]) -> tuple[int, int, int]:
 
 
 def decrease(font_size: str, pt: int) -> str:
-    """Decrease fontsize."""
     return f"{int(font_size[:-2]) - int(pt)}pt"
 
 
 def increase(font_size: str, pt: int) -> str:
-    """Increase fontsize."""
     return f"{int(font_size[:-2]) + int(pt)}pt"
 
 
 def color_for_background(color: ty.Union[str, Color]) -> str:
-    """Return color that will stand out against background color."""
     color = _get_color(color)
     return get_text_color(rgb_to_hex(color, 1)).name()
 
 
 def background_for_color(color: ty.Union[str, Color]) -> str:
-    """Return background color that will stand out against text color."""
     color = _get_color(color)
     return get_background_color(rgb_to_hex(color, 1)).name()
 
 
 def darken_or_lighten(color: ty.Union[str, Color], percentage: float = 10) -> str:
-    """Darken or lighten the color.
-
-    If color is light, darken it, otherwise lighten it.
-    """
     red, green, blue = _get_color(color)
     if (red * 0.299 + green * 0.587 + blue * 0.114) > 186:
         return darken(color, percentage)
@@ -76,10 +68,6 @@ def darken_or_lighten(color: ty.Union[str, Color], percentage: float = 10) -> st
 def dark_or_light_color_darken(
     dark_color: ty.Union[str, Color], light_color: ty.Union[str, Color], percentage: float = 10
 ) -> str:
-    """Darken or lighten the color.
-
-    If color is light, darken it, otherwise lighten it.
-    """
     color = dark_color if is_dark_theme() else light_color
     return darken(color, percentage)
 
@@ -87,23 +75,17 @@ def dark_or_light_color_darken(
 def dark_or_light_color_lighten(
     dark_color: ty.Union[str, Color], light_color: ty.Union[str, Color], percentage: float = 10
 ) -> str:
-    """Darken or lighten the color.
-
-    If color is light, darken it, otherwise lighten it.
-    """
     color = dark_color if is_dark_theme() else light_color
     return lighten(color, percentage)
 
 
 def darken_or_lighten_for_theme(color: ty.Union[str, Color], is_dark: bool = False, percentage: float = 10) -> str:
-    """Darken the color if it is light, otherwise lighten it."""
     if is_dark:
         return lighten(color, percentage)
     return darken(color, percentage)
 
 
 def darken(color: ty.Union[str, Color], percentage: float = 10) -> str:
-    """Darken the color."""
     red, green, blue = _get_color(color)
     ratio = 1 - float(percentage) / 100
     red = min(max(int(red * ratio), 0), 255)
@@ -113,7 +95,6 @@ def darken(color: ty.Union[str, Color], percentage: float = 10) -> str:
 
 
 def lighten(color: ty.Union[str, Color], percentage: float = 10) -> str:
-    """Lighten the color."""
     red, green, blue = _get_color(color)
     ratio = float(percentage) / 100
     red = min(max(int(red + (255 - red) * ratio), 0), 255)
@@ -123,13 +104,11 @@ def lighten(color: ty.Union[str, Color], percentage: float = 10) -> str:
 
 
 def opacity(color: ty.Union[str, Color], value: int = 255) -> str:
-    """Adjust opacity."""
     red, green, blue = _get_color(color)
     return f"rgba({red}, {green}, {blue}, {max(min(int(value), 255), 0)})"
 
 
 def gradient(stops: list[str], horizontal: bool = True) -> str:
-    """Make gradient."""
     if not use_gradients:
         return stops[-1]
 
@@ -144,7 +123,6 @@ def gradient(stops: list[str], horizontal: bool = True) -> str:
 
 
 def template(css, **theme):
-    """Generate template."""
 
     def _increase_match(matchobj):
         font_size, to_add = matchobj.groups()

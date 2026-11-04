@@ -15,9 +15,6 @@ set_ptx_path(resources.resource_base_path() / "core")
 
 
 def cli_build_message() -> str:
-    """
-    Override the build_info_message function of core to report that the CLI was used to build.
-    """
     return f"built with the PreTeXt-CLI, version {VERSION} using core commit {CORE_COMMIT}"
 
 

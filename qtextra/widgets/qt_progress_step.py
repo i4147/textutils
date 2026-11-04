@@ -8,11 +8,6 @@ from qtextra.config import THEMES
 
 
 class QtStepProgressBar(QWidget):
-    """Progress bar with steps.
-
-    https://stackoverflow.com/questions/63004722/how-to-create-a-labelled-qprogressbar-in-pyside
-    """
-
     evt_steps_changed = Signal(list)
     evt_value_changed = Signal(int)
 
@@ -32,22 +27,18 @@ class QtStepProgressBar(QWidget):
         self._animation.valueChanged.connect(self.update)
 
     def get_labels(self) -> list[str]:
-        """Get labels."""
         return self._labels
 
     def set_labels(self, labels: list[str]) -> None:
-        """Set labels."""
         self._labels = labels
         self.evt_steps_changed.emit(self._labels)
 
     labels = Property(list, fget=get_labels, fset=set_labels, notify=evt_steps_changed)
 
     def get_value(self) -> int:
-        """Get value."""
         return self._value
 
     def set_value(self, value: int) -> None:
-        """Set current value."""
         if 0 <= value < len(self.labels) + 1:
             self._value = value
             self.evt_value_changed.emit(value)
@@ -58,7 +49,6 @@ class QtStepProgressBar(QWidget):
     value = Property(int, fget=get_value, fset=set_value, notify=evt_value_changed)
 
     def sizeHint(self) -> QSize:
-        """Return the size hint for the widget."""
         return QSize(320, 120)
 
     def paintEvent(self, event):

@@ -3,8 +3,6 @@ from qtpy import QtWidgets as QtW
 
 
 class QtVerticalLabel(QtW.QLabel):
-    """Rotated label."""
-
     def __init__(self, *args):
         QtW.QLabel.__init__(self, *args)
 

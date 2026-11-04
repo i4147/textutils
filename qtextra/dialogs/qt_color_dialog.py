@@ -13,7 +13,6 @@ from qtextra.widgets.qt_dialog import QtDialog
 
 
 def parse_colors(colors: ty.Union[ty.List[str], ty.List[Color]]) -> ty.List[str]:
-    """Parse colors."""
     _colors = []
     for color in colors:
         if isinstance(color, Color):
@@ -24,8 +23,6 @@ def parse_colors(colors: ty.Union[ty.List[str], ty.List[Color]]) -> ty.List[str]
 
 
 class QtColorListDialog(QtDialog):
-    """Dialog for editing a list of colors, with optional colormap presets."""
-
     def __init__(
         self,
         parent: QWidget | None,
@@ -39,11 +36,9 @@ class QtColorListDialog(QtDialog):
 
     @property
     def n_colors(self) -> int:
-        """Return the number of colors."""
         return len(self.colors)
 
     def make_panel(self) -> QLayout:
-        """Make panel."""
         info_label = hp.make_label(self, self.message, wrap=True)
 
         color_layout, self.swatches = hp.make_swatch_grid(
@@ -101,7 +96,6 @@ class QtColorListDialog(QtDialog):
         return layout
 
     def on_randomize(self) -> None:
-        """Randomize colors."""
         from koyo.color import get_random_hex_color
 
         self.colors = [get_random_hex_color() for _ in range(self.n_colors)]
@@ -112,7 +106,6 @@ class QtColorListDialog(QtDialog):
 
     @Slot()
     def on_set_colormap(self) -> None:
-        """Set colors based on colormap."""
         import matplotlib.cm
 
         colormap = self.colormap_combo.currentText()
@@ -128,11 +121,9 @@ class QtColorListDialog(QtDialog):
             self.new_colors[color_idx] = color
 
     def on_update_color(self, color_idx: int, color: str) -> None:
-        """Update color."""
         self.new_colors[color_idx] = color
 
     def accept(self) -> None:
-        """Accept changes."""
         self.colors = self.new_colors
         super().accept()
 

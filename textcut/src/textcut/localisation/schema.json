@@ -1,0 +1,65 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://example.com/product.schema.json",
+    "title": "Cutting rules definition",
+    "description": "Definition of the cutting probabilities depending on the text-environment for a given language.",
+    "type": "object",
+    "properties": {
+        "lang": {
+            "type": "string",
+            "description": "ISO language code with or without variation (e.g., 'de', 'en-UK', ...)"
+        },
+        "after": {
+            "description": "The probabilities to cut AFTER patterns. Defaults to an empty list.",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "sequences": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "description": "Regex pattern matching a sequence in the text."
+                        }
+                    },
+                    "probability": {
+                        "type": "float",
+                        "description": "The probability of cutting the text after the patterns."
+                    },
+                    "override": {
+                        "type": "boolean",
+                        "description": "If true, this probability will be enforced, even if a higher probability is found. Defaults to false."
+                    }
+                },
+                "required": ["sequences", "probability"]
+            }
+        },
+        "before": {
+            "description": "The probabilities to cut BEFORE patterns. Defaults to an empty list.",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "sequences": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "description": "Regex pattern matching a sequence in the text."
+                        }
+                    },
+                    "probability": {
+                        "type": "float",
+                        "description": "The probability of cutting the text before the patterns."
+                    }
+                },
+                "required": ["sequences", "probability"]
+            }
+        },
+        "default": {
+            "type": "float",
+            "description": "Default probability to cut anywhere else not listed in after's and before's sequences. Defaults to 1."
+        },
+        "required": ["lang"]
+    }
+}
+

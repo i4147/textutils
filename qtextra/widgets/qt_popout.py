@@ -23,8 +23,6 @@ from qtextra.widgets.qt_label_image import QImageLabel
 
 
 class PopoutAnimationType(StrEnum):
-    """Popout animation type."""
-
     SLIDE_UP = "slide_up"
     SLIDE_DOWN = "slide_down"
     SLIDE_LEFT = "slide_left"
@@ -34,8 +32,6 @@ class PopoutAnimationType(StrEnum):
 
 
 class PopoutViewBase(QWidget):
-    """Popout view base class."""
-
     def __init__(self, parent=None):
         super().__init__(parent=parent)
 
@@ -46,15 +42,12 @@ class PopoutViewBase(QWidget):
         raise NotImplementedError
 
     def background_color(self):
-        """Return the background color."""
         return QColor(40, 40, 40) if is_dark() else QColor(248, 248, 248)
 
     def border_color(self):
-        """Return the border color."""
         return QColor(0, 0, 0, 45) if is_dark() else QColor(0, 0, 0, 17)
 
     def paintEvent(self, e):
-        """Paint event."""
         painter = QPainter(self)
         painter.setRenderHints(QPainter.RenderHint.Antialiasing)
 
@@ -66,29 +59,6 @@ class PopoutViewBase(QWidget):
 
 
 class PopoutView(PopoutViewBase):
-    """Popout view.
-
-    Parameters
-    ----------
-    title: str
-        the title of teaching tip
-
-    content: str
-        the content of teaching tip
-
-    icon: InfoBarIcon | QIcon | str
-        the icon of teaching tip
-
-    image: str | QPixmap | QImage
-        the image of teaching tip
-
-    is_closable: bool
-        whether to show the close button
-
-    parent: QWidget
-        parent widget
-    """
-
     evt_closed = Signal()
 
     def __init__(
@@ -162,11 +132,9 @@ class PopoutView(PopoutViewBase):
         self._addImageToLayout()
 
     def addSpacing(self, size):
-        """Add spacing to view."""
         self.widgetLayout.addSpacing(size)
 
     def addWidget(self, widget: QWidget, stretch=0, align=Qt.AlignmentFlag.AlignLeft):
-        """Add widget to view."""
         self.widgetLayout.addSpacing(8)
         self.widgetLayout.addWidget(widget, stretch, align)
 
@@ -189,15 +157,12 @@ class PopoutView(PopoutViewBase):
         self.imageLabel.scaledToWidth(w)
 
     def showEvent(self, e):
-        """Show event."""
         super().showEvent(e)
         self._adjustImage()
         self.adjustSize()
 
 
 class QtPopout(QWidget):
-    """Popout."""
-
     evt_closed = Signal()
 
     def __init__(self, view: PopoutViewBase, parent=None, close_on_delete=True):
@@ -217,7 +182,6 @@ class QtPopout(QWidget):
         )
 
     def setShadowEffect(self, blurRadius=35, offset=(0, 8)):
-        """Add shadow to dialog."""
         color = QColor(0, 0, 0, 80 if is_dark() else 30)
         self.shadowEffect = QGraphicsDropShadowEffect(self.view)
         self.shadowEffect.setBlurRadius(blurRadius)
@@ -227,7 +191,6 @@ class QtPopout(QWidget):
         self.view.setGraphicsEffect(self.shadowEffect)
 
     def closeEvent(self, e):
-        """Close event."""
         if self.close_on_delete:
             self.deleteLater()
 
@@ -239,7 +202,6 @@ class QtPopout(QWidget):
         super().showEvent(e)
 
     def exec(self, pos: QPoint, animation_type=PopoutAnimationType.SLIDE_UP):
-        """Show calendar view."""
         self.aniManager = PopoutAnimationManager.make(animation_type, self)
         self.show()
         self.aniManager.exec(pos)
@@ -253,25 +215,6 @@ class QtPopout(QWidget):
         animation_type: PopoutAnimationType = PopoutAnimationType.SLIDE_UP,
         close_on_delete: bool = True,
     ):
-        """Create and show a Popout.
-
-        Parameters
-        ----------
-        view: PopoutViewBase
-            Popout view
-
-        target: QWidget | QPoint
-            the target widget or position to show Popout
-
-        parent: QWidget
-            parent window
-
-        animation_type: PopoutAnimationType
-            Popout animation type
-
-        close_on_delete: bool
-            whether delete Popout automatically when Popout is evt_closed
-        """
         w = cls(view, parent, close_on_delete)
 
         if target is None:
@@ -298,37 +241,6 @@ class QtPopout(QWidget):
         animation_type: PopoutAnimationType = PopoutAnimationType.SLIDE_UP,
         close_on_delete=True,
     ):
-        """Create and show a Popout using the default view.
-
-        Parameters
-        ----------
-        title: str
-            the title of teaching tip
-
-        content: str
-            the content of teaching tip
-
-        icon: InfoBarIcon | QIcon | str
-            the icon of teaching tip
-
-        image: str | QPixmap | QImage
-            the image of teaching tip
-
-        is_closable: bool
-            whether to show the close button
-
-        target: QWidget | QPoint
-            the target widget or position to show Popout
-
-        parent: QWidget
-            parent window
-
-        animation_type: PopoutAnimationType
-            Popout animation type
-
-        close_on_delete: bool
-            whether delete Popout automatically when Popout is evt_closed
-        """
         view = PopoutView(title, content, icon, image, is_closable)
         w = cls._init(view, target, parent, animation_type, close_on_delete)
         view.evt_closed.connect(w.close)
@@ -344,8 +256,6 @@ class QtPopout(QWidget):
 
 
 class PopoutAnimationManager(QObject):
-    """Popout animation manager."""
-
     managers: ClassVar[dict[PopoutAnimationType, type[PopoutAnimationManager]]] = {}
 
     def __init__(self, popout: QtPopout):
@@ -368,13 +278,6 @@ class PopoutAnimationManager(QObject):
 
     @classmethod
     def register(cls, name):
-        """Register menu animation manager.
-
-        Parameters
-        ----------
-        name: Any
-            the name of manager, it should be unique
-        """
 
         def wrapper(Manager):
             if name not in cls.managers:
@@ -385,7 +288,6 @@ class PopoutAnimationManager(QObject):
         return wrapper
 
     def exec(self, pos: QPoint):
-        """Start animation."""
         raise NotImplementedError
 
     def _adjustPosition(self, pos):
@@ -396,12 +298,10 @@ class PopoutAnimationManager(QObject):
         return QPoint(x, y)
 
     def position(self, target: QWidget):
-        """Return the top left position relative to the target."""
         raise NotImplementedError
 
     @classmethod
     def make(cls, animation_type: PopoutAnimationType, popup: QtPopout) -> PopoutAnimationManager:
-        """Mask animation manager."""
         if animation_type not in cls.managers:
             raise ValueError(f"`{animation_type}` is an invalid animation type.")
 
@@ -410,8 +310,6 @@ class PopoutAnimationManager(QObject):
 
 @PopoutAnimationManager.register(PopoutAnimationType.SLIDE_UP)
 class PullUpPopoutAnimationManager(PopoutAnimationManager):
-    """Pull up Popout animation manager."""
-
     def position(self, target: QWidget):
         w = self._popout
         pos = target.mapToGlobal(QPoint())
@@ -428,8 +326,6 @@ class PullUpPopoutAnimationManager(PopoutAnimationManager):
 
 @PopoutAnimationManager.register(PopoutAnimationType.SLIDE_DOWN)
 class DropDownPopoutAnimationManager(PopoutAnimationManager):
-    """Drop down Popout animation manager."""
-
     def position(self, target: QWidget):
         w = self._popout
         pos = target.mapToGlobal(QPoint(0, target.height()))
@@ -446,8 +342,6 @@ class DropDownPopoutAnimationManager(PopoutAnimationManager):
 
 @PopoutAnimationManager.register(PopoutAnimationType.SLIDE_LEFT)
 class SlideLeftPopoutAnimationManager(PopoutAnimationManager):
-    """Slide left Popout animation manager."""
-
     def position(self, target: QWidget):
         w = self._popout
         pos = target.mapToGlobal(QPoint(0, 0))
@@ -464,8 +358,6 @@ class SlideLeftPopoutAnimationManager(PopoutAnimationManager):
 
 @PopoutAnimationManager.register(PopoutAnimationType.SLIDE_RIGHT)
 class SlideRightPopoutAnimationManager(PopoutAnimationManager):
-    """Slide right Popout animation manager."""
-
     def position(self, target: QWidget):
         w = self._popout
         pos = target.mapToGlobal(QPoint(0, 0))
@@ -482,8 +374,6 @@ class SlideRightPopoutAnimationManager(PopoutAnimationManager):
 
 @PopoutAnimationManager.register(PopoutAnimationType.FADE_IN)
 class FadeInPopoutAnimationManager(PopoutAnimationManager):
-    """Fade in Popout animation manager."""
-
     def position(self, target: QWidget):
         w = self._popout
         pos = target.mapToGlobal(QPoint())
@@ -499,14 +389,10 @@ class FadeInPopoutAnimationManager(PopoutAnimationManager):
 
 @PopoutAnimationManager.register(PopoutAnimationType.NONE)
 class DummyPopoutAnimationManager(PopoutAnimationManager):
-    """Dummy Popout animation manager."""
-
     def exec(self, pos: QPoint):
-        """Start animation."""
         self._popout.move(self._adjustPosition(pos))
 
     def position(self, target: QWidget):
-        """Return the top left position relative to the target."""
         m = self._popout.hBoxLayout.contentsMargins()
         return target.mapToGlobal(QPoint(-m.left(), -self._popout.sizeHint().height() + m.bottom() - 8))
 

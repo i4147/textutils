@@ -2,29 +2,17 @@ import collections
 import itertools
 import re
 from typing import Generator, List, Dict, Pattern, Union
-
 from networkx import DiGraph
 
 L = "<"
 R = ">"
 LEFT = "<"
 RIGHT = ">"
-
 NodeObj = collections.namedtuple("NodeObj", "name node")
 
 
 class NgrexMatch:
-    """
-    Match objects always have a boolean value of True.
-    """
-
     def __init__(self, pattern: "NgrexPattern", graph: DiGraph, nodes: List[NodeObj]):
-        """
-        Args:
-            pattern: The expression object whose `finditer()` produced this instance
-            graph: The graph passed to `finditer()`
-            nodes:
-        """
         self.pattern = pattern
         self.graph = graph
         self.nodes = nodes
@@ -34,18 +22,6 @@ class NgrexMatch:
         return True
 
     def group(self, group: Union[int, str]):
-        """
-        Returns the input node captured by the given group during the previous match operation.
-        If a group number is negative or larger than the number of groups defined in the pattern,
-        an IndexError exception is raised.
-
-        If the pattern uses the name syntax, the group argument may also be a string identifying
-        the group by its name. If a string argument is not used as a group name in the pattern,
-        an IndexError exception is raised.
-
-        Raises:
-            IndexError
-        """
         if isinstance(group, int):
             return self.nodes[group].node
         elif isinstance(group, str):
@@ -57,26 +33,14 @@ class NgrexMatch:
             raise TypeError(type(group))
 
     def groups(self):
-        """
-        Returns a list containing all the subgroups of the match, from 0 up to however many nodes
-        are in the pattern.
-        """
         return (node.node for node in self.nodes)
 
 
 class NgrexPattern:
-    """
-    A NgrexPattern is a tgrep-type pattern for matching node configurations in Networkx structures.
-    """
-
     def __init__(self):
         self.pattern = ""
 
     def finditer(self, graph: DiGraph) -> Generator[NgrexMatch, None, None]:
-        """
-        Returns an iterator yielding MatcherObj instances over all matches for the ngrex pattern
-        in graph.
-        """
         raise NotImplementedError
 
     def __str__(self):
@@ -103,16 +67,11 @@ class NodePattern(NgrexPattern):
 
 class EdgePattern(NgrexPattern):
     def __init__(self, governor: NgrexPattern, dependant: NgrexPattern, edge_attributes, direction: str = LEFT):
-        """
-        Args:
-            direction: right if 'governor >edge dependant', left if 'dependant <edge governor'
-        """
         super(EdgePattern, self).__init__()
         self.governor = governor
         self.dependant = dependant
         self.direction = direction
         self.edge_attributes = _get_attributes_regex(edge_attributes)
-
         if self.direction == LEFT:
             args = (dependant, "<", governor)
         else:
@@ -139,10 +98,6 @@ class EdgePattern(NgrexPattern):
 
 class CoordinationPattern(NgrexPattern):
     def __init__(self, pattern1: NgrexPattern, pattern2: NgrexPattern, is_conj: bool = True):
-        """
-        Args:
-            is_conj: if is_conj is true, then it is an "AND"; otherwise, it is an "OR".
-        """
         super(CoordinationPattern, self).__init__()
         self.pattern1 = pattern1
         self.pattern2 = pattern2

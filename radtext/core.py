@@ -1,6 +1,5 @@
 from datetime import datetime
 from typing import List, Union
-
 from bioc import BioCDocument, BioCPassage, BioCSentence, BioCCollection
 
 

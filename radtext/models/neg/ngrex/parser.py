@@ -1,18 +1,14 @@
 from ply import lex
 from ply import yacc
-
 from radtext.models.neg.ngrex import pattern
 
 t_ignore = " \t\r"
-
 tokens = (
     "RELATION",
     "IDENTIFIER",
     "REGEX",
 )
-
 literals = "{}()&[]:|,="
-
 t_RELATION = r"[<>]"
 t_IDENTIFIER = r'([^ \n\r!@#$%^&*()+={}\[\]\|\\;\':",./<>?`~-])+'
 t_REGEX = r"/(/|[^\n\r/])*?/"
@@ -26,12 +22,6 @@ lexer = lex.lex()
 
 
 def p_SubNode(p):
-    """
-    SubNode : ModNode
-            | ModNode RelationDisj
-            | '(' SubNode ')'
-            | '(' SubNode ')' RelationDisj
-    """
     if len(p) == 2:
         p[0] = p[1]
     elif len(p) == 3:
@@ -75,10 +65,6 @@ def _merge_conj(p1, relations):
 
 
 def p_RelationDisj(p):
-    """
-    RelationDisj : RelationConj
-                 | RelationConj '|' RelationDisj
-    """
     if len(p) == 2:
         p[0] = ("OR", [p[1]])
     elif len(p) == 4:
@@ -86,11 +72,6 @@ def p_RelationDisj(p):
 
 
 def p_RelationConj(p):
-    """
-    RelationConj : ModRelation
-                 | ModRelation RelationConj
-                 | ModRelation '&' RelationConj
-    """
     if len(p) == 2:
         p[0] = ("AND", [p[1]])
     if len(p) == 3:
@@ -100,35 +81,18 @@ def p_RelationConj(p):
 
 
 def p_ModRelation(p):
-    """
-    ModRelation : RelChild
-    """
     p[0] = p[1]
 
 
 def p_RelChild(p):
-    """
-    RelChild : Relation
-    """
     p[0] = p[1]
 
 
 def p_Relation(p):
-    """
-    Relation : RELATION '{' Attributes '}' Relation_Next
-    """
-    """
-    Returns:
-        < edge_attributes node
-    """
     p[0] = (p[1], p[3], p[5])
 
 
 def p_Relation_Next(p):
-    """
-    Relation_Next : ModNode
-                  | '(' SubNode ')'
-    """
     if len(p) == 2:
         p[0] = p[1]
     else:
@@ -136,24 +100,14 @@ def p_Relation_Next(p):
 
 
 def p_ModNode(p):
-    """
-    ModNode : Child
-    """
     p[0] = p[1]
 
 
 def p_Child(p):
-    """
-    Child : Description
-    """
     p[0] = p[1]
 
 
 def p_Description(p):
-    """
-    Description : '{' Attributes '}'
-                | '{' Attributes '}' '=' IDENTIFIER
-    """
     if len(p) == 4:
         p[0] = pattern.NodePattern(p[2])
     else:
@@ -161,11 +115,6 @@ def p_Description(p):
 
 
 def p_Attributes(p):
-    """
-    Attributes : IDENTIFIER ':' REGEX
-               | IDENTIFIER ':' REGEX ',' Attributes
-               | empty
-    """
     if len(p) == 4:
         p[0] = {p[1]: p[3]}
     elif len(p) == 6:
@@ -176,7 +125,6 @@ def p_Attributes(p):
 
 
 def p_empty(p):
-    "empty :"
     pass
 
 

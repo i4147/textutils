@@ -9,8 +9,6 @@ Alignment = ty.Literal["left", "center", "right"]
 
 
 class Column(ty.TypedDict):
-    """Column data."""
-
     name: str
     tag: str
     type: str
@@ -25,8 +23,6 @@ class Column(ty.TypedDict):
 
 
 class TableConfig(MutableMapping[int, Column]):
-    """Table configuration object."""
-
     def __init__(self, text_alignment: Alignment | str = "center") -> None:
         super().__init__()
         self._dict: dict[int, Column] = {}
@@ -39,7 +35,6 @@ class TableConfig(MutableMapping[int, Column]):
         self.text_alignment: Alignment = text_alignment
 
     def __getitem__(self, tag: ty.Union[int, str]) -> ty.Any:
-        """Get item id."""
         val = self._dict[tag] if isinstance(tag, int) else self.find_col_id(tag)
         if val == -1:
             raise KeyError("Could not retrieve value")
@@ -56,21 +51,17 @@ class TableConfig(MutableMapping[int, Column]):
 
     @property
     def n_columns(self) -> int:
-        """Return number of columns."""
         return len(self)
 
     @property
     def header(self) -> list[str]:
-        """Return header."""
         return [v["name"] for v in self.values()]
 
     @property
     def hidden_columns(self) -> list[int]:
-        """Returns list of hidden columns."""
         return [value["order"] for value in self.values() if value["hidden"]]
 
     def update_attribute(self, name: str, attr: str, value: ty.Any) -> None:
-        """Update attribute value by column name or tag."""
         for _, meta_ in self.items():
             if meta_["name"] == name or meta_["tag"] == name:
                 meta_[attr] = value
@@ -91,7 +82,6 @@ class TableConfig(MutableMapping[int, Column]):
         selectable: bool = True,
         resizable: bool = False,
     ) -> TableConfig:
-        """Add an item to the configuration."""
         self.last_index += 1
 
         if dtype == "bool":
@@ -123,14 +113,12 @@ class TableConfig(MutableMapping[int, Column]):
         return self
 
     def find_col_id(self, tag: str) -> int:
-        """Find column id by the tag."""
         for col_id, col_info in self.items():
             if col_info["tag"] == tag or col_info["name"] == tag:
                 return col_id
         return -1
 
     def get_column(self, tag: int | str) -> Column | None:
-        """Get column by tag."""
         for col_id, col_info in self.items():
             if isinstance(tag, int) and col_id == tag:
                 return col_info
@@ -139,24 +127,20 @@ class TableConfig(MutableMapping[int, Column]):
         return None
 
     def get_width(self, column_id: int) -> int:
-        """Get the width of column."""
         data = self.get(column_id, {})
         width: int = data.get("width", 100)
         return width
 
     def to_columns(self, include_check: bool = True) -> list[str]:
-        """Return columns."""
         if include_check:
             return [v["name"] for v in self.values()]
         return [v["name"] for v in self.values() if v["tag"] != "check"]
 
     def column_iter(self) -> ty.Iterator[tuple[int, Column]]:
-        """Return column iterator."""
         for col_id in self:
             yield col_id, self[col_id]
 
     def get_selected_columns(self) -> list[int]:
-        """Return selected columns."""
         selectable_columns = []
         for col_id, col_info in self.column_iter():
             if col_info["show"] and col_info["selectable"]:
@@ -164,7 +148,6 @@ class TableConfig(MutableMapping[int, Column]):
         return selectable_columns
 
     def get_selectable_columns(self) -> list[int]:
-        """Return selectable columns."""
         selectable_columns = []
         for col_id, col_info in self.column_iter():
             if col_info["selectable"]:

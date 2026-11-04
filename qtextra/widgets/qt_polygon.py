@@ -125,8 +125,6 @@ def _polygon_path(exterior: np.ndarray, holes: Sequence[np.ndarray]) -> QPainter
 
 
 class _PolygonGraphicsItem(QGraphicsItem):
-    """Render cached polygon paths as a single graphics-scene item."""
-
     def __init__(self) -> None:
         super().__init__()
         self._paths: list[QPainterPath] = []
@@ -138,7 +136,6 @@ class _PolygonGraphicsItem(QGraphicsItem):
         self._batch_count = 0
 
     def boundingRect(self) -> QRectF:
-        """Return the complete polygon extent in scene coordinates."""
         return QRectF(self._bounds)
 
     def paint(
@@ -147,11 +144,9 @@ class _PolygonGraphicsItem(QGraphicsItem):
         _option: QStyleOptionGraphicsItem,
         _widget: QWidget | None = None,
     ) -> None:
-        """Replay the cached vector paint commands."""
         painter.drawPicture(0, 0, self._picture)
 
     def set_geometry(self, paths: list[QPainterPath], bounds: QRectF) -> None:
-        """Replace the cached polygon geometry."""
         self.prepareGeometryChange()
         self._paths = paths
         self._bounds = QRectF(bounds)
@@ -163,7 +158,6 @@ class _PolygonGraphicsItem(QGraphicsItem):
         edge_colors: list[QColor | None],
         edge_width: float,
     ) -> None:
-        """Replace the polygon styles and rebuild the vector picture."""
         self._face_colors = face_colors
         self._edge_colors = edge_colors
         self._edge_width = edge_width
@@ -214,8 +208,6 @@ class _PolygonGraphicsItem(QGraphicsItem):
 
 
 class QPolygonView(QBaseGraphicsView):
-    """Display one or more closed polygons using native Qt vector painting."""
-
     def __init__(
         self,
         shapes: Rings | None = None,
@@ -225,7 +217,6 @@ class QPolygonView(QBaseGraphicsView):
         edge_width: float = DEFAULT_EDGE_WIDTH,
         parent: QWidget | None = None,
     ) -> None:
-        """Initialize the polygon view with optional coordinate data."""
         super().__init__(parent)
         self._item = self.addItem(_PolygonGraphicsItem())
         self._global_face_color = _normalize_color(face_color, "face color")
@@ -241,15 +232,9 @@ class QPolygonView(QBaseGraphicsView):
             self._apply_style()
 
     def shape_count(self) -> int:
-        """Return the number of polygons currently displayed."""
         return len(self._item._paths)
 
     def set_shape(self, exterior: Ring, *, holes: Rings | None = None) -> None:
-        """Replace the view contents with exterior coordinates and optional holes.
-
-        Rows containing NaN split the exterior into separate polygons. Holes are
-        only supported when the exterior contains a single polygon.
-        """
         normalized_exteriors = _normalize_ring_segments(exterior, "exterior")
         normalized_holes = _normalize_rings(holes, "holes")
         if len(normalized_exteriors) > 1 and normalized_holes:
@@ -266,11 +251,6 @@ class QPolygonView(QBaseGraphicsView):
         *,
         holes: Sequence[Rings | None] | None = None,
     ) -> None:
-        """Replace the displayed polygons and their optional aligned hole groups.
-
-        Rows containing NaN split an exterior into separate polygons before hole
-        groups are aligned.
-        """
         normalized_exteriors = _normalize_rings(exteriors, "exteriors")
         if holes is None or len(holes) == 0:
             normalized_holes = [[] for _ in normalized_exteriors]
@@ -285,40 +265,33 @@ class QPolygonView(QBaseGraphicsView):
         self._set_normalized_shapes(normalized_exteriors, normalized_holes)
 
     def clear(self) -> None:
-        """Remove all displayed polygons."""
         self._set_normalized_shapes([], [])
 
     def set_face_color(self, color: Color) -> None:
-        """Set one fill color for every polygon and clear per-polygon overrides."""
         normalized = _normalize_color(color, "face color")
         self._global_face_color = normalized
         self._face_colors = None
         self._apply_style()
 
     def set_edge_color(self, color: Color) -> None:
-        """Set one outline color for every polygon and clear per-polygon overrides."""
         normalized = _normalize_color(color, "edge color")
         self._global_edge_color = normalized
         self._edge_colors = None
         self._apply_style()
 
     def set_face_colors(self, colors: Sequence[Color]) -> None:
-        """Set fill colors aligned one-to-one with the displayed polygons."""
         self._face_colors = self._normalize_color_sequence(colors, "face colors")
         self._apply_style()
 
     def set_edge_colors(self, colors: Sequence[Color]) -> None:
-        """Set outline colors aligned one-to-one with the displayed polygons."""
         self._edge_colors = self._normalize_color_sequence(colors, "edge colors")
         self._apply_style()
 
     def set_edge_width(self, width: float) -> None:
-        """Set the outline width in screen pixels."""
         self._edge_width = self._normalize_edge_width(width)
         self._apply_style()
 
     def fit_to_view(self) -> None:
-        """Fit the complete polygon extent into the viewport while preserving aspect ratio."""
         bounds = self._item.boundingRect()
         if bounds.isEmpty():
             self.resetTransform()
@@ -330,12 +303,10 @@ class QPolygonView(QBaseGraphicsView):
         self.fitInView(view_rect, Qt.AspectRatioMode.KeepAspectRatio)
 
     def resizeEvent(self, event: QResizeEvent) -> None:
-        """Refit cached geometry after the viewport size changes."""
         super().resizeEvent(event)
         self.fit_to_view()
 
     def showEvent(self, event: QShowEvent) -> None:
-        """Fit geometry once the widget has a usable viewport."""
         super().showEvent(event)
         self.fit_to_view()
 

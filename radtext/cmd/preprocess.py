@@ -4,7 +4,6 @@ import spacy
 import tqdm
 import stanza
 from stanza.pipeline.core import ResourcesFileNotFoundError
-
 from radtext.cmd.cmd_utils import process_options, process_file
 from radtext.models.preprocess_spacy import BioCSpacy
 from radtext.models.preprocess_stanza import BioCStanza
@@ -13,7 +12,6 @@ from radtext.models.preprocess_stanza import BioCStanza
 def main():
     argv = docopt.docopt(__doc__)
     process_options(argv)
-
     if argv["stanza"]:
         try:
             nlp = stanza.Pipeline("en", processors="tokenize,pos,lemma,depparse")
@@ -30,7 +28,6 @@ def main():
         processor = BioCSpacy(nlp)
     else:
         raise KeyError
-
     process_file(argv["-i"], argv["-o"], processor, bioc.DOCUMENT)
 
 

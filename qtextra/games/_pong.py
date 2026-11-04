@@ -28,8 +28,6 @@ TICK_INTERVAL_MS = 16
 
 @dataclass(frozen=True, slots=True)
 class PongGameState:
-    """Immutable Pong game state."""
-
     width: int
     height: int
     paddle_width: int
@@ -49,12 +47,10 @@ class PongGameState:
 
 
 def clamp_paddle(y_pos: float, board_height: int, paddle_height: int) -> float:
-    """Clamp a paddle position to the visible board."""
     return max(0.0, min(y_pos, float(board_height - paddle_height)))
 
 
 def _make_ball_velocity(rng: random.Random, *, toward_player: bool) -> tuple[float, float]:
-    """Create a deterministic serve velocity."""
     vertical_speed = rng.choice((-BALL_SPEED_Y, -BALL_SPEED_Y + 1.0, BALL_SPEED_Y - 1.0, BALL_SPEED_Y))
     horizontal_speed = -BALL_SPEED_X if toward_player else BALL_SPEED_X
     return horizontal_speed, vertical_speed
@@ -66,7 +62,6 @@ def create_initial_state(
     height: int = BOARD_HEIGHT,
     rng: random.Random | None = None,
 ) -> PongGameState:
-    """Create a fresh Pong game state."""
     generator = rng if rng is not None else random.Random()
     player_y = (height - PADDLE_HEIGHT) / 2
     ai_y = (height - PADDLE_HEIGHT) / 2
@@ -92,7 +87,6 @@ def create_initial_state(
 
 
 def move_player_paddle(state: PongGameState, delta: float) -> PongGameState:
-    """Move the player paddle up or down."""
     if state.is_game_over:
         return state
     player_y = clamp_paddle(state.player_y + delta, state.height, state.paddle_height)
@@ -100,7 +94,6 @@ def move_player_paddle(state: PongGameState, delta: float) -> PongGameState:
 
 
 def _reset_ball(state: PongGameState, rng: random.Random, *, toward_player: bool) -> PongGameState:
-    """Reset the ball to the center after a point is scored."""
     ball_velocity_x, ball_velocity_y = _make_ball_velocity(rng, toward_player=toward_player)
     ai_target_offset = rng.uniform(-AI_TARGET_JITTER, AI_TARGET_JITTER)
     return replace(
@@ -114,7 +107,6 @@ def _reset_ball(state: PongGameState, rng: random.Random, *, toward_player: bool
 
 
 def advance_state(state: PongGameState, rng: random.Random) -> PongGameState:
-    """Advance the Pong game by one tick."""
     if state.is_game_over:
         return state
 
@@ -204,21 +196,16 @@ def advance_state(state: PongGameState, rng: random.Random) -> PongGameState:
 
 
 class PongBoardWidget(GameBoardWidget):
-    """Paint the Pong board."""
-
     _state: PongGameState | None
 
     def __init__(self, parent: QWidget | None = None) -> None:
-        """Initialize the board widget."""
         super().__init__(parent)
         self.setMinimumSize(420, 260)
 
     def sizeHint(self) -> QSize:
-        """Return the preferred board size."""
         return QSize(540, 320)
 
     def paintEvent(self, event: QPaintEvent) -> None:
-        """Paint the current game state."""
         super().paintEvent(event)
         if self._state is None:
             return
@@ -261,10 +248,7 @@ class PongBoardWidget(GameBoardWidget):
 
 
 class PongDialog(GameDialogMixin, QtDialog):
-    """Standalone dialog that hosts a minimal Pong game."""
-
     def __init__(self, parent: QWidget | None, *, rng: random.Random | None = None) -> None:
-        """Initialize the Pong dialog."""
         self._rng = rng if rng is not None else random.Random()
         self._state = create_initial_state(rng=self._rng)
         self._is_paused = False
@@ -275,31 +259,24 @@ class PongDialog(GameDialogMixin, QtDialog):
         self.restart_game()
 
     def _create_board_widget(self) -> PongBoardWidget:
-        """Return the Pong board widget."""
         return PongBoardWidget(self)
 
     def _instructions_text(self) -> str:
-        """Return keyboard instructions."""
         return "Arrow keys or W/S move. Space pauses. R restarts."
 
     def _do_restart(self) -> None:
-        """Reset game state for a new round."""
         self._state = create_initial_state(rng=self._rng)
 
     def _do_advance_state(self) -> None:
-        """Advance the Pong simulation by one tick."""
         self._state = advance_state(self._state, self._rng)
 
     def _score_text(self) -> str:
-        """Return the score label with both player and AI scores."""
         return f"Score: {self._state.player_score} - {self._state.ai_score}"
 
     def _game_over_status(self) -> str:
-        """Return the winner string."""
         return f"{self._state.winner} wins"
 
     def keyPressEvent(self, event: QKeyEvent | None) -> None:
-        """Handle keyboard controls."""
         if event is None:
             return
 

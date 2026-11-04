@@ -7,8 +7,6 @@ import qtextra.helpers as hp
 
 
 class QtSplashScreen(QSplashScreen):
-    """Splash screen."""
-
     TITLE = "qtextra"
 
     def __init__(self, path: PathLike, width: int = 360):
@@ -32,7 +30,6 @@ class QtSplashScreen(QSplashScreen):
 
     @Slot(str)
     def on_message(self, msg: str):
-        """Show message."""
         self.showMessage(msg, alignment=Qt.AlignmentFlag.AlignLeft, color=Qt.GlobalColor.white)
 
 

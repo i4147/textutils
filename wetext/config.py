@@ -4,8 +4,6 @@ from typing import Literal
 
 @dataclass
 class NormalizerConfig:
-    """Configuration for text normalization."""
-
     lang: Literal["auto", "en", "zh"] = "auto"
     """Language of the input text ('auto' for automatic detection)."""
 

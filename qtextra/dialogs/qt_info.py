@@ -6,8 +6,6 @@ from qtextra.widgets.qt_dialog import QtFramelessPopup
 
 
 class InfoDialog(QtFramelessPopup):
-    """Dialog to display some useful information."""
-
     def __init__(
         self,
         parent: QWidget,
@@ -34,15 +32,12 @@ class InfoDialog(QtFramelessPopup):
             self.label.setText(text)
 
     def on_scroll_to_top(self) -> None:
-        """Scroll to end."""
         self.label.verticalScrollBar().setValue(self.label.verticalScrollBar().minimum())
 
     def on_scroll_to_end(self) -> None:
-        """Scroll to end."""
         self.label.verticalScrollBar().setValue(self.label.verticalScrollBar().maximum())
 
     def make_panel(self) -> QFormLayout:
-        """Make panel."""
         if self.persist:
             _, header_layout = self._make_close_handle(self._title)
         else:

@@ -22,7 +22,6 @@ def _base_font(bold=False, size=_FONT_SIZE) -> QFont:
 
 
 def _draw_chevron(painter: QPainter, cx: float, cy: float, close: bool = True):
-    """Draw a ▾ or ▴ chevron."""
     pen = QPen(
         QtStyler.icon(),
         1.6,
@@ -40,8 +39,6 @@ def _draw_chevron(painter: QPainter, cx: float, cy: float, close: bool = True):
 
 
 class _BaseButton(QAbstractButton):
-    """Shared pill-shaped dropdown trigger button."""
-
     def __init__(self, min_width: int = 180, parent: QWidget | None = None):
         super().__init__(parent)
         self._open = False
@@ -81,8 +78,6 @@ class _BaseButton(QAbstractButton):
 
 
 class _PopupPanel(QWidget):
-    """Floating popup card that closes when clicking outside."""
-
     evt_hidden = Signal()
 
     def __init__(self, parent=None):
@@ -122,8 +117,6 @@ class _PopupPanel(QWidget):
 
 
 class _ScrollablePanel(_PopupPanel):
-    """Popup with a scrollable inner area."""
-
     MAX_VISIBLE_H = 280
 
     def __init__(self, parent=None):
@@ -156,8 +149,6 @@ class _ScrollablePanel(_PopupPanel):
 
 
 class _ItemRow(QAbstractButton):
-    """A single selectable row inside a popup."""
-
     def __init__(self, label: str, selected: bool = False, parent=None):
         super().__init__(parent)
         self._label = label

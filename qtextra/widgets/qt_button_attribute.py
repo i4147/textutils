@@ -31,8 +31,6 @@ def _format_value(value: DictTagValue) -> str:
 
 
 class _QtAttributeEditorPopup(QFrame):
-    """Small transient editor used for both new and existing attributes."""
-
     def __init__(
         self,
         parent: QWidget,
@@ -87,7 +85,6 @@ class _QtAttributeEditorPopup(QFrame):
         value: DictTagValue = None,
         key_options: Sequence[str] | None = None,
     ) -> None:
-        """Open the popup beneath an anchor for an add or edit operation."""
         self._original_key = key
         self._set_error("")
         self.set_key_options(key_options)
@@ -102,7 +99,6 @@ class _QtAttributeEditorPopup(QFrame):
         self.key_edit.selectAll()
 
     def set_key_options(self, key_options: Sequence[str] | None) -> None:
-        """Replace the editable key suggestions."""
         current_text = self.key_edit.text()
         self.key_combo.clear()
         self.key_combo.addItems(key_options or ())
@@ -180,8 +176,6 @@ class _QtAttributeEditorPopup(QFrame):
 
 
 class QtAttributeTagButton(QFrame):
-    """Compact attribute pill with edit and delete actions."""
-
     evt_clicked = Signal(str)
     evt_delete_requested = Signal(str)
 
@@ -223,21 +217,17 @@ class QtAttributeTagButton(QFrame):
 
     @property
     def key(self) -> str:
-        """Return the attribute key."""
         return self._key
 
     @property
     def value(self) -> DictTagValue:
-        """Return the typed attribute value."""
         return self._value
 
     @property
     def text(self) -> str:
-        """Return the full text rendered by the pill."""
         return f"{self._key}: {_format_value(self._value)}"
 
     def set_item(self, key: str, value: DictTagValue) -> None:
-        """Replace the key and value displayed by this pill."""
         self._key = key
         self._value = value
         self.label.setText(self.text)
@@ -245,7 +235,6 @@ class QtAttributeTagButton(QFrame):
         self.label.setToolTip(self.text)
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
-        """Request editing when the pill body is clicked."""
         if event.button() == Qt.MouseButton.LeftButton:
             self.evt_clicked.emit(self._key)
         super().mousePressEvent(event)
@@ -257,12 +246,6 @@ class QtAttributeTagButton(QFrame):
 
 
 class QtAttributeTagManager(QWidget):
-    """Manage compact pills representing a typed key-value dictionary.
-
-    Suggested keys can be provided through ``key_options`` without restricting
-    users from entering their own keys.
-    """
-
     evt_items_changed = Signal(dict)
     evt_item_added = Signal(str, object)
     evt_item_updated = Signal(str, str, object)
@@ -316,32 +299,26 @@ class QtAttributeTagManager(QWidget):
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
     def items(self) -> dict[str, DictTagValue]:
-        """Return a copy of the attributes in display order."""
         return dict(self._items)
 
     def export_dict(self) -> dict[str, DictTagValue]:
-        """Export the current attributes as a dictionary."""
         return self.items()
 
     def set_items(self, items: Mapping[str, DictTagValue]) -> None:
-        """Replace all current attributes."""
         self.clear_items(emit_signal=False)
         for key, value in items.items():
             self._set_item(key, value, emit_signal=False)
         self._emit_items_changed()
 
     def set_key_options(self, key_options: Sequence[str] | None) -> None:
-        """Set suggested keys, or clear the suggestions with ``None``."""
         self._key_options = None if key_options is None else tuple(key_options)
         original_key = self._popup._original_key if self._popup.isVisible() else None
         self._popup.set_key_options(self._available_key_options(original_key))
 
     def add_item(self, key: str, value: DictTagValue) -> bool:
-        """Add or update one attribute."""
         return self._set_item(key, value, emit_signal=True)
 
     def add_items(self, items: Mapping[str, DictTagValue]) -> list[str]:
-        """Add or update several attributes and return the affected keys."""
         changed: list[str] = []
         for key, value in items.items():
             if self.add_item(key, value):
@@ -349,7 +326,6 @@ class QtAttributeTagManager(QWidget):
         return changed
 
     def remove_item(self, key: str) -> bool:
-        """Remove an attribute by key."""
         existing_key = self._find_key(key)
         if existing_key is None:
             return False
@@ -363,7 +339,6 @@ class QtAttributeTagManager(QWidget):
         return True
 
     def clear_items(self, emit_signal: bool = True) -> None:
-        """Remove every attribute."""
         for widget in list(self.widgets.values()):
             self._remove_widget(widget)
         self.widgets.clear()
@@ -372,18 +347,15 @@ class QtAttributeTagManager(QWidget):
             self._emit_items_changed()
 
     def has_item(self, key: str) -> bool:
-        """Return whether an attribute key exists."""
         return self._find_key(key) is not None
 
     def get_value(self, key: str) -> DictTagValue:
-        """Return the value associated with a key."""
         existing_key = self._find_key(key)
         if existing_key is None:
             raise KeyError(key)
         return self._items[existing_key]
 
     def edit_item(self, key: str) -> bool:
-        """Open the popup editor for an existing attribute."""
         existing_key = self._find_key(key)
         if existing_key is None:
             return False

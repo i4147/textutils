@@ -1,0 +1,7 @@
+{"schema": "releaseledger.migration-journal.v2", "phase": "staging", "migration_id": "111e2d33-5416-4a30-bed3-8892dfd15bc0", "plan_hash": "pending", "reason": "Migrate releaseledger into .ledger/ shared layout", "legacy_data_root": "/data/data/com.termux/files/home/src/epub2text/.releaseledger", "target_data_root": "/data/data/com.termux/files/home/src/epub2text/.ledger/releaseledger/data", "source_fingerprint": "sha256:caea17142ce12e3486a012eead651752293052ec7b6f470902c99b85dae3ff0f"}
+{"phase": "activation-prepared", "migration_id": "111e2d33-5416-4a30-bed3-8892dfd15bc0", "data_action": "create", "config_action": "create"}
+{"phase": "canonical-activated", "migration_id": "111e2d33-5416-4a30-bed3-8892dfd15bc0"}
+{"phase": "indexes-rebuilt", "migration_id": "111e2d33-5416-4a30-bed3-8892dfd15bc0"}
+{"phase": "domain-verified", "migration_id": "111e2d33-5416-4a30-bed3-8892dfd15bc0"}
+{"phase": "receipt-written", "migration_id": "111e2d33-5416-4a30-bed3-8892dfd15bc0", "receipt_path": "/data/data/com.termux/files/home/src/epub2text/.ledger/releaseledger/migrations/111e2d33-5416-4a30-bed3-8892dfd15bc0.toml"}
+{"phase": "complete", "migration_id": "111e2d33-5416-4a30-bed3-8892dfd15bc0"}

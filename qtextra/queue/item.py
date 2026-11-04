@@ -24,8 +24,6 @@ IS_DEV = os.environ.get("DEV_MODE", "0") == "1"
 
 
 class TaskWidget(QFrame):
-    """Widget controlling and displaying task information."""
-
     evt_start_task = Signal(Task)
     evt_requeue_task = Signal(Task)
     evt_cancel_task = Signal(Task)
@@ -164,7 +162,6 @@ class TaskWidget(QFrame):
 
     @property
     def toggled(self) -> bool:
-        """Return state of toggled."""
         return self._toggled
 
     @toggled.setter
@@ -173,11 +170,9 @@ class TaskWidget(QFrame):
         self.toggle_visibility()
 
     def on_toggle_visibility(self) -> None:
-        """Toggle visibility."""
         self.toggled = not self.toggled
 
     def toggle_visibility(self) -> None:
-        """Hide certain widgets."""
         hp.hide_widgets(
             self.task_info,
             self.start_btn,
@@ -198,7 +193,6 @@ class TaskWidget(QFrame):
         can_force_start: bool = False,
         auto_expand: bool = True,
     ) -> None:
-        """Setup UI for task."""
         with MeasureTimer() as timer:
             self.task = task
             self.can_cancel = can_cancel
@@ -220,7 +214,7 @@ class TaskWidget(QFrame):
         logger.trace(f"Added task '{self.task.summary()}' in {timer()}")
 
     def _update_warnings(self) -> None:
-        """Generate warnings for task."""
+        pass
         # errors: list[str] = []
         # if self.task:
         #     errors = self.task.config_errors()
@@ -230,7 +224,6 @@ class TaskWidget(QFrame):
         # self.errors_btn.setToolTip(tooltip)
 
     def on_copy_to_clipboard(self) -> None:
-        """Copy commands to clipboard."""
         if self.task:
             commands = list(self.task.command_iter())
             commands = [" ".join(cmd) for cmd in commands]
@@ -238,7 +231,6 @@ class TaskWidget(QFrame):
             hp.add_flash_animation(self, duration=1000)
 
     def on_task_info(self) -> None:
-        """Show widget with information about the task."""
         if self.task:
             from qtextra.queue.info import TaskInfoDialog
 
@@ -254,7 +246,6 @@ class TaskWidget(QFrame):
                 self.on_task_info()
 
     def update_progress(self) -> None:
-        """Update progress."""
         try:
             if self.dlg_info:
                 self.dlg_info.update_progress()
@@ -262,7 +253,6 @@ class TaskWidget(QFrame):
             self.dlg_info = None
 
     def on_open_menu(self) -> None:
-        """Open folder menu."""
         from qtextra.queue.queue_widget import QUEUE
 
         if not QUEUE.has_actions():
@@ -279,25 +269,21 @@ class TaskWidget(QFrame):
             )
 
     def _execute_action(self, func: ty.Callable[[Task], None]) -> None:
-        """Execute action."""
         if self.task:
             func(self.task)
 
     def _on_retry_task(self) -> None:
-        """Try task again."""
         task = self.task
         if task:
             task.state = TaskState.QUEUED
             self.evt_requeue_task.emit(task)
 
     def on_start_task(self) -> None:
-        """Triggered when user clicked on the run task button."""
         if self.task:
             self.evt_start_task.emit(self.task)
             self.started()
 
     def _update_state(self) -> None:
-        """Update state."""
         if self.task:
             self.task_info.setText(self.task.pretty_info)
             self.task_state.setText(self.task.state.capitalize())
@@ -306,21 +292,18 @@ class TaskWidget(QFrame):
             logger.trace(f"Updating task '{self.task.summary()}'...")
 
     def started(self) -> None:
-        """Start task."""
         self.poll_timer.start()
         hp.disable_widgets(self.pause_btn, disabled=self.can_pause)
         hp.disable_widgets(self.start_btn, disabled=True)
         self._update_state()
 
     def _on_pause_task(self) -> None:
-        """Triggered when user clicked to pause task."""
         if self.task:
             self.pause_btn.paused = not self.pause_btn.paused
             self.evt_pause_task.emit(self.task, self.pause_btn.paused)
         self._update_state()
 
     def paused(self, paused: bool) -> None:
-        """The task was paused."""
         if self.task:
             self.pause_btn.paused = paused
             if self.pause_btn.paused:
@@ -332,17 +315,14 @@ class TaskWidget(QFrame):
             self._update_state()
 
     def _on_cancel_task(self, force: bool = False) -> None:
-        """Triggered when user clicked to pause the task."""
         if self.task and (force or hp.confirm(self, "Are you sure you wish to cancel this task?", "Cancel task?")):
             self.evt_cancel_task.emit(self.task)
         self._update_state()
 
     def cancel(self) -> None:
-        """Triggered when user clicked to cancel task."""
         self._on_cancel_task()
 
     def cancelled(self) -> None:
-        """The task was canceled."""
         if self.task:
             try:
                 self.poll_timer.stop()
@@ -356,15 +336,12 @@ class TaskWidget(QFrame):
         self._update_state()
 
     def next(self) -> None:
-        """Update task."""
         self._update_state()
 
     def part_failed(self) -> None:
-        """Update task."""
         self._update_state()
 
     def stop(self) -> None:
-        """Stop task."""
         try:
             self.poll_timer.stop()
         except RuntimeError:
@@ -376,17 +353,14 @@ class TaskWidget(QFrame):
         self._update_state()
 
     def close(self) -> bool:
-        """Close method."""
         self.poll_timer.timeout.disconnect(self.on_update_timer)
         self.poll_timer.stop()
         return super().close()
 
     def on_update_timer(self) -> None:
-        """Update stats about the process."""
         if self.task:
             self.time_info.setText(format_interval(self.task.current_duration))
 
     def mousePressEvent(self, event: ty.Any) -> None:
-        """Mouse press event."""
         self.toggled = not self.toggled
         return QFrame.mousePressEvent(self, event)

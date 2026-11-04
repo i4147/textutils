@@ -25,8 +25,6 @@ TICK_INTERVAL_MS = 32
 
 @dataclass(frozen=True, slots=True)
 class Obstacle:
-    """A single ground obstacle."""
-
     x: float
     width: int
     height: int
@@ -34,8 +32,6 @@ class Obstacle:
 
 @dataclass(frozen=True, slots=True)
 class DinosaurGameState:
-    """Immutable dinosaur runner game state."""
-
     width: int
     height: int
     ground_y: int
@@ -53,14 +49,12 @@ class DinosaurGameState:
 
 
 def _make_obstacle(rng: random.Random, board_width: int) -> Obstacle:
-    """Create a deterministic obstacle."""
     width, height = rng.choice(((18, 30), (22, 42), (28, 52)))
     offset = rng.randint(0, 40)
     return Obstacle(x=float(board_width + offset), width=width, height=height)
 
 
 def _make_spawn_cooldown(rng: random.Random) -> int:
-    """Create a deterministic obstacle spawn cooldown."""
     return rng.randint(18, 30)
 
 
@@ -70,7 +64,6 @@ def create_initial_state(
     height: int = BOARD_HEIGHT,
     rng: random.Random | None = None,
 ) -> DinosaurGameState:
-    """Create a fresh dinosaur runner state."""
     generator = rng if rng is not None else random.Random()
     ground_y = height - GROUND_MARGIN
     return DinosaurGameState(
@@ -92,7 +85,6 @@ def create_initial_state(
 
 
 def jump_dinosaur(state: DinosaurGameState) -> DinosaurGameState:
-    """Trigger a jump when the dinosaur is on the ground."""
     if state.is_game_over:
         return state
     ground_top = float(state.ground_y - state.dino_height)
@@ -111,12 +103,10 @@ def _rectangles_overlap(
     width2: int,
     height2: int,
 ) -> bool:
-    """Return whether two axis-aligned rectangles overlap."""
     return x1 < x2 + width2 and x1 + width1 > x2 and y1 < y2 + height2 and y1 + height1 > y2
 
 
 def advance_state(state: DinosaurGameState, rng: random.Random) -> DinosaurGameState:
-    """Advance the dinosaur runner by one tick."""
     if state.is_game_over:
         return state
 
@@ -178,21 +168,16 @@ def advance_state(state: DinosaurGameState, rng: random.Random) -> DinosaurGameS
 
 
 class DinosaurBoardWidget(GameBoardWidget):
-    """Paint the dinosaur runner board."""
-
     _state: DinosaurGameState | None
 
     def __init__(self, parent: QWidget | None = None) -> None:
-        """Initialize the board widget."""
         super().__init__(parent)
         self.setMinimumSize(480, 220)
 
     def sizeHint(self) -> QSize:
-        """Return the preferred board size."""
         return QSize(560, 240)
 
     def paintEvent(self, event: QPaintEvent) -> None:
-        """Paint the current game state."""
         super().paintEvent(event)
         if self._state is None:
             return
@@ -234,10 +219,7 @@ class DinosaurBoardWidget(GameBoardWidget):
 
 
 class DinosaurDialog(GameDialogMixin, QtDialog):
-    """Standalone dialog that hosts a minimal dinosaur runner."""
-
     def __init__(self, parent: QWidget | None, *, rng: random.Random | None = None) -> None:
-        """Initialize the dinosaur dialog."""
         self._rng = rng if rng is not None else random.Random()
         self._state = create_initial_state(rng=self._rng)
         self._is_paused = False
@@ -248,23 +230,18 @@ class DinosaurDialog(GameDialogMixin, QtDialog):
         self.restart_game()
 
     def _create_board_widget(self) -> DinosaurBoardWidget:
-        """Return the dinosaur board widget."""
         return DinosaurBoardWidget(self)
 
     def _instructions_text(self) -> str:
-        """Return keyboard instructions."""
         return "Space, Up, or W jumps. P pauses. R restarts."
 
     def _do_restart(self) -> None:
-        """Reset game state for a new run."""
         self._state = create_initial_state(rng=self._rng)
 
     def _do_advance_state(self) -> None:
-        """Advance the runner by one tick."""
         self._state = advance_state(self._state, self._rng)
 
     def keyPressEvent(self, event: QKeyEvent | None) -> None:
-        """Handle keyboard controls."""
         if event is None:
             return
 

@@ -9,8 +9,6 @@ from qtextra.widgets._qt_combobox import _BTN_H, _base_font, _BaseButton, _draw_
 
 
 class QtColorSwatchComboBox(QWidget):
-    """Combobox showing a grid of color swatches with optional names."""
-
     evt_color_changed = Signal(QColor)
 
     def __init__(self, placeholder: str = "Choose color...", parent=None):
@@ -34,7 +32,6 @@ class QtColorSwatchComboBox(QWidget):
         self._panel.add_swatch(QColor(color), name)
 
     def add_swatches(self, swatches: list[tuple[str, str]]):
-        """Swatches = list of (hex, name) tuples."""
         for hex_c, name in swatches:
             self.add_swatch(hex_c, name)
 
@@ -57,7 +54,6 @@ class QtColorSwatchComboBox(QWidget):
         return self._color
 
     def _close_panel(self) -> None:
-        """Reset the button state when the popup closes."""
         self._btn.set_open(False)
 
 
@@ -91,7 +87,6 @@ class _SwatchPanel(_PopupPanel):
         self.adjustSize()
 
     def _rebuild_grid(self, cols: int):
-        """Redistribute all cells with a new column count."""
         if cols == self._cols:
             return
         self._cols = cols
@@ -101,7 +96,6 @@ class _SwatchPanel(_PopupPanel):
         self.adjustSize()
 
     def show_below(self, widget, min_width=0):
-        """Recalculate columns from available width before showing."""
         avail = max(widget.width(), min_width) - self.PADDING
         cols = max(1, avail // (self.CELL + self.MIN_GAP))
         self._rebuild_grid(cols)
@@ -115,7 +109,6 @@ class _SwatchPanel(_PopupPanel):
         self.evt_color_selected.emit(color, name)
 
     def _make_cell_click_handler(self, color: QColor, name: str):
-        """Create a click handler for a swatch cell."""
 
         def _handle_cell_click(_checked: bool = False) -> None:
             self._pick(color, name)
